@@ -3,7 +3,7 @@ import KeyboardShortcuts
 
 @main
 struct sharkfinApp: App {
-  private let database = AppDatabase.shared
+  @State private var directoryStore = DirectoryStore(database: .shared)
 
   var body: some Scene {
     MenuBarExtra("Sharkfin", systemImage: "magnifyingglass") {
@@ -12,6 +12,7 @@ struct sharkfinApp: App {
 
     Window("Sharkfin Settings", id: "settings") {
       SettingsView()
+        .environment(directoryStore)
     }
     .defaultSize(width: 800, height: 500)
     .windowResizability(.contentSize)

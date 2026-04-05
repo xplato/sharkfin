@@ -86,6 +86,15 @@ final class AppDatabase: Sendable {
     return migrator
   }
   
+  /// The app's data directory in Application Support.
+  static let dataDirectoryURL: URL = {
+    let appSupportURL = FileManager.default.urls(
+      for: .applicationSupportDirectory,
+      in: .userDomainMask
+    ).first!
+    return appSupportURL.appendingPathComponent("com.lgx.mnemonic", isDirectory: true)
+  }()
+
   // MARK: - Shared Instance
   
   static let shared: AppDatabase = {

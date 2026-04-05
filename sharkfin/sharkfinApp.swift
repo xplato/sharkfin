@@ -4,7 +4,7 @@ import Quartz
 
 @main
 struct sharkfinApp: App {
-  @State private var directoryStore = DirectoryStore(database: .shared)
+  @State private var directoryStore: DirectoryStore
   @State private var modelManager: CLIPModelManager
   @State private var indexingService: IndexingService
   @State private var appState: AppState
@@ -15,8 +15,10 @@ struct sharkfinApp: App {
     _indexingService = State(initialValue: IndexingService(
       database: .shared, modelManager: manager
     ))
+    let store = DirectoryStore(database: .shared)
+    _directoryStore = State(initialValue: store)
     _appState = State(initialValue: AppState(
-      database: .shared, modelManager: manager
+      database: .shared, modelManager: manager, directoryStore: store
     ))
   }
 
@@ -40,12 +42,14 @@ final class AppState {
   private var searchPanel: SearchPanel?
   private var searchViewModel: SearchViewModel
   private var searchController = SearchController()
+  let directoryStore: DirectoryStore
   private var resignKeyObserver: Any?
 
-  init(database: AppDatabase, modelManager: CLIPModelManager) {
+  init(database: AppDatabase, modelManager: CLIPModelManager, directoryStore: DirectoryStore) {
     self.searchViewModel = SearchViewModel(
       database: database, modelManager: modelManager
     )
+    self.directoryStore = directoryStore
     KeyboardShortcuts.onKeyUp(for: .activateSearch) { [self] in
       activateSearch()
     }
@@ -131,6 +135,7 @@ final class AppState {
         }
       )
       .environment(searchController)
+      .environment(directoryStore)
     )
 
     panel.contentView = hostingView

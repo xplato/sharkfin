@@ -36,8 +36,7 @@ struct SettingsView: View {
         }
         .tag(Tab.advanced)
     }
-    .frame(minWidth: 500, idealWidth: 800, maxWidth: 1000,
-           minHeight: 300, idealHeight: 500, maxHeight: 700)
-    .padding()
+    .frame(minWidth: 400, idealWidth: 500, maxWidth: 600,
+           minHeight: 500, idealHeight: 600, maxHeight: 900)
   }
 }

@@ -33,11 +33,11 @@ struct DirectoryRowView: View {
 
       Spacer()
 
-      Toggle("Watch", isOn: Binding(
-        get: { directory.watch },
+      Toggle("Enabled", isOn: Binding(
+        get: { directory.enabled },
         set: { newValue in
           guard let id = directory.id else { return }
-          try? store.database.updateDirectoryWatch(id: id, watch: newValue)
+          try? store.database.updateDirectoryEnabled(id: id, enabled: newValue)
         }
       ))
       .toggleStyle(.switch)

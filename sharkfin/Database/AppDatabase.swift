@@ -23,6 +23,7 @@ final class AppDatabase: Sendable {
         t.autoIncrementedPrimaryKey("id")
         t.column("path", .text).notNull().unique()
         t.column("label", .text)
+        t.column("enabled", .boolean).notNull().defaults(to: true)
         t.column("watch", .boolean).notNull().defaults(to: false)
         t.column("addedAt", .datetime).notNull()
         t.column("lastIndexedAt", .datetime)
@@ -147,6 +148,15 @@ final class AppDatabase: Sendable {
     }
   }
   
+  func updateDirectoryEnabled(id: Int64, enabled: Bool) throws {
+    try dbQueue.write { db in
+      if var directory = try SharkfinDirectory.fetchOne(db, id: id) {
+        directory.enabled = enabled
+        try directory.update(db)
+      }
+    }
+  }
+
   func updateDirectoryWatch(id: Int64, watch: Bool) throws {
     try dbQueue.write { db in
       if var directory = try SharkfinDirectory.fetchOne(db, id: id) {

@@ -62,6 +62,10 @@ struct SearchPanelView: View {
     }
     .background(.ultraThinMaterial)
     .clipShape(RoundedRectangle(cornerRadius: 12))
+    .overlay {
+      RoundedRectangle(cornerRadius: 12)
+        .strokeBorder(.separator, lineWidth: 1)
+    }
     .shadow(color: .black.opacity(0.3), radius: 20, y: 8)
     .frame(width: 680)
     .fixedSize(horizontal: false, vertical: true)

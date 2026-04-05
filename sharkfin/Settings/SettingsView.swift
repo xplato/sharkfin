@@ -1,15 +1,36 @@
 import SwiftUI
-import KeyboardShortcuts
 
 struct SettingsView: View {
-  var body: some View {
-    Form {
-      Section("Keyboard Shortcut") {
-        KeyboardShortcuts.Recorder("Activate Search:", name: .activateSearch)
-      }
-    }
-    .formStyle(.grouped)
-    .frame(minWidth: 350, idealWidth: 800, maxWidth: 1200,
-           minHeight: 150, idealHeight: 500, maxHeight: 900)
+  @State private var selection: Tab = .general
+  
+  enum Tab: Hashable {
+    case general
+    case shortcuts
+    case about
   }
+  
+  var body: some View {
+    TabView(selection: $selection) {
+      GeneralSettingsView()
+        .tabItem {
+          Label("General", systemImage: "gearshape")
+        }
+        .tag(Tab.general)
+      
+      KeyboardShortcutsView()
+        .tabItem {
+          Label("Shortcuts", systemImage: "keyboard")
+        }
+        .tag(Tab.shortcuts)
+      
+      AboutView()
+        .tabItem {
+          Label("About", systemImage: "info.circle")
+        }
+        .tag(Tab.about)
+    }
+    .frame(width: 500, height: 300)
+    .padding()
+  }
+  
 }

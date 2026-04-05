@@ -3,6 +3,7 @@ import SwiftUI
 struct DirectoryRowView: View {
   let directory: SharkfinDirectory
   @Environment(DirectoryStore.self) private var store
+  @Environment(IndexingService.self) private var indexingService
   @State private var showDeleteConfirmation = false
 
   /// Shorten the path for display: /Users/tristan/.../DirName
@@ -11,6 +12,16 @@ struct DirectoryRowView: View {
     let components = path.split(separator: "/")
     guard components.count > 3 else { return path }
     return "/\(components[0])/\(components[1])/\u{2026}/\(components.last ?? "")"
+  }
+
+  private var progress: IndexingProgress? {
+    guard let id = directory.id else { return nil }
+    return indexingService.progressByDirectory[id]
+  }
+
+  private var isIndexing: Bool {
+    guard let id = directory.id else { return false }
+    return indexingService.isIndexing(id)
   }
 
   var body: some View {
@@ -29,9 +40,33 @@ struct DirectoryRowView: View {
             .lineLimit(1)
             .truncationMode(.middle)
         }
+
+        if let progress {
+          progressView(progress)
+        }
       }
 
       Spacer()
+
+      if isIndexing {
+        Button {
+          guard let id = directory.id else { return }
+          indexingService.cancelIndexing(id)
+        } label: {
+          Image(systemName: "xmark.circle")
+        }
+        .buttonStyle(.borderless)
+        .help("Cancel indexing")
+      } else {
+        Button {
+          indexingService.indexDirectory(directory)
+        } label: {
+          Image(systemName: "arrow.clockwise")
+        }
+        .buttonStyle(.borderless)
+        .disabled(!indexingService.modelsReady)
+        .help(indexingService.modelsReady ? "Index now" : "Download vision model first")
+      }
 
       Toggle("Enabled", isOn: Binding(
         get: { directory.enabled },
@@ -63,5 +98,46 @@ struct DirectoryRowView: View {
       }
     }
     .padding(.vertical, 6)
+  }
+
+  @ViewBuilder
+  private func progressView(_ progress: IndexingProgress) -> some View {
+    switch progress.phase {
+    case .scanning:
+      HStack(spacing: 4) {
+        ProgressView()
+          .controlSize(.small)
+        Text("Scanning files...")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
+    case .indexing:
+      VStack(alignment: .leading, spacing: 2) {
+        ProgressView(
+          value: Double(progress.processed),
+          total: Double(max(progress.total, 1))
+        )
+        .controlSize(.small)
+        Text("\(progress.processed) of \(progress.total) files indexed")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
+    case .complete(let count):
+      Text("Indexed \(count) files")
+        .font(.caption)
+        .foregroundStyle(.green)
+    case .upToDate:
+      Text("Up to date")
+        .font(.caption)
+        .foregroundStyle(.green)
+    case .error(let message):
+      Text(message)
+        .font(.caption)
+        .foregroundStyle(.red)
+    case .cancelled:
+      Text("Cancelled")
+        .font(.caption)
+        .foregroundStyle(.secondary)
+    }
   }
 }

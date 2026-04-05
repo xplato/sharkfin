@@ -4,8 +4,17 @@ import KeyboardShortcuts
 @main
 struct sharkfinApp: App {
   @State private var directoryStore = DirectoryStore(database: .shared)
-  @State private var modelManager = CLIPModelManager()
+  @State private var modelManager: CLIPModelManager
+  @State private var indexingService: IndexingService
   @State private var appState = AppState()
+
+  init() {
+    let manager = CLIPModelManager()
+    _modelManager = State(initialValue: manager)
+    _indexingService = State(initialValue: IndexingService(
+      database: .shared, modelManager: manager
+    ))
+  }
 
   var body: some Scene {
     MenuBarExtra("Sharkfin", systemImage: "magnifyingglass") {
@@ -16,6 +25,7 @@ struct sharkfinApp: App {
       SettingsView()
         .environment(directoryStore)
         .environment(modelManager)
+        .environment(indexingService)
     }
   }
 }
@@ -37,8 +47,9 @@ final class AppState {
       object: nil,
       queue: .main
     ) { [weak self] _ in
+      guard let self else { return }
       Task { @MainActor in
-        self?.hideSearch()
+        self.hideSearch()
       }
     }
   }

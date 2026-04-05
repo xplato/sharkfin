@@ -3,14 +3,14 @@ import SwiftUI
 struct GeneralSettingsView: View {
   @Environment(DirectoryStore.self) private var directoryStore
   @AppStorage("watchDirectories") private var watchDirectories = false
-
+  
   var body: some View {
     Form {
       Section("Features") {
         Toggle("Watch for changes", isOn: $watchDirectories)
       }
       
-      Section("Indexed Directories") {
+      Section(header: Text("Directories"), footer: Text("After indexing, the contents of these directories will be included in search results.")) {
         if directoryStore.directories.isEmpty {
           Text("No directories added yet.")
             .foregroundStyle(.secondary)
@@ -19,7 +19,7 @@ struct GeneralSettingsView: View {
             DirectoryRowView(directory: directory)
           }
         }
-
+        
         AddDirectoryButton()
       }
       

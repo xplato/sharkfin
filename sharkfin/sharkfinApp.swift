@@ -76,8 +76,11 @@ final class AppState {
     searchViewModel.clearSearch()
     panel.makeKeyAndOrderFront(nil)
 
+    // Focus the text field after the hosting view has laid out
     DispatchQueue.main.async {
-      panel.makeKey()
+      if let textField = self.findTextField(in: panel.contentView) {
+        panel.makeFirstResponder(textField)
+      }
     }
   }
 
@@ -120,6 +123,19 @@ final class AppState {
     hostingView.layer?.masksToBounds = true
     self.searchPanel = panel
     return panel
+  }
+
+  private func findTextField(in view: NSView?) -> NSTextField? {
+    guard let view else { return nil }
+    if let textField = view as? NSTextField, textField.isEditable {
+      return textField
+    }
+    for subview in view.subviews {
+      if let found = findTextField(in: subview) {
+        return found
+      }
+    }
+    return nil
   }
 }
 

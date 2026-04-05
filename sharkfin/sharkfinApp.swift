@@ -78,7 +78,7 @@ final class AppState {
     }) ?? NSScreen.main ?? NSScreen.screens.first {
       let screenFrame = screen.visibleFrame
       let panelWidth: CGFloat = 680
-      let panelHeight: CGFloat = 400
+      let panelHeight: CGFloat = 560
       let x = screenFrame.midX - panelWidth / 2
       // Top edge of panel at ~72% up the screen, matching Spotlight placement
       let panelTopY = screenFrame.origin.y + screenFrame.height * 0.72
@@ -115,7 +115,7 @@ final class AppState {
     if let existing = searchPanel { return existing }
 
     let panel = SearchPanel(
-      contentRect: NSRect(x: 0, y: 0, width: 680, height: 400)
+      contentRect: NSRect(x: 0, y: 0, width: 680, height: 560)
     )
 
     let hostingView = NSHostingView(

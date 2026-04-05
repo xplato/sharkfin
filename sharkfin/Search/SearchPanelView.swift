@@ -21,7 +21,7 @@ struct SearchPanelView: View {
         } else if !viewModel.results.isEmpty {
           Divider()
           SearchResultsGridView(results: viewModel.results)
-            .frame(maxHeight: 280)
+            .frame(maxHeight: 700)
         } else if viewModel.state == .noResults {
           Divider()
           noResultsView
@@ -84,7 +84,7 @@ struct SearchPanelView: View {
       }
       .frame(maxWidth: .infinity)
       .padding()
-      .frame(maxHeight: 280)
+      .frame(maxHeight: 700)
     }
   }
 

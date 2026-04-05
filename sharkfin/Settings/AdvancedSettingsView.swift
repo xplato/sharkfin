@@ -7,13 +7,76 @@ struct AdvancedSettingsView: View {
     "suppressDisableDirectoryWarning",
   ]
 
+  @Environment(IndexingService.self) private var indexingService
+  @State private var stats: AppDatabase.Stats?
   @State private var showResetConfirmation = false
+
+  private var activeJobCount: Int {
+    indexingService.progressByDirectory.values.filter { progress in
+      switch progress.phase {
+      case .scanning, .indexing: true
+      default: false
+      }
+    }.count
+  }
 
   var body: some View {
     Form {
       Section("Database") {
-        Label("Local database initialized", systemImage: "checkmark.circle.fill")
-          .foregroundStyle(.green)
+        if let stats {
+          LabeledContent("Indexed files") {
+            Text("\(stats.totalFiles)")
+              .monospacedDigit()
+          }
+
+          LabeledContent("Embeddings") {
+            Text("\(stats.totalEmbeddings)")
+              .monospacedDigit()
+          }
+
+          LabeledContent("Directories") {
+            Text("\(stats.enabledDirectories) of \(stats.totalDirectories) enabled")
+              .monospacedDigit()
+          }
+
+          LabeledContent("Source file size") {
+            Text(formattedBytes(stats.totalSizeBytes))
+              .monospacedDigit()
+          }
+
+          LabeledContent("Database size") {
+            Text(formattedBytes(stats.databaseSizeBytes))
+              .monospacedDigit()
+          }
+
+          LabeledContent("Thumbnails size") {
+            Text(formattedBytes(stats.thumbnailsSizeBytes))
+              .monospacedDigit()
+          }
+
+          LabeledContent("Last indexed") {
+            if let date = stats.lastIndexedAt {
+              Text(date, format: .relative(presentation: .named))
+            } else {
+              Text("Never")
+                .foregroundStyle(.secondary)
+            }
+          }
+
+          if activeJobCount > 0 {
+            LabeledContent("Active jobs") {
+              HStack(spacing: 6) {
+                ProgressView()
+                  .controlSize(.small)
+                Text("\(activeJobCount)")
+                  .monospacedDigit()
+              }
+            }
+          }
+        } else {
+          ProgressView()
+            .frame(maxWidth: .infinity)
+        }
       }
 
       Section("Storage") {
@@ -58,5 +121,25 @@ struct AdvancedSettingsView: View {
       }
     }
     .formStyle(.grouped)
+    .task {
+      await refreshStats()
+    }
+    .onChange(of: activeJobCount) {
+      Task { await refreshStats() }
+    }
+  }
+
+  private func refreshStats() async {
+    do {
+      let db = AppDatabase.shared
+      let fetched = try db.fetchStats()
+      stats = fetched
+    } catch {
+      print("Failed to fetch database stats: \(error)")
+    }
+  }
+
+  private func formattedBytes(_ bytes: Int64) -> String {
+    ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
   }
 }

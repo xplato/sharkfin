@@ -156,6 +156,60 @@ final class AppDatabase: Sendable {
     }
   }
 
+  // MARK: - Stats
+
+  nonisolated struct Stats: Sendable, Equatable {
+    var totalFiles: Int
+    var totalEmbeddings: Int
+    var totalDirectories: Int
+    var enabledDirectories: Int
+    var totalSizeBytes: Int64
+    var lastIndexedAt: Date?
+    var databaseSizeBytes: Int64
+    var thumbnailsSizeBytes: Int64
+  }
+
+  func fetchStats() throws -> Stats {
+    let fm = FileManager.default
+    let dbURL = Self.dataDirectoryURL.appendingPathComponent("sharkfin.db")
+    let dbSize = (try? fm.attributesOfItem(atPath: dbURL.path)[.size] as? Int64) ?? 0
+    // WAL and SHM files also contribute to actual disk usage
+    let walSize = (try? fm.attributesOfItem(
+      atPath: dbURL.path + "-wal")[.size] as? Int64) ?? 0
+
+    let thumbsDir = ThumbnailGenerator.thumbnailsDirectory
+    var thumbnailsSize: Int64 = 0
+    if let enumerator = fm.enumerator(at: thumbsDir, includingPropertiesForKeys: [.fileSizeKey]) {
+      for case let fileURL as URL in enumerator {
+        let size = (try? fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        thumbnailsSize += Int64(size)
+      }
+    }
+
+    return try dbQueue.read { db in
+      let totalFiles = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM files") ?? 0
+      let totalEmbeddings = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM fileEmbeddings") ?? 0
+      let totalDirectories = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM directories") ?? 0
+      let enabledDirectories = try Int.fetchOne(
+        db, sql: "SELECT COUNT(*) FROM directories WHERE enabled = 1") ?? 0
+      let totalSizeBytes = try Int64.fetchOne(
+        db, sql: "SELECT COALESCE(SUM(sizeBytes), 0) FROM files") ?? 0
+      let lastIndexedAt = try Date.fetchOne(
+        db, sql: "SELECT MAX(lastIndexedAt) FROM directories")
+
+      return Stats(
+        totalFiles: totalFiles,
+        totalEmbeddings: totalEmbeddings,
+        totalDirectories: totalDirectories,
+        enabledDirectories: enabledDirectories,
+        totalSizeBytes: totalSizeBytes,
+        lastIndexedAt: lastIndexedAt,
+        databaseSizeBytes: dbSize + walSize,
+        thumbnailsSizeBytes: thumbnailsSize
+      )
+    }
+  }
+
   /// Returns the security-scoped bookmark for the directory containing a file.
   func directoryBookmark(forFileId fileId: Int64) async throws -> Data? {
     try await dbQueue.read { db in

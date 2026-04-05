@@ -69,7 +69,7 @@ extension CLIPModelSpec {
 final class CLIPModelManager {
   private(set) var modelStates: [String: ModelDownloadState] = [:]
 
-  private var activeTasks: [String: Task<Void, Never>] = [:]
+  private var activeDownloads: [String: FileDownloader] = [:]
   private let fileManager = FileManager.default
 
   static let modelsDirectoryURL: URL = {
@@ -91,16 +91,19 @@ final class CLIPModelManager {
 
   func download(_ model: CLIPModelSpec) {
     guard modelStates[model.id] != .downloading(progress: 0) else { return }
+    modelStates[model.id] = .downloading(progress: 0)
 
-    let task = Task {
-      await performDownload(model)
+    let downloader = FileDownloader()
+    activeDownloads[model.id] = downloader
+
+    Task {
+      await performDownload(model, downloader: downloader)
     }
-    activeTasks[model.id] = task
   }
 
   func cancel(_ model: CLIPModelSpec) {
-    activeTasks[model.id]?.cancel()
-    activeTasks[model.id] = nil
+    activeDownloads[model.id]?.cancelAll()
+    activeDownloads[model.id] = nil
     cleanupPartialDownload(model)
     modelStates[model.id] = .notDownloaded
   }
@@ -144,7 +147,7 @@ final class CLIPModelManager {
 
   // MARK: - Download Logic
 
-  private func performDownload(_ model: CLIPModelSpec) async {
+  private func performDownload(_ model: CLIPModelSpec, downloader: FileDownloader) async {
     let modelDir = Self.modelsDirectoryURL.appendingPathComponent(model.id)
 
     do {
@@ -155,56 +158,50 @@ final class CLIPModelManager {
     }
 
     let totalBytes = model.totalSizeBytes
-    var downloadedBytes: Int64 = 0
-
-    modelStates[model.id] = .downloading(progress: 0)
+    var completedBytes: Int64 = 0
 
     for file in model.files {
-      if Task.isCancelled { return }
-
       let destinationURL = modelDir.appendingPathComponent(file.filename)
 
       // Skip already-downloaded files (enables resume after partial failure)
       if fileManager.fileExists(atPath: destinationURL.path) {
-        downloadedBytes += file.sizeBytes
+        completedBytes += file.sizeBytes
         modelStates[model.id] = .downloading(
-          progress: Double(downloadedBytes) / Double(totalBytes)
+          progress: Double(completedBytes) / Double(totalBytes)
         )
         continue
       }
 
-      do {
-        let (tempURL, response) = try await URLSession.shared.download(from: model.downloadURL(for: file))
-
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
-          let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
-          throw URLError(.badServerResponse, userInfo: [
-            NSLocalizedDescriptionKey: "Server returned status \(statusCode)"
-          ])
+      let baseBytes = completedBytes
+      let result = await downloader.download(
+        from: model.downloadURL(for: file),
+        to: destinationURL
+      ) { [weak self] fileProgress in
+        guard let self else { return }
+        let bytesForFile = Int64(fileProgress * Double(file.sizeBytes))
+        let overall = Double(baseBytes + bytesForFile) / Double(totalBytes)
+        Task { @MainActor in
+          self.modelStates[model.id] = .downloading(progress: min(overall, 0.99))
         }
+      }
 
-        // Atomic move from system temp to final location
-        if fileManager.fileExists(atPath: destinationURL.path) {
-          try fileManager.removeItem(at: destinationURL)
-        }
-        try fileManager.moveItem(at: tempURL, to: destinationURL)
-
-        downloadedBytes += file.sizeBytes
+      switch result {
+      case .success:
+        completedBytes += file.sizeBytes
         modelStates[model.id] = .downloading(
-          progress: Double(downloadedBytes) / Double(totalBytes)
+          progress: Double(completedBytes) / Double(totalBytes)
         )
-      } catch is CancellationError {
+      case .cancelled:
         return
-      } catch {
-        modelStates[model.id] = .error(error.localizedDescription)
-        activeTasks[model.id] = nil
+      case .failure(let message):
+        modelStates[model.id] = .error(message)
+        activeDownloads[model.id] = nil
         return
       }
     }
 
     modelStates[model.id] = .downloaded
-    activeTasks[model.id] = nil
+    activeDownloads[model.id] = nil
   }
 
   // MARK: - File Management
@@ -238,5 +235,110 @@ final class CLIPModelManager {
     for fileURL in contents where fileURL.pathExtension == "tmp" {
       try? fileManager.removeItem(at: fileURL)
     }
+  }
+}
+
+// MARK: - Download Result
+
+enum DownloadResult {
+  case success
+  case cancelled
+  case failure(String)
+}
+
+// MARK: - File Downloader (URLSessionDownloadDelegate)
+
+/// Handles individual file downloads with progress reporting, proper redirect
+/// handling, and timeouts suitable for large model files.
+final class FileDownloader: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
+  private var session: URLSession!
+  private var continuation: CheckedContinuation<DownloadResult, Never>?
+  private var progressHandler: ((Double) -> Void)?
+  private var destinationURL: URL?
+  private var activeTask: URLSessionDownloadTask?
+
+  override init() {
+    super.init()
+    let config = URLSessionConfiguration.default
+    config.timeoutIntervalForRequest = 120
+    config.timeoutIntervalForResource = 3600 // 1 hour for large files
+    config.waitsForConnectivity = true
+    config.httpMaximumConnectionsPerHost = 1
+    session = URLSession(configuration: config, delegate: self, delegateQueue: nil)
+  }
+
+  func download(
+    from url: URL,
+    to destination: URL,
+    progress: @escaping (Double) -> Void
+  ) async -> DownloadResult {
+    self.destinationURL = destination
+    self.progressHandler = progress
+
+    return await withCheckedContinuation { continuation in
+      self.continuation = continuation
+      let task = session.downloadTask(with: url)
+      self.activeTask = task
+      task.resume()
+    }
+  }
+
+  func cancelAll() {
+    activeTask?.cancel()
+    activeTask = nil
+    session.invalidateAndCancel()
+  }
+
+  // MARK: - URLSessionDownloadDelegate
+
+  nonisolated func urlSession(
+    _ session: URLSession,
+    downloadTask: URLSessionDownloadTask,
+    didFinishDownloadingTo location: URL
+  ) {
+    guard let destination = destinationURL else {
+      continuation?.resume(returning: .failure("No destination URL set"))
+      continuation = nil
+      return
+    }
+
+    do {
+      let fm = FileManager.default
+      if fm.fileExists(atPath: destination.path) {
+        try fm.removeItem(at: destination)
+      }
+      try fm.moveItem(at: location, to: destination)
+      continuation?.resume(returning: .success)
+      continuation = nil
+    } catch {
+      continuation?.resume(returning: .failure(error.localizedDescription))
+      continuation = nil
+    }
+  }
+
+  nonisolated func urlSession(
+    _ session: URLSession,
+    downloadTask: URLSessionDownloadTask,
+    didWriteData bytesWritten: Int64,
+    totalBytesWritten: Int64,
+    totalBytesExpectedToWrite: Int64
+  ) {
+    guard totalBytesExpectedToWrite > 0 else { return }
+    let fraction = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
+    progressHandler?(fraction)
+  }
+
+  nonisolated func urlSession(
+    _ session: URLSession,
+    task: URLSessionTask,
+    didCompleteWithError error: (any Error)?
+  ) {
+    guard let error else { return }
+    if (error as NSError).code == NSURLErrorCancelled {
+      continuation?.resume(returning: .cancelled)
+    } else {
+      continuation?.resume(returning: .failure(error.localizedDescription))
+    }
+    continuation = nil
   }
 }

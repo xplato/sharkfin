@@ -6,12 +6,15 @@ struct sharkfinApp: App {
   @State private var directoryStore = DirectoryStore(database: .shared)
   @State private var modelManager: CLIPModelManager
   @State private var indexingService: IndexingService
-  @State private var appState = AppState()
+  @State private var appState: AppState
 
   init() {
     let manager = CLIPModelManager()
     _modelManager = State(initialValue: manager)
     _indexingService = State(initialValue: IndexingService(
+      database: .shared, modelManager: manager
+    ))
+    _appState = State(initialValue: AppState(
       database: .shared, modelManager: manager
     ))
   }
@@ -34,10 +37,14 @@ struct sharkfinApp: App {
 @Observable
 final class AppState {
   private var searchPanel: SearchPanel?
-  private var searchViewModel = SearchViewModel()
+  private var searchViewModel: SearchViewModel
+  private var searchController = SearchController()
   private var resignKeyObserver: Any?
 
-  init() {
+  init(database: AppDatabase, modelManager: CLIPModelManager) {
+    self.searchViewModel = SearchViewModel(
+      database: database, modelManager: modelManager
+    )
     KeyboardShortcuts.onKeyUp(for: .activateSearch) { [self] in
       activateSearch()
     }
@@ -83,6 +90,7 @@ final class AppState {
     }
 
     searchViewModel.clearSearch()
+    searchController.clearSelection()
     panel.makeKeyAndOrderFront(nil)
 
     // Focus the text field after the hosting view has laid out
@@ -117,6 +125,7 @@ final class AppState {
           self?.hideSearch()
         }
       )
+      .environment(searchController)
     )
 
     panel.contentView = hostingView

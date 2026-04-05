@@ -7,11 +7,13 @@ enum SearchState: Equatable {
   case noResults
 }
 
-struct SearchResult: Identifiable {
+struct SearchResult: Identifiable, Equatable {
   let id: Int64
   let filename: String
-  let thumbnailPath: String?
   let path: String
+  let thumbnailPath: String?
+  let rawScore: Float
+  let relevance: Float
 }
 
 @MainActor
@@ -21,48 +23,80 @@ final class SearchViewModel {
   private(set) var state: SearchState = .idle
   private(set) var results: [SearchResult] = []
 
-  /// Called when user presses Enter.
-  /// Stubbed with mock data for now.
-  func performSearch() {
+  private let database: AppDatabase
+  private let modelManager: CLIPModelManager
+  private var searchService: SearchService?
+  private var searchTask: Task<Void, Never>?
+
+  init(database: AppDatabase, modelManager: CLIPModelManager) {
+    self.database = database
+    self.modelManager = modelManager
+  }
+
+  /// Called by the view on each query change to debounce search.
+  func queryChanged() {
+    searchTask?.cancel()
     let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty else {
-      clearSearch()
+      results = []
+      state = .idle
       return
     }
-
-    state = .searching
-
-    // Mock search with a short delay
-    Task {
+    searchTask = Task {
       try? await Task.sleep(for: .milliseconds(300))
-      let mockResults = Self.makeMockResults(for: trimmed)
-      if mockResults.isEmpty {
-        results = []
-        state = .noResults
-      } else {
-        results = mockResults
-        state = .results
-      }
+      guard !Task.isCancelled else { return }
+      await executeSearch(trimmed)
+    }
+  }
+
+  /// Called on Enter to skip debounce and search immediately.
+  func submitSearch() {
+    searchTask?.cancel()
+    let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { return }
+    searchTask = Task {
+      await executeSearch(trimmed)
     }
   }
 
   func clearSearch() {
+    searchTask?.cancel()
     query = ""
     results = []
     state = .idle
   }
 
-  // Mock: typing "empty" returns no results; anything else returns 8 items.
-  private static func makeMockResults(for query: String) -> [SearchResult] {
-    if query.lowercased().contains("empty") { return [] }
+  // MARK: - Private
 
-    return (1...8).map { i in
-      SearchResult(
-        id: Int64(i),
-        filename: "photo_\(i).jpg",
-        thumbnailPath: nil,
-        path: "/mock/path/photo_\(i).jpg"
-      )
+  private func executeSearch(_ query: String) async {
+    state = .searching
+    do {
+      let service = try await getOrCreateSearchService()
+      let searchResults = try await service.search(query: query)
+      guard !Task.isCancelled else { return }
+      results = searchResults
+      state = searchResults.isEmpty ? .noResults : .results
+    } catch is CancellationError {
+      // Keep previous results on cancellation
+    } catch {
+      guard !Task.isCancelled else { return }
+      print("[Search] Error: \(error)")
+      results = []
+      state = .noResults
     }
+  }
+
+  private func getOrCreateSearchService() async throws -> SearchService {
+    if let existing = searchService { return existing }
+    guard let modelURL = modelManager.textModelURL,
+          let tokenizerURL = modelManager.textTokenizerFolderURL else {
+      throw CLIPError.modelNotReady
+    }
+    let encoder = try await CLIPTextEncoder(
+      modelPath: modelURL, tokenizerFolder: tokenizerURL
+    )
+    let service = SearchService(database: database, textEncoder: encoder)
+    searchService = service
+    return service
   }
 }

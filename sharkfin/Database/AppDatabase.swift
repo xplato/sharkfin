@@ -24,7 +24,6 @@ final class AppDatabase: Sendable {
         t.column("path", .text).notNull().unique()
         t.column("label", .text)
         t.column("enabled", .boolean).notNull().defaults(to: true)
-        t.column("watch", .boolean).notNull().defaults(to: false)
         t.column("addedAt", .datetime).notNull()
         t.column("lastIndexedAt", .datetime)
         t.column("bookmark", .blob)
@@ -157,12 +156,4 @@ final class AppDatabase: Sendable {
     }
   }
 
-  func updateDirectoryWatch(id: Int64, watch: Bool) throws {
-    try dbQueue.write { db in
-      if var directory = try SharkfinDirectory.fetchOne(db, id: id) {
-        directory.watch = watch
-        try directory.update(db)
-      }
-    }
-  }
 }

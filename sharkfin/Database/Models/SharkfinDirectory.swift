@@ -6,7 +6,6 @@ nonisolated struct SharkfinDirectory: Codable, Identifiable, Sendable {
   var path: String
   var label: String?
   var enabled: Bool
-  var watch: Bool
   var addedAt: Date
   var lastIndexedAt: Date?
   var bookmark: Data?

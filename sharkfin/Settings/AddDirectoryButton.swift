@@ -32,7 +32,6 @@ struct AddDirectoryButton: View {
         path: url.path(percentEncoded: false),
         label: url.lastPathComponent,
         enabled: true,
-        watch: false,
         addedAt: Date(),
         bookmark: bookmarkData
       )

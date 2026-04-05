@@ -2,9 +2,14 @@ import SwiftUI
 
 struct GeneralSettingsView: View {
   @Environment(DirectoryStore.self) private var directoryStore
+  @AppStorage("watchDirectories") private var watchDirectories = false
 
   var body: some View {
     Form {
+      Section("Features") {
+        Toggle("Watch for changes", isOn: $watchDirectories)
+      }
+      
       Section("Indexed Directories") {
         if directoryStore.directories.isEmpty {
           Text("No directories added yet.")

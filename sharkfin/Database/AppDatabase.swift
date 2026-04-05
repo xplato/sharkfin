@@ -88,7 +88,15 @@ final class AppDatabase: Sendable {
   
   // MARK: - Shared Instance
   
-  static func makeShared() throws -> AppDatabase {
+  static let shared: AppDatabase = {
+    do {
+      return try makeShared()
+    } catch {
+      fatalError("Failed to initialize database: \(error)")
+    }
+  }()
+  
+  private static func makeShared() throws -> AppDatabase {
     let fileManager = FileManager.default
     let appSupportURL = try fileManager.url(
       for: .applicationSupportDirectory,
@@ -118,7 +126,7 @@ final class AppDatabase: Sendable {
   
   // MARK: - Directory Operations
   
-  func addDirectory(_ directory: inout MnemonicDirectory) throws {
+  func addDirectory(_ directory: inout SharkfinDirectory) throws {
     try dbQueue.write { db in
       try directory.insert(db)
     }
@@ -126,13 +134,13 @@ final class AppDatabase: Sendable {
   
   func deleteDirectory(id: Int64) throws {
     try dbQueue.write { db in
-      _ = try MnemonicDirectory.deleteOne(db, id: id)
+      _ = try SharkfinDirectory.deleteOne(db, id: id)
     }
   }
   
   func updateDirectoryWatch(id: Int64, watch: Bool) throws {
     try dbQueue.write { db in
-      if var directory = try MnemonicDirectory.fetchOne(db, id: id) {
+      if var directory = try SharkfinDirectory.fetchOne(db, id: id) {
         directory.watch = watch
         try directory.update(db)
       }

@@ -3,11 +3,13 @@ import KeyboardShortcuts
 
 @main
 struct sharkfinApp: App {
+  private let database = AppDatabase.shared
+
   var body: some Scene {
     MenuBarExtra("Sharkfin", systemImage: "magnifyingglass") {
       MenuBarContent()
     }
-    
+
     Window("Sharkfin Settings", id: "settings") {
       SettingsView()
     }
@@ -24,7 +26,7 @@ final class AppState {
       activateSearch()
     }
   }
-  
+
   func activateSearch() {
     // TODO: Open the floating search panel
   }
@@ -32,19 +34,19 @@ final class AppState {
 
 struct MenuBarContent: View {
   @Environment(\.openWindow) private var openWindow
-  
+
   var body: some View {
     Button("Open Search") {}
       .keyboardShortcut("F")
-    
+
     Button("Settings...") {
       NSApplication.shared.activate(ignoringOtherApps: true)
       openWindow(id: "settings")
     }
     .keyboardShortcut(",")
-    
+
     Divider()
-    
+
     Button("Quit") { NSApplication.shared.terminate(nil) }
       .keyboardShortcut("Q")
   }

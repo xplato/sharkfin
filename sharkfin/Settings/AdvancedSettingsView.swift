@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct GeneralSettingsView: View {
+struct AdvancedSettingsView: View {
   var body: some View {
     Form {
       Section("Database") {

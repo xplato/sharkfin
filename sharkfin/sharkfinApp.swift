@@ -11,7 +11,7 @@ struct sharkfinApp: App {
     Window("Sharkfin Settings", id: "settings") {
       SettingsView()
     }
-    .defaultSize(width: 400, height: 200)
+    .defaultSize(width: 800, height: 500)
     .windowResizability(.contentSize)
   }
 }

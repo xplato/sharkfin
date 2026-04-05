@@ -12,13 +12,11 @@ struct sharkfinApp: App {
       MenuBarContent(appState: appState)
     }
 
-    Window("Sharkfin Settings", id: "settings") {
+    Settings {
       SettingsView()
         .environment(directoryStore)
         .environment(modelManager)
     }
-    .defaultSize(width: 800, height: 500)
-    .windowResizability(.contentSize)
   }
 }
 
@@ -88,6 +86,12 @@ final class AppState {
     searchPanel?.orderOut(nil)
   }
 
+  func openSettings() {
+    hideSearch()
+    NSApplication.shared.activate(ignoringOtherApps: true)
+    NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+  }
+
   private func getOrCreatePanel() -> SearchPanel {
     if let existing = searchPanel { return existing }
 
@@ -100,15 +104,6 @@ final class AppState {
         viewModel: searchViewModel,
         onDismiss: { [weak self] in
           self?.hideSearch()
-        },
-        onOpenSettings: { [weak self] in
-          self?.hideSearch()
-          NSApplication.shared.activate(ignoringOtherApps: true)
-          if let settingsWindow = NSApp.windows.first(where: {
-            $0.identifier?.rawValue.contains("settings") == true
-          }) {
-            settingsWindow.makeKeyAndOrderFront(nil)
-          }
         }
       )
     )
@@ -140,7 +135,6 @@ final class AppState {
 }
 
 struct MenuBarContent: View {
-  @Environment(\.openWindow) private var openWindow
   let appState: AppState
 
   var body: some View {
@@ -150,8 +144,7 @@ struct MenuBarContent: View {
     .keyboardShortcut("F")
 
     Button("Settings...") {
-      NSApplication.shared.activate(ignoringOtherApps: true)
-      openWindow(id: "settings")
+      appState.openSettings()
     }
     .keyboardShortcut(",")
 

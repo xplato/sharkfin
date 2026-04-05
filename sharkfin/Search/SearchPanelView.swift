@@ -3,7 +3,6 @@ import SwiftUI
 struct SearchPanelView: View {
   @Bindable var viewModel: SearchViewModel
   var onDismiss: () -> Void
-  var onOpenSettings: () -> Void
 
   var body: some View {
     VStack(spacing: 0) {
@@ -12,7 +11,7 @@ struct SearchPanelView: View {
         SearchBarView(
           viewModel: viewModel,
           onSubmit: { viewModel.performSearch() },
-          onSettingsTapped: { onOpenSettings() }
+          onDismiss: { onDismiss() }
         )
 
         if viewModel.state != .idle {
@@ -76,6 +75,14 @@ struct SearchPanelView: View {
     .onKeyPress(.escape) {
       handleEscape()
       return .handled
+    }
+    .onKeyPress(phases: .down) { keyPress in
+      if keyPress.key == "," && keyPress.modifiers == .command {
+        onDismiss()
+        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        return .handled
+      }
+      return .ignored
     }
   }
 

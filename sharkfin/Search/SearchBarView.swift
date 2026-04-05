@@ -3,7 +3,7 @@ import SwiftUI
 struct SearchBarView: View {
   @Bindable var viewModel: SearchViewModel
   var onSubmit: () -> Void
-  var onSettingsTapped: () -> Void
+  var onDismiss: () -> Void
 
   var body: some View {
     HStack(spacing: 12) {
@@ -21,14 +21,13 @@ struct SearchBarView: View {
           .controlSize(.small)
       }
 
-      Button {
-        onSettingsTapped()
-      } label: {
+      SettingsLink {
         Image(systemName: "ellipsis")
           .font(.title3)
           .foregroundStyle(.secondary)
       }
       .buttonStyle(.plain)
+      .simultaneousGesture(TapGesture().onEnded { onDismiss() })
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 12)

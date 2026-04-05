@@ -248,23 +248,32 @@ enum DownloadResult {
 
 // MARK: - File Downloader (URLSessionDownloadDelegate)
 
-/// Handles individual file downloads with progress reporting, proper redirect
-/// handling, and timeouts suitable for large model files.
+/// Handles individual file downloads with progress reporting, automatic retry
+/// with resume data, and timeouts suitable for large model files.
+/// The HuggingFace Xet CDN tends to drop connections on large files, so we
+/// retry aggressively with resume data to incrementally complete the download.
 final class FileDownloader: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
-  private var session: URLSession!
   private var continuation: CheckedContinuation<DownloadResult, Never>?
   private var progressHandler: ((Double) -> Void)?
   private var destinationURL: URL?
   private var activeTask: URLSessionDownloadTask?
+  private var resumeData: Data?
+  private var isCancelled = false
+  private var consecutiveResumeFails = 0
 
-  override init() {
-    super.init()
-    let config = URLSessionConfiguration.default
-    config.timeoutIntervalForRequest = 120
-    config.timeoutIntervalForResource = 3600 // 1 hour for large files
+  private static let maxRetries = 15
+
+  /// Create a fresh ephemeral session for each download attempt to avoid
+  /// stale HTTP/2 connection reuse that triggers -1005 on the CDN.
+  private func makeSession() -> URLSession {
+    let config = URLSessionConfiguration.ephemeral
+    config.timeoutIntervalForRequest = 300
+    config.timeoutIntervalForResource = 7200
     config.waitsForConnectivity = true
     config.httpMaximumConnectionsPerHost = 1
-    session = URLSession(configuration: config, delegate: self, delegateQueue: nil)
+    config.urlCache = nil
+    config.requestCachePolicy = .reloadIgnoringLocalCacheData
+    return URLSession(configuration: config, delegate: self, delegateQueue: nil)
   }
 
   func download(
@@ -274,19 +283,58 @@ final class FileDownloader: NSObject, URLSessionDownloadDelegate, @unchecked Sen
   ) async -> DownloadResult {
     self.destinationURL = destination
     self.progressHandler = progress
+    self.isCancelled = false
+    self.resumeData = nil
+    self.consecutiveResumeFails = 0
 
-    return await withCheckedContinuation { continuation in
-      self.continuation = continuation
-      let task = session.downloadTask(with: url)
-      self.activeTask = task
-      task.resume()
+    var lastResult: DownloadResult = .failure("Download did not start")
+
+    for attempt in 0..<Self.maxRetries {
+      if isCancelled { return .cancelled }
+
+      if attempt > 0 {
+        let delay = min(2 + attempt, 10)
+        try? await Task.sleep(for: .seconds(delay))
+        if isCancelled { return .cancelled }
+      }
+
+      // Fresh session per attempt avoids stale connection issues
+      let session = makeSession()
+
+      lastResult = await withCheckedContinuation { continuation in
+        self.continuation = continuation
+
+        let task: URLSessionDownloadTask
+        if let data = self.resumeData, self.consecutiveResumeFails < 2 {
+          task = session.downloadTask(withResumeData: data)
+        } else {
+          // Resume data expired or failed twice — start fresh from original URL
+          // which will get a new signed CDN redirect
+          self.resumeData = nil
+          self.consecutiveResumeFails = 0
+          task = session.downloadTask(with: url)
+        }
+        self.activeTask = task
+        task.resume()
+      }
+
+      session.invalidateAndCancel()
+
+      switch lastResult {
+      case .success, .cancelled:
+        return lastResult
+      case .failure:
+        continue
+      }
     }
+
+    return lastResult
   }
 
   func cancelAll() {
+    isCancelled = true
     activeTask?.cancel()
     activeTask = nil
-    session.invalidateAndCancel()
   }
 
   // MARK: - URLSessionDownloadDelegate
@@ -334,7 +382,19 @@ final class FileDownloader: NSObject, URLSessionDownloadDelegate, @unchecked Sen
     didCompleteWithError error: (any Error)?
   ) {
     guard let error else { return }
-    if (error as NSError).code == NSURLErrorCancelled {
+
+    let nsError = error as NSError
+
+    // Capture resume data for retry
+    if let data = nsError.userInfo[NSURLSessionDownloadTaskResumeData] as? Data {
+      self.resumeData = data
+      self.consecutiveResumeFails = 0
+    } else if self.resumeData != nil {
+      // Had resume data but this attempt didn't produce new data — likely expired
+      self.consecutiveResumeFails += 1
+    }
+
+    if nsError.code == NSURLErrorCancelled && isCancelled {
       continuation?.resume(returning: .cancelled)
     } else {
       continuation?.resume(returning: .failure(error.localizedDescription))

@@ -5,7 +5,7 @@ struct KeyboardShortcutsView: View {
   var body: some View {
     Form {
       Section("Keyboard Shortcut") {
-        KeyboardShortcuts.Recorder("Activate Search:", name: .activateSearch)
+        KeyboardShortcuts.Recorder("Show searchbar", name: .activateSearch)
       }
     }
     .formStyle(.grouped)

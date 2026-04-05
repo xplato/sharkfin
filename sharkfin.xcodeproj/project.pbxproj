@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		6A17ACBB2F82D280002F4666 /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = 6A17ACBA2F82D280002F4666 /* KeyboardShortcuts */; };
 		6A17ACE22F82DAC2002F4666 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = 6A17ACE12F82DAC2002F4666 /* GRDB */; };
+		6A17AD4C2F82FA69002F4666 /* onnxruntime in Frameworks */ = {isa = PBXBuildFile; productRef = 6A17AD4B2F82FA69002F4666 /* onnxruntime */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,6 +29,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6A17AD4C2F82FA69002F4666 /* onnxruntime in Frameworks */,
 				6A17ACBB2F82D280002F4666 /* KeyboardShortcuts in Frameworks */,
 				6A17ACE22F82DAC2002F4666 /* GRDB in Frameworks */,
 			);
@@ -74,6 +76,7 @@
 			packageProductDependencies = (
 				6A17ACBA2F82D280002F4666 /* KeyboardShortcuts */,
 				6A17ACE12F82DAC2002F4666 /* GRDB */,
+				6A17AD4B2F82FA69002F4666 /* onnxruntime */,
 			);
 			productName = sharkfin;
 			productReference = 6A17ACA42F82C78E002F4666 /* sharkfin.app */;
@@ -106,6 +109,7 @@
 			packageReferences = (
 				6A17ACB92F82D280002F4666 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
 				6A17ACE02F82DAC2002F4666 /* XCRemoteSwiftPackageReference "GRDB.swift" */,
+				6A17AD4A2F82FA69002F4666 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6A17ACA52F82C78E002F4666 /* Products */;
@@ -358,6 +362,14 @@
 				kind = branch;
 			};
 		};
+		6A17AD4A2F82FA69002F4666 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/microsoft/onnxruntime-swift-package-manager";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.24.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -370,6 +382,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 6A17ACE02F82DAC2002F4666 /* XCRemoteSwiftPackageReference "GRDB.swift" */;
 			productName = GRDB;
+		};
+		6A17AD4B2F82FA69002F4666 /* onnxruntime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6A17AD4A2F82FA69002F4666 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */;
+			productName = onnxruntime;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

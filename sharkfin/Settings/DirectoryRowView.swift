@@ -45,6 +45,8 @@ struct DirectoryRowView: View {
 
         if let progress {
           progressView(progress)
+        } else if directory.lastIndexedAt == nil {
+          notIndexedView
         }
       }
 
@@ -100,7 +102,7 @@ struct DirectoryRowView: View {
           try? store.database.deleteDirectory(id: id)
         }
       } message: {
-        Text("This directory will be removed from Sharkfin. New indexing will not be performed, and existing analysis, thumbnails, and references will be deleted. The content of the directory will remain unchanged.")
+        Text("This directory will be removed from Sharkfin. New indexing will not be performed, and existing analysis, thumbnails, and references will be deleted. The contents of the directory will remain unchanged.")
       }
     }
     .padding(.vertical, 6)
@@ -117,6 +119,17 @@ struct DirectoryRowView: View {
       Text("Search results from this directory will be hidden while it is disabled.")
     }
     .dialogSuppressionToggle(isSuppressed: $suppressDisableWarning)
+  }
+
+  private var notIndexedView: some View {
+    Text("Not yet indexed — click \(Image(systemName: "arrow.clockwise")) to start")
+      .font(.caption)
+      .foregroundStyle(.orange)
+      .onTapGesture {
+        if indexingService.modelsReady {
+          indexingService.indexDirectory(directory)
+        }
+      }
   }
 
   @ViewBuilder

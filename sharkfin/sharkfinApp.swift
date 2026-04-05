@@ -4,6 +4,7 @@ import KeyboardShortcuts
 @main
 struct sharkfinApp: App {
   @State private var directoryStore = DirectoryStore(database: .shared)
+  @State private var modelManager = CLIPModelManager()
 
   var body: some Scene {
     MenuBarExtra("Sharkfin", systemImage: "magnifyingglass") {
@@ -13,6 +14,7 @@ struct sharkfinApp: App {
     Window("Sharkfin Settings", id: "settings") {
       SettingsView()
         .environment(directoryStore)
+        .environment(modelManager)
     }
     .defaultSize(width: 800, height: 500)
     .windowResizability(.contentSize)

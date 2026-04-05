@@ -10,6 +10,12 @@ struct GeneralSettingsView: View {
         Toggle("Watch for changes", isOn: $watchDirectories)
       }
       
+      Section("Models") {
+        ForEach(CLIPModelSpec.all) { model in
+          ModelRowView(model: model)
+        }
+      }
+
       Section("Indexed Directories") {
         if directoryStore.directories.isEmpty {
           Text("No directories added yet.")

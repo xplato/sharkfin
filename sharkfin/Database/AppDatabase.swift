@@ -1,7 +1,7 @@
 import GRDB
 import Foundation
 
-/// Manages the SQLite database for Mnemonic.
+/// Manages the SQLite database for Sharkfin.
 final class AppDatabase: Sendable {
   let dbQueue: DatabaseQueue
   
@@ -92,7 +92,7 @@ final class AppDatabase: Sendable {
       for: .applicationSupportDirectory,
       in: .userDomainMask
     ).first!
-    return appSupportURL.appendingPathComponent("com.lgx.mnemonic", isDirectory: true)
+    return appSupportURL.appendingPathComponent("com.lgx.sharkfin", isDirectory: true)
   }()
 
   // MARK: - Shared Instance
@@ -114,14 +114,14 @@ final class AppDatabase: Sendable {
       create: true
     )
     let directoryURL = appSupportURL.appendingPathComponent(
-      "com.lgx.mnemonic",
+      "com.lgx.sharkfin",
       isDirectory: true
     )
     try fileManager.createDirectory(
       at: directoryURL,
       withIntermediateDirectories: true
     )
-    let dbURL = directoryURL.appendingPathComponent("mnemonic.db")
+    let dbURL = directoryURL.appendingPathComponent("sharkfin.db")
     
     var config = Configuration()
     config.prepareDatabase { db in

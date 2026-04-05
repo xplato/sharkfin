@@ -10,6 +10,7 @@
 		6A17ACBB2F82D280002F4666 /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = 6A17ACBA2F82D280002F4666 /* KeyboardShortcuts */; };
 		6A17ACE22F82DAC2002F4666 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = 6A17ACE12F82DAC2002F4666 /* GRDB */; };
 		6A17AD4C2F82FA69002F4666 /* onnxruntime in Frameworks */ = {isa = PBXBuildFile; productRef = 6A17AD4B2F82FA69002F4666 /* onnxruntime */; };
+		6A17AD532F82FE81002F4666 /* Transformers in Frameworks */ = {isa = PBXBuildFile; productRef = 6A17AD522F82FE81002F4666 /* Transformers */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,6 +32,7 @@
 			files = (
 				6A17AD4C2F82FA69002F4666 /* onnxruntime in Frameworks */,
 				6A17ACBB2F82D280002F4666 /* KeyboardShortcuts in Frameworks */,
+				6A17AD532F82FE81002F4666 /* Transformers in Frameworks */,
 				6A17ACE22F82DAC2002F4666 /* GRDB in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -77,6 +79,7 @@
 				6A17ACBA2F82D280002F4666 /* KeyboardShortcuts */,
 				6A17ACE12F82DAC2002F4666 /* GRDB */,
 				6A17AD4B2F82FA69002F4666 /* onnxruntime */,
+				6A17AD522F82FE81002F4666 /* Transformers */,
 			);
 			productName = sharkfin;
 			productReference = 6A17ACA42F82C78E002F4666 /* sharkfin.app */;
@@ -110,6 +113,7 @@
 				6A17ACB92F82D280002F4666 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
 				6A17ACE02F82DAC2002F4666 /* XCRemoteSwiftPackageReference "GRDB.swift" */,
 				6A17AD4A2F82FA69002F4666 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */,
+				6A17AD512F82FE81002F4666 /* XCRemoteSwiftPackageReference "swift-transformers" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6A17ACA52F82C78E002F4666 /* Products */;
@@ -370,6 +374,14 @@
 				minimumVersion = 1.24.2;
 			};
 		};
+		6A17AD512F82FE81002F4666 /* XCRemoteSwiftPackageReference "swift-transformers" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/huggingface/swift-transformers";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.3.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -387,6 +399,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 6A17AD4A2F82FA69002F4666 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */;
 			productName = onnxruntime;
+		};
+		6A17AD522F82FE81002F4666 /* Transformers */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6A17AD512F82FE81002F4666 /* XCRemoteSwiftPackageReference "swift-transformers" */;
+			productName = Transformers;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

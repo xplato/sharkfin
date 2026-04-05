@@ -64,7 +64,8 @@ final class AppState {
       let panelWidth: CGFloat = 680
       let panelHeight: CGFloat = 400
       let x = screenFrame.midX - panelWidth / 2
-      let y = screenFrame.maxY - panelHeight - (screenFrame.height * 0.15)
+      // Position near top of screen, matching Spotlight placement
+      let y = screenFrame.origin.y + screenFrame.height * 0.72
       panel.setFrame(
         NSRect(x: x, y: y, width: panelWidth, height: panelHeight),
         display: false

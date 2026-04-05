@@ -15,7 +15,6 @@ struct SearchPanelView: View {
 
       if viewModel.state != .idle {
         Divider()
-          .padding(.horizontal, 8)
 
         Group {
           switch viewModel.state {

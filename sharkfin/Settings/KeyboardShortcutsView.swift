@@ -9,7 +9,5 @@ struct KeyboardShortcutsView: View {
       }
     }
     .formStyle(.grouped)
-    .frame(minWidth: 350, idealWidth: 800, maxWidth: 1200,
-           minHeight: 150, idealHeight: 500, maxHeight: 900)
   }
 }

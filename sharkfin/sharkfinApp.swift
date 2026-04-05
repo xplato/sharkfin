@@ -64,8 +64,9 @@ final class AppState {
       let panelWidth: CGFloat = 680
       let panelHeight: CGFloat = 400
       let x = screenFrame.midX - panelWidth / 2
-      // Position near top of screen, matching Spotlight placement
-      let y = screenFrame.origin.y + screenFrame.height * 0.72
+      // Top edge of panel at ~72% up the screen, matching Spotlight placement
+      let panelTopY = screenFrame.origin.y + screenFrame.height * 0.72
+      let y = panelTopY - panelHeight
       panel.setFrame(
         NSRect(x: x, y: y, width: panelWidth, height: panelHeight),
         display: false
@@ -118,27 +119,7 @@ final class AppState {
     hostingView.layer?.cornerCurve = .continuous
     hostingView.layer?.masksToBounds = true
     self.searchPanel = panel
-
-    searchViewModel.onStateChange = { [weak self] in
-      self?.updatePanelSize()
-    }
-
     return panel
-  }
-
-  private func updatePanelSize() {
-    guard let panel = searchPanel,
-          let hostingView = panel.contentView as? NSHostingView<SearchPanelView>
-    else { return }
-
-    let fittingSize = hostingView.fittingSize
-    let newFrame = NSRect(
-      x: panel.frame.origin.x,
-      y: panel.frame.maxY - fittingSize.height,
-      width: panel.frame.width,
-      height: fittingSize.height
-    )
-    panel.setFrame(newFrame, display: true, animate: true)
   }
 }
 

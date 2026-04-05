@@ -21,8 +21,6 @@ final class SearchViewModel {
   private(set) var state: SearchState = .idle
   private(set) var results: [SearchResult] = []
 
-  var onStateChange: (() -> Void)?
-
   /// Called when user presses Enter.
   /// Stubbed with mock data for now.
   func performSearch() {
@@ -33,7 +31,6 @@ final class SearchViewModel {
     }
 
     state = .searching
-    onStateChange?()
 
     // Mock search with a short delay
     Task {
@@ -46,7 +43,6 @@ final class SearchViewModel {
         results = mockResults
         state = .results
       }
-      onStateChange?()
     }
   }
 
@@ -54,7 +50,6 @@ final class SearchViewModel {
     query = ""
     results = []
     state = .idle
-    onStateChange?()
   }
 
   // Mock: typing "empty" returns no results; anything else returns 8 items.

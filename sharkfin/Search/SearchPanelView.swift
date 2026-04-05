@@ -7,68 +7,72 @@ struct SearchPanelView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      SearchBarView(
-        viewModel: viewModel,
-        onSubmit: { viewModel.performSearch() },
-        onSettingsTapped: { onOpenSettings() }
-      )
+      // Content card — top-aligned so it grows downward
+      VStack(spacing: 0) {
+        SearchBarView(
+          viewModel: viewModel,
+          onSubmit: { viewModel.performSearch() },
+          onSettingsTapped: { onOpenSettings() }
+        )
 
-      if viewModel.state != .idle {
-        Divider()
+        if viewModel.state != .idle {
+          Divider()
 
-        Group {
-          switch viewModel.state {
-          case .searching:
-            VStack(spacing: 12) {
-              ProgressView()
-              Text("Searching...")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            }
-            .frame(height: 120)
-            .frame(maxWidth: .infinity)
-
-          case .results:
-            SearchResultsGridView(
-              results: viewModel.results,
-              onResultTapped: { result in
-                NSWorkspace.shared.selectFile(
-                  result.path,
-                  inFileViewerRootedAtPath: ""
-                )
+          Group {
+            switch viewModel.state {
+            case .searching:
+              VStack(spacing: 12) {
+                ProgressView()
+                Text("Searching...")
+                  .font(.subheadline)
+                  .foregroundStyle(.secondary)
               }
-            )
-            .frame(maxHeight: 280)
+              .frame(height: 120)
+              .frame(maxWidth: .infinity)
 
-          case .noResults:
-            VStack(spacing: 12) {
-              Text("No relevant results were found.")
-                .foregroundStyle(.secondary)
-              Button("Clear search") {
-                viewModel.clearSearch()
+            case .results:
+              SearchResultsGridView(
+                results: viewModel.results,
+                onResultTapped: { result in
+                  NSWorkspace.shared.selectFile(
+                    result.path,
+                    inFileViewerRootedAtPath: ""
+                  )
+                }
+              )
+              .frame(maxHeight: 280)
+
+            case .noResults:
+              VStack(spacing: 12) {
+                Text("No relevant results were found.")
+                  .foregroundStyle(.secondary)
+                Button("Clear search") {
+                  viewModel.clearSearch()
+                }
+                .buttonStyle(.bordered)
               }
-              .buttonStyle(.bordered)
-            }
-            .frame(height: 100)
-            .frame(maxWidth: .infinity)
+              .frame(height: 100)
+              .frame(maxWidth: .infinity)
 
-          case .idle:
-            EmptyView()
+            case .idle:
+              EmptyView()
+            }
           }
+          .transition(.opacity)
         }
-        .transition(.opacity)
       }
+      .background(.ultraThinMaterial)
+      .clipShape(RoundedRectangle(cornerRadius: 12))
+      .overlay {
+        RoundedRectangle(cornerRadius: 12)
+          .strokeBorder(.separator, lineWidth: 1)
+      }
+      .shadow(color: .black.opacity(0.3), radius: 20, y: 8)
+      .animation(.easeInOut(duration: 0.2), value: viewModel.state)
+
+      Spacer(minLength: 0)
     }
-    .background(.ultraThinMaterial)
-    .clipShape(RoundedRectangle(cornerRadius: 12))
-    .overlay {
-      RoundedRectangle(cornerRadius: 12)
-        .strokeBorder(.separator, lineWidth: 1)
-    }
-    .shadow(color: .black.opacity(0.3), radius: 20, y: 8)
     .frame(width: 680)
-    .fixedSize(horizontal: false, vertical: true)
-    .animation(.easeInOut(duration: 0.2), value: viewModel.state)
     .onKeyPress(.escape) {
       handleEscape()
       return .handled

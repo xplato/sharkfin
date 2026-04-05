@@ -14,7 +14,7 @@ final class SearchPanel: NSPanel {
     level = .floating
     isOpaque = false
     backgroundColor = .clear
-    hasShadow = false
+    hasShadow = true
     isMovableByWindowBackground = false
     hidesOnDeactivate = false
     isReleasedWhenClosed = false

@@ -67,7 +67,7 @@ struct SearchPanelView: View {
         RoundedRectangle(cornerRadius: 12)
           .strokeBorder(.separator, lineWidth: 1)
       }
-      .shadow(color: .black.opacity(0.3), radius: 20, y: 8)
+
       .animation(.easeInOut(duration: 0.2), value: viewModel.state)
 
       Spacer(minLength: 0)

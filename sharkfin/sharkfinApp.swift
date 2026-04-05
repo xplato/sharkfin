@@ -81,7 +81,7 @@ final class AppState {
       let panelHeight: CGFloat = 560
       let x = screenFrame.midX - panelWidth / 2
       // Top edge of panel at ~72% up the screen, matching Spotlight placement
-      let panelTopY = screenFrame.origin.y + screenFrame.height * 0.72
+      let panelTopY = screenFrame.origin.y + screenFrame.height * 0.72 + 100
       let y = panelTopY - panelHeight
       panel.setFrame(
         NSRect(x: x, y: y, width: panelWidth, height: panelHeight),

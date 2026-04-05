@@ -5,6 +5,8 @@ struct DirectoryRowView: View {
   @Environment(DirectoryStore.self) private var store
   @Environment(IndexingService.self) private var indexingService
   @State private var showDeleteConfirmation = false
+  @State private var showDisableConfirmation = false
+  @AppStorage("suppressDisableDirectoryWarning") private var suppressDisableWarning = false
 
   /// Shorten the path for display: /Users/tristan/.../DirName
   private var shortenedPath: String {
@@ -72,7 +74,11 @@ struct DirectoryRowView: View {
         get: { directory.enabled },
         set: { newValue in
           guard let id = directory.id else { return }
-          try? store.database.updateDirectoryEnabled(id: id, enabled: newValue)
+          if !newValue && !suppressDisableWarning {
+            showDisableConfirmation = true
+          } else {
+            try? store.database.updateDirectoryEnabled(id: id, enabled: newValue)
+          }
         }
       ))
       .toggleStyle(.switch)
@@ -98,6 +104,19 @@ struct DirectoryRowView: View {
       }
     }
     .padding(.vertical, 6)
+    .alert(
+      "Disable \"\(directory.label ?? URL(fileURLWithPath: directory.path).lastPathComponent)\"?",
+      isPresented: $showDisableConfirmation
+    ) {
+      Button("Disable") {
+        guard let id = directory.id else { return }
+        try? store.database.updateDirectoryEnabled(id: id, enabled: false)
+      }
+      Button("Cancel", role: .cancel) { }
+    } message: {
+      Text("Search results from this directory will be hidden while it is disabled.")
+    }
+    .dialogSuppressionToggle(isSuppressed: $suppressDisableWarning)
   }
 
   @ViewBuilder

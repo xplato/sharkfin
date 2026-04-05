@@ -27,6 +27,8 @@ final class SearchService: @unchecked Sendable {
                 SELECT e.fileId, e.embedding, f.filename, f.path, f.thumbnailPath
                 FROM fileEmbeddings e
                 JOIN files f ON f.id = e.fileId
+                JOIN directories d ON d.id = f.directoryId
+                WHERE d.enabled = 1
                 """)
     }
     print("[Search] Loaded \(rows.count) embeddings from DB")
@@ -79,7 +81,8 @@ final class SearchService: @unchecked Sendable {
         SELECT e.fileId, e.embedding, f.filename, f.path, f.thumbnailPath
         FROM fileEmbeddings e
         JOIN files f ON f.id = e.fileId
-        WHERE e.fileId = ?
+        JOIN directories d ON d.id = f.directoryId
+        WHERE e.fileId = ? AND d.enabled = 1
         """, arguments: [fileId])
     }
     
@@ -95,7 +98,8 @@ final class SearchService: @unchecked Sendable {
         SELECT e.fileId, e.embedding, f.filename, f.path, f.thumbnailPath
         FROM fileEmbeddings e
         JOIN files f ON f.id = e.fileId
-        WHERE e.fileId != ?
+        JOIN directories d ON d.id = f.directoryId
+        WHERE e.fileId != ? AND d.enabled = 1
         """, arguments: [fileId])
     }
     

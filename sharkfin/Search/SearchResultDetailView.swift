@@ -30,6 +30,10 @@ struct SearchResultDetailView: View {
     .onDisappear {
       securityScopedURL?.stopAccessingSecurityScopedResource()
     }
+    .onKeyPress(.space) {
+      quickLook()
+      return .handled
+    }
   }
 
   // MARK: - Toolbar

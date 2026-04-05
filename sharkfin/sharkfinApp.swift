@@ -1,5 +1,6 @@
 import SwiftUI
 import KeyboardShortcuts
+import Quartz
 
 @main
 struct sharkfinApp: App {
@@ -55,7 +56,13 @@ final class AppState {
       queue: .main
     ) { [weak self] _ in
       guard let self else { return }
-      Task { @MainActor in
+      // Check on next run loop tick so the new key window is settled
+      DispatchQueue.main.async {
+        // Don't hide if Quick Look panel took focus
+        if QLPreviewPanel.sharedPreviewPanelExists(),
+           QLPreviewPanel.shared().isVisible {
+          return
+        }
         self.hideSearch()
       }
     }
@@ -89,8 +96,6 @@ final class AppState {
       )
     }
 
-    searchViewModel.clearSearch()
-    searchController.clearSelection()
     panel.makeKeyAndOrderFront(nil)
 
     // Focus the text field after the hosting view has laid out

@@ -156,4 +156,15 @@ final class AppDatabase: Sendable {
     }
   }
 
+  /// Returns the security-scoped bookmark for the directory containing a file.
+  func directoryBookmark(forFileId fileId: Int64) async throws -> Data? {
+    try await dbQueue.read { db in
+      try Data.fetchOne(db, sql: """
+        SELECT d.bookmark FROM directories d
+        JOIN files f ON f.directoryId = d.id
+        WHERE f.id = ?
+        """, arguments: [fileId])
+    }
+  }
+
 }

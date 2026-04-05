@@ -15,9 +15,9 @@ struct SearchPanelView: View {
           onDismiss: { onDismiss() }
         )
 
-        if searchController.selectedResult != nil {
+        if let selected = searchController.selectedResult {
           Divider()
-          selectedDetailView
+          SearchResultDetailView(result: selected)
         } else if !viewModel.results.isEmpty {
           Divider()
           SearchResultsGridView(results: viewModel.results)
@@ -56,35 +56,6 @@ struct SearchPanelView: View {
         return .handled
       }
       return .ignored
-    }
-  }
-
-  // MARK: - Detail View (placeholder)
-
-  @ViewBuilder
-  private var selectedDetailView: some View {
-    if let result = searchController.selectedResult {
-      VStack(spacing: 8) {
-        if let thumbPath = result.thumbnailPath,
-           let nsImage = NSImage(contentsOfFile: thumbPath) {
-          Image(nsImage: nsImage)
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(maxHeight: 180)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-        }
-
-        Text(result.filename)
-          .font(.headline)
-        Text(result.path)
-          .font(.caption)
-          .foregroundStyle(.secondary)
-          .lineLimit(1)
-          .truncationMode(.middle)
-      }
-      .frame(maxWidth: .infinity)
-      .padding()
-      .frame(maxHeight: 700)
     }
   }
 

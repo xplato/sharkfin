@@ -150,6 +150,22 @@ Similar-image search uses the same approach, substituting a stored image embeddi
 
 All data is stored locally in a SQLite database (via [GRDB](https://github.com/groue/GRDB.swift)) with tables for directories, indexed files, embeddings (stored as raw float blobs), and index job status. Thumbnails are stored as JPEG/PNG files on disk, content-addressed by hash to avoid duplicates.
 
+## Search Quality
+
+Generally, I've found the results to be pretty good—sometimes surprisingly so (see the "woman as a flamingo" example above). However, in other cases the results are quite strange. Here's an example:
+
+[image 1]
+
+It's returning rather abstract vectors. While I don't necessarily have any images of an ostensible airplane plilot, I do have images that are quite close to that, both in terms of implicit meaning and explicit text.
+
+[image 2]
+
+or, also
+
+[image 3]
+
+Improving the quality of search results is, of course, a priority moving forward.
+
 ## Developing
 
 ### Prerequisites

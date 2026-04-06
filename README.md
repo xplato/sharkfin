@@ -16,10 +16,6 @@ Note: The UI is very likely to have changed since this demo video was recorded.
 - **Natural language searching:** Search indexed files with natural language. Currently, only images are supported.
 - **High performance:** Indexing and searching are both highly optimized to leverage the built-in neural engine in macOS. See the screenshots and videos section below for a demo. 
 
-## Implementation
-
-TODO.
-
 ## Demos
 
 ### Indexing
@@ -76,7 +72,7 @@ Sharkfin works on directories you add to the app. In the "General" tab of Sharkf
 
 <img width="1418" height="1386" alt="CleanShot 2026-04-06 at 17 32 09@2x" src="https://github.com/user-attachments/assets/0f0c8a04-27bf-4ba4-a8f2-999736ed1bf0" />
 
-**Indexing Performance and Functionality**
+#### Indexing Performance and Functionality
 
 Depending on the number of files and their respective sizes, the initial index of the added directory could take some time, but typically it is very fast. Once added, Sharkfin will listen to file system events and automatically index new, modified, or deleted files (this behavior can be disabled in the "Advanced" tab of Sharkfin's settings).
 
@@ -84,7 +80,7 @@ Performing a new index is typically a lightweight operation, as any files that h
 
 <img width="1368" height="932" alt="CleanShot 2026-04-06 at 17 32 51@2x" src="https://github.com/user-attachments/assets/d671d04d-7f74-4e1b-92c8-586185db9a61" />
 
-**Enabled Directories**
+#### Enabled Directories
 
 The toggle in the directory row controls the enabled or disabled state of the directory. When disabled, Sharkfin will exclude files in that directory from the search results; disabling a directory simply hides results, it doesn't affect the existing indexes and embeddings.
 
@@ -99,6 +95,50 @@ Once models have been downloaded and directories have been added, you can now se
 ### Welcome Screen
 
 <img width="1200" height="1176" alt="CleanShot 2026-04-06 at 17 07 26@2x" src="https://github.com/user-attachments/assets/884bf74f-9515-4343-b93a-6ba25ad642da" />
+
+## Implementation
+
+Sharkfin uses [CLIP](https://openai.com/index/clip/) (Contrastive Language-Image Pre-Training) to embed both images and text into a shared 512-dimensional vector space, enabling natural language search over local image files.
+
+### Indexing
+
+Indexing is triggered either by filesystem events (via `FSEvents`) or manually by the user. The pipeline has three phases:
+
+1. **Scan:** `FileScanner` recursively walks the target directory, collecting metadata (path, size, modification date) for supported image types. No file contents are read at this stage.
+2. **Diff:** The indexing service compares scanned files against the database, skipping files that are already indexed and unchanged. Deleted files are removed from the database.
+3. **Process (up to 8 concurrent tasks per file):**
+   - Load and downscale the image if needed.
+   - Compute a SHA-256 content hash.
+   - Preprocess the image for CLIP (resize, center-crop to 224x224, normalize with ImageNet stats, arrange in CHW layout).
+   - Encode the image into a 512-dimensional, L2-normalized embedding via the CLIP vision model.
+   - Generate a content-addressed thumbnail (256px max).
+   - Persist the `IndexedFile` and `FileEmbedding` records in a single database transaction.
+
+After indexing completes, the in-memory search cache is invalidated.
+
+### Embedding
+
+CLIP inference is performed locally using two ONNX models (~350 MB vision, ~250 MB text) run via [ONNX Runtime](https://onnxruntime.ai/):
+
+- **Image encoding** uses the CoreML execution provider for hardware acceleration (Neural Engine/GPU). The preprocessed `[1, 3, 224, 224]` tensor is passed through the vision model and the output is L2-normalized.
+- **Text encoding** runs on CPU (to avoid CoreML dynamic-shape issues). Input text is tokenized to 77 tokens via `swift-transformers`, passed through the text model, and L2-normalized.
+
+Both encoders produce unit-length vectors in the same latent space, so cosine similarity reduces to a simple dot product.
+
+### Search
+
+When the user types a query:
+
+1. The query text is encoded into a 512-dim vector via the CLIP text encoder.
+2. On first search (or after cache invalidation), all stored embeddings are loaded into a contiguous in-memory cache.
+3. A single `vDSP_mmul` call (Apple Accelerate) computes the dot product of the query vector against all stored embeddings at once.
+4. Results below a similarity threshold (0.16) are discarded, remaining scores are normalized to a 0–1 relevance scale, sorted, and capped at 50.
+
+Similar-image search uses the same approach, substituting a stored image embedding for the text query vector.
+
+### Storage
+
+All data is stored locally in a SQLite database (via [GRDB](https://github.com/groue/GRDB.swift)) with tables for directories, indexed files, embeddings (stored as raw float blobs), and index job status. Thumbnails are stored as JPEG/PNG files on disk, content-addressed by hash to avoid duplicates.
 
 ## Developing
 

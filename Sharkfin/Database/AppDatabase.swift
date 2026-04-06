@@ -243,6 +243,23 @@ final class AppDatabase: Sendable {
     }
   }
 
+  // MARK: - File Type Queries
+
+  /// Returns the distinct file extensions present in enabled directories, lowercased and sorted.
+  func fetchAvailableFileTypes() throws -> [String] {
+    try dbQueue.read { db in
+      try String.fetchAll(
+        db,
+        sql: """
+          SELECT DISTINCT LOWER(fileExtension) FROM files
+          WHERE fileExtension IS NOT NULL
+          AND directoryId IN (SELECT id FROM directories WHERE enabled = 1)
+          ORDER BY fileExtension
+          """
+      )
+    }
+  }
+
   /// Returns the security-scoped bookmark for the directory containing a file.
   func directoryBookmark(forFileId fileId: Int64) async throws -> Data? {
     try await dbQueue.read { db in

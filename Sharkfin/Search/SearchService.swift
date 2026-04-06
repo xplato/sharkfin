@@ -51,7 +51,10 @@ final class SearchService: @unchecked Sendable {
     print("[Search] Cache invalidated")
   }
 
-  nonisolated func search(query: String) async throws -> [SearchResult] {
+  nonisolated func search(
+    query: String,
+    filters: SearchFilters = SearchFilters()
+  ) async throws -> [SearchResult] {
     // 1. Encode query text
     let queryEmbedding = try textEncoder.encode(text: query)
 
@@ -80,11 +83,17 @@ final class SearchService: @unchecked Sendable {
       }
     }
 
-    // 4. Filter by minimum score, normalize relevance, collect results
+    // 4. Filter by minimum score, apply filters, normalize relevance, collect results
+    let filterByType = !filters.fileTypes.isEmpty
     var results: [SearchResult] = []
     for i in 0..<cached.count {
       let rawScore = scores[i]
       guard rawScore >= Self.minRawScore else { continue }
+      if filterByType {
+        guard filters.fileTypes.contains(cached.fileExtensions[i]) else {
+          continue
+        }
+      }
       let relevance = max(
         0,
         min(
@@ -180,7 +189,8 @@ final class SearchService: @unchecked Sendable {
       try EmbeddingRow.fetchAll(
         db,
         sql: """
-          SELECT e.fileId, e.embedding, f.filename, f.path, f.thumbnailPath
+          SELECT e.fileId, e.embedding, f.filename, f.path, f.thumbnailPath,
+                 LOWER(f.fileExtension) AS fileExtension
           FROM fileEmbeddings e
           JOIN files f ON f.id = e.fileId
           JOIN directories d ON d.id = f.directoryId
@@ -196,6 +206,7 @@ final class SearchService: @unchecked Sendable {
         filenames: [],
         paths: [],
         thumbnailPaths: [],
+        fileExtensions: [],
         count: 0,
         dims: 0
       )
@@ -212,6 +223,8 @@ final class SearchService: @unchecked Sendable {
     paths.reserveCapacity(rows.count)
     var thumbnailPaths = [String?]()
     thumbnailPaths.reserveCapacity(rows.count)
+    var fileExtensions = [String]()
+    fileExtensions.reserveCapacity(rows.count)
 
     for row in rows {
       let floats: [Float] = row.embedding.withUnsafeBytes { buffer in
@@ -223,6 +236,7 @@ final class SearchService: @unchecked Sendable {
       filenames.append(row.filename)
       paths.append(row.path)
       thumbnailPaths.append(row.thumbnailPath)
+      fileExtensions.append(row.fileExtension ?? "")
     }
 
     print(
@@ -234,6 +248,7 @@ final class SearchService: @unchecked Sendable {
       filenames: filenames,
       paths: paths,
       thumbnailPaths: thumbnailPaths,
+      fileExtensions: fileExtensions,
       count: fileIds.count,
       dims: dims
     )
@@ -248,6 +263,7 @@ private struct EmbeddingCache: Sendable {
   let filenames: [String]
   let paths: [String]
   let thumbnailPaths: [String?]
+  let fileExtensions: [String]
   let count: Int
   let dims: Int
 }
@@ -258,4 +274,5 @@ private nonisolated struct EmbeddingRow: FetchableRecord, Decodable, Sendable {
   var filename: String
   var path: String
   var thumbnailPath: String?
+  var fileExtension: String?
 }

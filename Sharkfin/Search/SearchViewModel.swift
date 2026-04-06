@@ -20,8 +20,10 @@ struct SearchResult: Identifiable, Equatable {
 @Observable
 final class SearchViewModel {
   var query: String = ""
+  var filters = SearchFilters()
   private(set) var state: SearchState = .idle
   private(set) var results: [SearchResult] = []
+  private(set) var availableFileTypes: [String] = []
 
   private let database: AppDatabase
   private let modelManager: CLIPModelManager
@@ -31,6 +33,21 @@ final class SearchViewModel {
   init(database: AppDatabase, modelManager: CLIPModelManager) {
     self.database = database
     self.modelManager = modelManager
+  }
+
+  func loadAvailableFileTypes() {
+    availableFileTypes = (try? database.fetchAvailableFileTypes()) ?? []
+    // Remove any selected types that are no longer available
+    filters.fileTypes.formIntersection(availableFileTypes)
+  }
+
+  func filtersChanged() {
+    let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { return }
+    searchTask?.cancel()
+    searchTask = Task {
+      await executeSearch(trimmed)
+    }
   }
 
   /// Called by the view on each query change to debounce search.
@@ -62,6 +79,7 @@ final class SearchViewModel {
   func clearSearch() {
     searchTask?.cancel()
     query = ""
+    filters = SearchFilters()
     results = []
     state = .idle
   }
@@ -70,10 +88,11 @@ final class SearchViewModel {
 
   private func executeSearch(_ query: String) async {
     state = .searching
+    let currentFilters = filters
     do {
       let service = try await getOrCreateSearchService()
       let searchResults = try await Task.detached(priority: .userInitiated) {
-        try await service.search(query: query)
+        try await service.search(query: query, filters: currentFilters)
       }.value
       guard !Task.isCancelled else { return }
       results = searchResults

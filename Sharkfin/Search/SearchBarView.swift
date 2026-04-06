@@ -78,14 +78,26 @@ struct SearchBarView: View {
         SpinnerView()
           .transition(.identity)
       }
+
+      if !viewModel.availableFileTypes.isEmpty {
+        SearchFilterButton(
+          selectedTypes: $viewModel.filters.fileTypes,
+          availableTypes: viewModel.availableFileTypes
+        )
+      }
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 12)
     .task {
       stats = try? AppDatabase.shared.fetchStats()
+      viewModel.loadAvailableFileTypes()
     }
     .onChange(of: directoryStore.directories) {
       stats = try? AppDatabase.shared.fetchStats()
+      viewModel.loadAvailableFileTypes()
+    }
+    .onChange(of: viewModel.filters) {
+      viewModel.filtersChanged()
     }
   }
 }

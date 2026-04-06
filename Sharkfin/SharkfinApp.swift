@@ -59,6 +59,7 @@ final class AppState {
   let directoryStore: DirectoryStore
   private var resignKeyObserver: Any?
   private var settingsOpener: (() -> Void)?
+  private var hasPositionedPanel = false
 
   var needsSetup: Bool {
     !UserDefaults.standard.bool(forKey: "hasSeenWelcome")
@@ -107,21 +108,25 @@ final class AppState {
   private func showSearch() {
     let panel = getOrCreatePanel()
 
-    // Center horizontally on screen, upper third vertically
-    if let screen = NSScreen.screens.first(where: {
-      $0.frame.contains(NSEvent.mouseLocation)
-    }) ?? NSScreen.main ?? NSScreen.screens.first {
-      let screenFrame = screen.visibleFrame
-      let panelWidth: CGFloat = 680
-      let panelHeight: CGFloat = 560
-      let x = screenFrame.midX - panelWidth / 2
-      // Top edge of panel at ~72% up the screen, matching Spotlight placement
-      let panelTopY = screenFrame.origin.y + screenFrame.height * 0.72 + 100
-      let y = panelTopY - panelHeight
-      panel.setFrame(
-        NSRect(x: x, y: y, width: panelWidth, height: panelHeight),
-        display: false
-      )
+    // Only set the default position on first show; subsequent shows
+    // preserve the user's dragged position (resets on app relaunch).
+    if !hasPositionedPanel {
+      if let screen = NSScreen.screens.first(where: {
+        $0.frame.contains(NSEvent.mouseLocation)
+      }) ?? NSScreen.main ?? NSScreen.screens.first {
+        let screenFrame = screen.visibleFrame
+        let panelWidth: CGFloat = 680
+        let panelHeight: CGFloat = 560
+        let x = screenFrame.midX - panelWidth / 2
+        let panelTopY = screenFrame.origin.y + screenFrame.height * 0.72 + 100
+        let y = panelTopY - panelHeight
+        panel.setFrame(
+          NSRect(x: x, y: y, width: panelWidth, height: panelHeight),
+          display: false
+        )
+        panel.defaultOriginY = y
+      }
+      hasPositionedPanel = true
     }
 
     panel.makeKeyAndOrderFront(nil)

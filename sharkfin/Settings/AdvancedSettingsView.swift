@@ -69,7 +69,7 @@ struct AdvancedSettingsView: View {
         Text("Files inside directories matching these names will be skipped during indexing.")
       }
 
-      Section("Database") {
+      Section("Database information") {
         if let stats {
           LabeledContent("Indexed files") {
             Text("\(stats.totalFiles)")
@@ -126,7 +126,7 @@ struct AdvancedSettingsView: View {
         }
       }
 
-      Section("Storage") {
+      Section(header: Text("Storage"), footer: Text("Application data (local database, models, thumbnails) is stored in this directory")) {
         HStack {
           Text(AppDatabase.dataDirectoryURL.path(percentEncoded: false))
             .foregroundStyle(.secondary)

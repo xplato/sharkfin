@@ -2,14 +2,6 @@
 
 Native macOS app for semantic search of local files. Currently only supports images (JPG, PNG, HEIC, WEBP, SVG, etc.).
 
-## Demo
-
-Performing several example searches on my local index of >18,000 files (source size: ~50 GB, database size: ~100 MB).
-
-https://github.com/user-attachments/assets/41a714ae-ced7-45fc-89bf-d6e46dbc8f1c
-
-Note: The UI is very likely to have changed since this demo video was recorded.
-
 ## Features and Notes
 
 - **Local-only:** indexing, searching, and all other app functionality apart from the initial CLIP model download is **entirely local.**
@@ -17,6 +9,24 @@ Note: The UI is very likely to have changed since this demo video was recorded.
 - **High performance:** Indexing and searching are both highly optimized to leverage the built-in neural engine in macOS. See the screenshots and videos section below for a demo. 
 
 ## Demos
+
+### Search
+
+Performing several example searches on my local index of >18,000 files (source size: ~50 GB, database size: ~100 MB).
+
+https://github.com/user-attachments/assets/41a714ae-ced7-45fc-89bf-d6e46dbc8f1c
+
+Note: The UI is very likely to have changed since this demo video was recorded.
+
+#### Other Search Examples
+
+(I have an egregious amount of unique design assets from Creative Market 😅)
+
+<img width="1468" height="1224" alt="CleanShot 2026-04-06 at 17 42 17@2x" src="https://github.com/user-attachments/assets/644dfa59-6846-4697-84e8-555d4bfce58f" />
+
+<img width="1446" height="1218" alt="CleanShot 2026-04-06 at 17 43 02@2x" src="https://github.com/user-attachments/assets/c7598183-02fd-4db8-9247-2e179b97761a" />
+
+<img width="1448" height="1212" alt="CleanShot 2026-04-06 at 17 43 40@2x" src="https://github.com/user-attachments/assets/1b94fea9-bf42-4663-8a08-c29e59c46790" />
 
 ### Indexing
 

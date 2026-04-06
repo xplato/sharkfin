@@ -181,10 +181,13 @@ final class IndexingService {
       }
     }
 
-    // Filter to only new or modified files
+    // Filter to only new or modified files.
+    // The database stores dates as text with millisecond precision, so the
+    // round-tripped date loses sub-millisecond information. Use a small
+    // tolerance to avoid false positives from that truncation.
     let filesToProcess = allFiles.filter { file in
       guard let existingDate = existingFiles[file.url.path] else { return true }
-      return file.modifiedAt > existingDate
+      return file.modifiedAt.timeIntervalSince(existingDate) > 1.0
     }
 
     if filesToProcess.isEmpty {
@@ -260,8 +263,32 @@ final class IndexingService {
     database: AppDatabase
   ) {
     do {
-      // 1. Load image
-      guard let image = NSImage(contentsOf: file.url) else { return }
+      // 1. Load image — if the file isn't a valid image, record it in the DB
+      //    without an embedding so the scanner doesn't retry it every time.
+      guard let image = NSImage(contentsOf: file.url) else {
+        try database.dbQueue.write { db in
+          try db.execute(
+            sql: "DELETE FROM files WHERE path = ? AND directoryId = ?",
+            arguments: [file.url.path, directoryId]
+          )
+          var indexedFile = IndexedFile(
+            path: file.url.path,
+            directoryId: directoryId,
+            filename: file.filename,
+            fileExtension: file.fileExtension,
+            sizeBytes: file.sizeBytes,
+            modifiedAt: file.modifiedAt,
+            contentHash: "",
+            mimeType: nil,
+            width: nil,
+            height: nil,
+            indexedAt: Date(),
+            thumbnailPath: nil
+          )
+          try indexedFile.insert(db)
+        }
+        return
+      }
 
       // Downscale if too large for CLIP
       let maxDim: CGFloat = 4096

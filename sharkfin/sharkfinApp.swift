@@ -192,7 +192,6 @@ struct MenuBarContent: View {
     Button("Open Search") {
       appState.activateSearch()
     }
-    .keyboardShortcut("F")
 
     Button("Settings...") {
       appState.openSettings()

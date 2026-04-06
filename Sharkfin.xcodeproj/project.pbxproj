@@ -16,15 +16,15 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		6A17ACA42F82C78E002F4666 /* sharkfin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = sharkfin.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6A17ACA42F82C78E002F4666 /* Sharkfin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Sharkfin.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6A7C10C32F835C8000F58732 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		6A7C10C72F83655000F58732 /* Sharkfin.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = Sharkfin.icon; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		6A17ACA62F82C78E002F4666 /* sharkfin */ = {
+		6A17ACA62F82C78E002F4666 /* Sharkfin */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = sharkfin;
+			path = Sharkfin;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -47,7 +47,7 @@
 		6A17AC9B2F82C78E002F4666 = {
 			isa = PBXGroup;
 			children = (
-				6A17ACA62F82C78E002F4666 /* sharkfin */,
+				6A17ACA62F82C78E002F4666 /* Sharkfin */,
 				6A17ACA52F82C78E002F4666 /* Products */,
 				6A7C10C32F835C8000F58732 /* README.md */,
 				6A7C10C72F83655000F58732 /* Sharkfin.icon */,
@@ -57,7 +57,7 @@
 		6A17ACA52F82C78E002F4666 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				6A17ACA42F82C78E002F4666 /* sharkfin.app */,
+				6A17ACA42F82C78E002F4666 /* Sharkfin.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -65,9 +65,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		6A17ACA32F82C78E002F4666 /* sharkfin */ = {
+		6A17ACA32F82C78E002F4666 /* Sharkfin */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 6A17ACAF2F82C78E002F4666 /* Build configuration list for PBXNativeTarget "sharkfin" */;
+			buildConfigurationList = 6A17ACAF2F82C78E002F4666 /* Build configuration list for PBXNativeTarget "Sharkfin" */;
 			buildPhases = (
 				6A17ACA02F82C78E002F4666 /* Sources */,
 				6A17ACA12F82C78E002F4666 /* Frameworks */,
@@ -78,9 +78,9 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				6A17ACA62F82C78E002F4666 /* sharkfin */,
+				6A17ACA62F82C78E002F4666 /* Sharkfin */,
 			);
-			name = sharkfin;
+			name = Sharkfin;
 			packageProductDependencies = (
 				6A17ACBA2F82D280002F4666 /* KeyboardShortcuts */,
 				6A17ACE12F82DAC2002F4666 /* GRDB */,
@@ -88,7 +88,7 @@
 				6A17AD522F82FE81002F4666 /* Transformers */,
 			);
 			productName = sharkfin;
-			productReference = 6A17ACA42F82C78E002F4666 /* sharkfin.app */;
+			productReference = 6A17ACA42F82C78E002F4666 /* Sharkfin.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -106,7 +106,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 6A17AC9F2F82C78E002F4666 /* Build configuration list for PBXProject "sharkfin" */;
+			buildConfigurationList = 6A17AC9F2F82C78E002F4666 /* Build configuration list for PBXProject "Sharkfin" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -126,7 +126,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				6A17ACA32F82C78E002F4666 /* sharkfin */,
+				6A17ACA32F82C78E002F4666 /* Sharkfin */,
 			);
 		};
 /* End PBXProject section */
@@ -302,6 +302,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = sharkfin/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Sharkfin;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -355,6 +356,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = sharkfin/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Sharkfin;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -383,7 +385,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		6A17AC9F2F82C78E002F4666 /* Build configuration list for PBXProject "sharkfin" */ = {
+		6A17AC9F2F82C78E002F4666 /* Build configuration list for PBXProject "Sharkfin" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				6A17ACAD2F82C78E002F4666 /* Debug */,
@@ -392,7 +394,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		6A17ACAF2F82C78E002F4666 /* Build configuration list for PBXNativeTarget "sharkfin" */ = {
+		6A17ACAF2F82C78E002F4666 /* Build configuration list for PBXNativeTarget "Sharkfin" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				6A17ACB02F82C78E002F4666 /* Debug */,

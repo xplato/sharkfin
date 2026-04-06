@@ -1,5 +1,5 @@
-import GRDB
 import Foundation
+import GRDB
 
 nonisolated struct FileMetadata: Codable, Identifiable, Sendable {
   var id: Int64?

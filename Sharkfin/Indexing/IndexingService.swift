@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
-import Observation
 import GRDB
+import Observation
 
 nonisolated enum IndexingPhase: Sendable, Equatable {
   case scanning
@@ -18,7 +18,12 @@ nonisolated struct IndexingProgress: Sendable, Equatable {
   var processed: Int
   var currentFile: String
 
-  init(phase: IndexingPhase, total: Int = 0, processed: Int = 0, currentFile: String = "") {
+  init(
+    phase: IndexingPhase,
+    total: Int = 0,
+    processed: Int = 0,
+    currentFile: String = ""
+  ) {
     self.phase = phase
     self.total = total
     self.processed = processed
@@ -54,7 +59,9 @@ final class IndexingService {
     guard let bookmark = directory.bookmark else { return }
 
     guard let visionModelURL = modelManager.visionModelURL else {
-      progressByDirectory[dirId] = IndexingProgress(phase: .error("Vision model not downloaded"))
+      progressByDirectory[dirId] = IndexingProgress(
+        phase: .error("Vision model not downloaded")
+      )
       return
     }
 
@@ -77,7 +84,9 @@ final class IndexingService {
       } catch is CancellationError {
         let service = self
         await MainActor.run {
-          service?.progressByDirectory[dirId] = IndexingProgress(phase: .cancelled)
+          service?.progressByDirectory[dirId] = IndexingProgress(
+            phase: .cancelled
+          )
         }
       } catch {
         let service = self
@@ -134,11 +143,12 @@ final class IndexingService {
     onProgress(IndexingProgress(phase: .scanning))
 
     let defaults = UserDefaults.standard
-    let skipHidden = defaults.object(forKey: "ignoreHiddenDirectories") as? Bool ?? true
+    let skipHidden =
+      defaults.object(forKey: "ignoreHiddenDirectories") as? Bool ?? true
     let excludedNames: Set<String> = {
       guard let json = defaults.string(forKey: "excludedFolderNames"),
-            let data = json.data(using: .utf8),
-            let array = try? JSONDecoder().decode([String].self, from: data)
+        let data = json.data(using: .utf8),
+        let array = try? JSONDecoder().decode([String].self, from: data)
       else { return [] }
       return Set(array)
     }()
@@ -216,7 +226,12 @@ final class IndexingService {
         let file = filesToProcess[index]
         index += 1
         group.addTask {
-          Self.processFile(file, directoryId: dirId, encoder: encoder, database: database)
+          Self.processFile(
+            file,
+            directoryId: dirId,
+            encoder: encoder,
+            database: database
+          )
           return file.filename
         }
       }
@@ -225,15 +240,25 @@ final class IndexingService {
       for await filename in group {
         if Task.isCancelled { break }
         processed += 1
-        onProgress(IndexingProgress(
-          phase: .indexing, total: total, processed: processed, currentFile: filename
-        ))
+        onProgress(
+          IndexingProgress(
+            phase: .indexing,
+            total: total,
+            processed: processed,
+            currentFile: filename
+          )
+        )
 
         if index < filesToProcess.count {
           let file = filesToProcess[index]
           index += 1
           group.addTask {
-            Self.processFile(file, directoryId: dirId, encoder: encoder, database: database)
+            Self.processFile(
+              file,
+              directoryId: dirId,
+              encoder: encoder,
+              database: database
+            )
             return file.filename
           }
         }
@@ -250,8 +275,17 @@ final class IndexingService {
       }
     }
 
-    onProgress(IndexingProgress(phase: .complete(processed), total: total, processed: processed))
-    await NotificationCenter.default.post(name: .searchCacheDidInvalidate, object: nil)
+    onProgress(
+      IndexingProgress(
+        phase: .complete(processed),
+        total: total,
+        processed: processed
+      )
+    )
+    await NotificationCenter.default.post(
+      name: .searchCacheDidInvalidate,
+      object: nil
+    )
   }
 
   // MARK: - Single File Processing
@@ -295,7 +329,10 @@ final class IndexingService {
       let finalImage: NSImage
       if image.size.width > maxDim || image.size.height > maxDim {
         let scale = min(maxDim / image.size.width, maxDim / image.size.height)
-        let newSize = NSSize(width: image.size.width * scale, height: image.size.height * scale)
+        let newSize = NSSize(
+          width: image.size.width * scale,
+          height: image.size.height * scale
+        )
         finalImage = NSImage(size: newSize)
         finalImage.lockFocus()
         image.draw(in: NSRect(origin: .zero, size: newSize))
@@ -308,12 +345,15 @@ final class IndexingService {
       let contentHash = try FileScanner.hashFile(at: file.url)
 
       // 3. CLIP preprocess + encode
-      guard let tensorData = ImagePreprocessor.preprocess(finalImage) else { return }
+      guard let tensorData = ImagePreprocessor.preprocess(finalImage) else {
+        return
+      }
       let embedding = try encoder.encode(pixelValues: tensorData)
 
       // 4. Generate thumbnail
       let thumbnailPath = try ThumbnailGenerator.generateThumbnail(
-        for: file.url, contentHash: contentHash
+        for: file.url,
+        contentHash: contentHash
       )
 
       // 5. Persist to database (single transaction)
@@ -343,7 +383,10 @@ final class IndexingService {
         try indexedFile.insert(db)
 
         guard let fileId = indexedFile.id else { return }
-        let fileEmbedding = FileEmbedding(fileId: fileId, embedding: embeddingData)
+        let fileEmbedding = FileEmbedding(
+          fileId: fileId,
+          embedding: embeddingData
+        )
         try fileEmbedding.insert(db)
       }
     } catch {

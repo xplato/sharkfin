@@ -1,5 +1,5 @@
-import SwiftUI
 import Quartz
+import SwiftUI
 
 struct SearchResultDetailView: View {
   let result: SearchResult
@@ -23,7 +23,8 @@ struct SearchResultDetailView: View {
     .task {
       await resolveSecurityScope()
       previewImage = Self.loadImage(
-        at: result.path, fallbackThumbnail: result.thumbnailPath
+        at: result.path,
+        fallbackThumbnail: result.thumbnailPath
       )
       fileInfo = FileMetadataInfo.load(from: result.path)
     }
@@ -40,7 +41,9 @@ struct SearchResultDetailView: View {
 
   private var detailToolbar: some View {
     HStack(spacing: 12) {
-      Button { searchController.clearSelection() } label: {
+      Button {
+        searchController.clearSelection()
+      } label: {
         Image(systemName: "chevron.left")
           .font(.body.weight(.medium))
       }
@@ -49,14 +52,18 @@ struct SearchResultDetailView: View {
 
       Spacer()
 
-      Button { quickLook() } label: {
+      Button {
+        quickLook()
+      } label: {
         Image(systemName: "arrow.up.left.and.arrow.down.right")
       }
       .buttonStyle(.plain)
       .foregroundStyle(.secondary)
       .help("Quick Look")
 
-      Button { revealInFinder() } label: {
+      Button {
+        revealInFinder()
+      } label: {
         Image(systemName: "folder")
       }
       .buttonStyle(.plain)
@@ -156,15 +163,19 @@ struct SearchResultDetailView: View {
   // MARK: - Security Scope
 
   private func resolveSecurityScope() async {
-    guard let bookmark = try? await AppDatabase.shared
-      .directoryBookmark(forFileId: result.id) else { return }
+    guard
+      let bookmark = try? await AppDatabase.shared
+        .directoryBookmark(forFileId: result.id)
+    else { return }
     var isStale = false
-    guard let url = try? URL(
-      resolvingBookmarkData: bookmark,
-      options: .withSecurityScope,
-      relativeTo: nil,
-      bookmarkDataIsStale: &isStale
-    ) else { return }
+    guard
+      let url = try? URL(
+        resolvingBookmarkData: bookmark,
+        options: .withSecurityScope,
+        relativeTo: nil,
+        bookmarkDataIsStale: &isStale
+      )
+    else { return }
     if url.startAccessingSecurityScopedResource() {
       securityScopedURL = url
     }
@@ -174,7 +185,8 @@ struct SearchResultDetailView: View {
 
   private func revealInFinder() {
     NSWorkspace.shared.selectFile(
-      result.path, inFileViewerRootedAtPath: ""
+      result.path,
+      inFileViewerRootedAtPath: ""
     )
   }
 
@@ -187,7 +199,8 @@ struct SearchResultDetailView: View {
   // MARK: - Image Loading
 
   private static func loadImage(
-    at path: String, fallbackThumbnail: String?
+    at path: String,
+    fallbackThumbnail: String?
   ) -> NSImage? {
     if let image = NSImage(contentsOfFile: path) {
       return image
@@ -218,16 +231,20 @@ private struct FileMetadataInfo {
 
     let bytes = (attrs[.size] as? Int64) ?? 0
     let fileSize = ByteCountFormatter.string(
-      fromByteCount: bytes, countStyle: .file
+      fromByteCount: bytes,
+      countStyle: .file
     )
 
     var resolution: String? = nil
     if let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-       let props = CGImageSourceCopyPropertiesAtIndex(
-         source, 0, nil
-       ) as? [String: Any],
-       let w = props[kCGImagePropertyPixelWidth as String] as? Int,
-       let h = props[kCGImagePropertyPixelHeight as String] as? Int {
+      let props = CGImageSourceCopyPropertiesAtIndex(
+        source,
+        0,
+        nil
+      ) as? [String: Any],
+      let w = props[kCGImagePropertyPixelWidth as String] as? Int,
+      let h = props[kCGImagePropertyPixelHeight as String] as? Int
+    {
       resolution = "\(w) × \(h)"
     }
 
@@ -235,9 +252,11 @@ private struct FileMetadataInfo {
     formatter.dateStyle = .medium
     formatter.timeStyle = .short
 
-    let modified = (attrs[.modificationDate] as? Date)
+    let modified =
+      (attrs[.modificationDate] as? Date)
       .map { formatter.string(from: $0) } ?? "—"
-    let created = (attrs[.creationDate] as? Date)
+    let created =
+      (attrs[.creationDate] as? Date)
       .map { formatter.string(from: $0) } ?? "—"
 
     return FileMetadataInfo(

@@ -1,6 +1,6 @@
-import SwiftUI
 import KeyboardShortcuts
 import Quartz
+import SwiftUI
 
 @main
 struct SharkfinApp: App {
@@ -22,9 +22,13 @@ struct SharkfinApp: App {
     _directoryStore = State(initialValue: store)
     let watcher = DirectoryWatcherService()
     _directoryWatcher = State(initialValue: watcher)
-    _appState = State(initialValue: AppState(
-      database: .shared, modelManager: manager, directoryStore: store
-    ))
+    _appState = State(
+      initialValue: AppState(
+        database: .shared,
+        modelManager: manager,
+        directoryStore: store
+      )
+    )
 
     // Give the AppDelegate references so it can start services on launch
     appDelegate.directoryWatcher = watcher
@@ -73,9 +77,14 @@ final class AppState {
     !UserDefaults.standard.bool(forKey: "hasSeenWelcome")
   }
 
-  init(database: AppDatabase, modelManager: CLIPModelManager, directoryStore: DirectoryStore) {
+  init(
+    database: AppDatabase,
+    modelManager: CLIPModelManager,
+    directoryStore: DirectoryStore
+  ) {
     self.searchViewModel = SearchViewModel(
-      database: database, modelManager: modelManager
+      database: database,
+      modelManager: modelManager
     )
     self.modelManager = modelManager
     self.directoryStore = directoryStore
@@ -93,7 +102,8 @@ final class AppState {
       DispatchQueue.main.async {
         // Don't hide if Quick Look panel took focus
         if QLPreviewPanel.sharedPreviewPanelExists(),
-           QLPreviewPanel.shared().isVisible {
+          QLPreviewPanel.shared().isVisible
+        {
           return
         }
         self.hideSearch()
@@ -233,11 +243,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   func applicationDidFinishLaunching(_ notification: Notification) {
     // Start FSEvents directory watcher and index on launch
     if let watcher = directoryWatcher,
-       let store = directoryStore,
-       let indexing = indexingService {
+      let store = directoryStore,
+      let indexing = indexingService
+    {
       watcher.start(directoryStore: store, indexingService: indexing)
 
-      let indexOnLaunch = UserDefaults.standard.object(forKey: "indexOnLaunch") as? Bool ?? true
+      let indexOnLaunch =
+        UserDefaults.standard.object(forKey: "indexOnLaunch") as? Bool ?? true
       if indexOnLaunch, indexing.modelsReady {
         indexing.indexAllEnabled(from: store)
       }

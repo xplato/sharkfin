@@ -96,7 +96,9 @@ struct ModelRowView: View {
           manager.delete(model)
         }
       } message: {
-        Text("The model files will be deleted. You can re-download them at any time.")
+        Text(
+          "The model files will be deleted. You can re-download them at any time."
+        )
       }
 
     case .error(let message):

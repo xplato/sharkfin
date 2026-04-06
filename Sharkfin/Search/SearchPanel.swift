@@ -79,7 +79,9 @@ final class SearchPanel: NSPanel {
       }
 
     case .leftMouseDragged:
-      guard let origin = dragOrigin, let startFrame = frameAtDragStart else { break }
+      guard let origin = dragOrigin, let startFrame = frameAtDragStart else {
+        break
+      }
 
       let current = NSEvent.mouseLocation
       let deltaX = current.x - origin.x
@@ -88,7 +90,7 @@ final class SearchPanel: NSPanel {
       if !isDragging {
         let distance = hypot(deltaX, deltaY)
         if distance < dragThreshold {
-          return // Not yet a drag — swallow
+          return  // Not yet a drag — swallow
         }
         isDragging = true
       }
@@ -111,7 +113,10 @@ final class SearchPanel: NSPanel {
         } else if dist <= snapTolerance {
           snappedToHCenter = true
           newX = screenCenterX - frame.width / 2
-          NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+          NSHapticFeedbackManager.defaultPerformer.perform(
+            .alignment,
+            performanceTime: .now
+          )
         }
       }
 
@@ -126,7 +131,10 @@ final class SearchPanel: NSPanel {
       } else if vDist <= snapTolerance {
         snappedToVOrigin = true
         newY = defaultOriginY
-        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+        NSHapticFeedbackManager.defaultPerformer.perform(
+          .alignment,
+          performanceTime: .now
+        )
       }
 
       setFrameOrigin(NSPoint(x: newX, y: newY))
@@ -161,5 +169,7 @@ final class SearchPanel: NSPanel {
 }
 
 extension Notification.Name {
-  static let searchPanelDidResignKey = Notification.Name("searchPanelDidResignKey")
+  static let searchPanelDidResignKey = Notification.Name(
+    "searchPanelDidResignKey"
+  )
 }

@@ -35,7 +35,10 @@ struct SearchPanelView: View {
           .strokeBorder(.separator, lineWidth: 1)
       }
       .animation(.easeInOut(duration: 0.2), value: viewModel.state)
-      .animation(.easeInOut(duration: 0.2), value: searchController.selectedResult?.id)
+      .animation(
+        .easeInOut(duration: 0.2),
+        value: searchController.selectedResult?.id
+      )
 
       Spacer(minLength: 0)
     }

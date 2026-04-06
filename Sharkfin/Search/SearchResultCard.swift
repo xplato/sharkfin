@@ -4,14 +4,20 @@ struct SearchResultCard: View {
   let result: SearchResult
   @Environment(SearchController.self) private var searchController
   @State private var isHovering = false
-  
+
   var body: some View {
     VStack(spacing: 4) {
       // Thumbnail
       if let thumbPath = result.thumbnailPath,
-         let nsImage = NSImage(contentsOfFile: thumbPath) {
+        let nsImage = NSImage(contentsOfFile: thumbPath)
+      {
         Color.clear
-          .frame(minWidth: 0, maxWidth: .infinity, minHeight: 138, maxHeight: 138)
+          .frame(
+            minWidth: 0,
+            maxWidth: .infinity,
+            minHeight: 138,
+            maxHeight: 138
+          )
           .overlay(alignment: .top) {
             Image(nsImage: nsImage)
               .resizable()
@@ -19,7 +25,10 @@ struct SearchResultCard: View {
               .frame(minWidth: 0, maxWidth: .infinity)
           }
           .clipShape(RoundedRectangle(cornerRadius: 6))
-          .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 6))
+          .background(
+            Color.primary.opacity(0.06),
+            in: RoundedRectangle(cornerRadius: 6)
+          )
       } else {
         RoundedRectangle(cornerRadius: 6)
           .fill(.quaternary)
@@ -30,7 +39,7 @@ struct SearchResultCard: View {
               .foregroundStyle(.secondary)
           }
       }
-      
+
       // File info
       HStack(spacing: 4) {
         Text(result.filename)

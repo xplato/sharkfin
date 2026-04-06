@@ -1,5 +1,5 @@
-import SwiftUI
 import KeyboardShortcuts
+import SwiftUI
 
 struct KeyboardShortcutsView: View {
   var body: some View {

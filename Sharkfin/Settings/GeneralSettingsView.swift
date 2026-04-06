@@ -1,10 +1,10 @@
-import SwiftUI
 import ServiceManagement
+import SwiftUI
 
 struct GeneralSettingsView: View {
   @Environment(DirectoryStore.self) private var directoryStore
   @State private var startAtLogin = SMAppService.mainApp.status == .enabled
-  
+
   var body: some View {
     Form {
       Section("Functionality") {
@@ -22,8 +22,13 @@ struct GeneralSettingsView: View {
             }
           }
       }
-      
-      Section(header: Text("Directories"), footer: Text("After indexing, the contents of these directories will be included in search results.")) {
+
+      Section(
+        header: Text("Directories"),
+        footer: Text(
+          "After indexing, the contents of these directories will be included in search results."
+        )
+      ) {
         if directoryStore.directories.isEmpty {
           Text("No directories added yet.")
             .foregroundStyle(.secondary)
@@ -32,11 +37,16 @@ struct GeneralSettingsView: View {
             DirectoryRowView(directory: directory)
           }
         }
-        
+
         AddDirectoryButton()
       }
-      
-      Section(header: Text("Models"), footer: Text("Models are downloaded from [huggingface.co/xplato](https://huggingface.co/xplato)")) {
+
+      Section(
+        header: Text("Models"),
+        footer: Text(
+          "Models are downloaded from [huggingface.co/xplato](https://huggingface.co/xplato)"
+        )
+      ) {
         ForEach(CLIPModelSpec.all) { model in
           ModelRowView(model: model)
         }

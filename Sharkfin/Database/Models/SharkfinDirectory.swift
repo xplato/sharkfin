@@ -1,7 +1,8 @@
-import GRDB
 import Foundation
+import GRDB
 
-nonisolated struct SharkfinDirectory: Codable, Identifiable, Sendable, Equatable {
+nonisolated struct SharkfinDirectory: Codable, Identifiable, Sendable, Equatable
+{
   var id: Int64?
   var path: String
   var label: String?
@@ -11,7 +12,9 @@ nonisolated struct SharkfinDirectory: Codable, Identifiable, Sendable, Equatable
   var bookmark: Data?
 }
 
-nonisolated extension SharkfinDirectory: FetchableRecord, MutablePersistableRecord {
+nonisolated extension SharkfinDirectory: FetchableRecord,
+  MutablePersistableRecord
+{
   static let databaseTableName = "directories"
   mutating func didInsert(_ inserted: InsertionSuccess) {
     id = inserted.rowID

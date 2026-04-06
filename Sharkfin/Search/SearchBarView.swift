@@ -8,7 +8,9 @@ private struct SpinnerView: View {
       .trim(from: 0, to: 0.7)
       .stroke(
         AngularGradient(
-          gradient: Gradient(colors: [Color.accentColor.opacity(0), .accentColor]),
+          gradient: Gradient(colors: [
+            Color.accentColor.opacity(0), .accentColor,
+          ]),
           center: .center,
           startAngle: .zero,
           endAngle: .degrees(252)
@@ -18,7 +20,8 @@ private struct SpinnerView: View {
       .frame(width: 18, height: 18)
       .rotationEffect(.degrees(rotation))
       .onAppear {
-        withAnimation(.linear(duration: 0.8).repeatForever(autoreverses: false)) {
+        withAnimation(.linear(duration: 0.8).repeatForever(autoreverses: false))
+        {
           rotation = 360
         }
       }
@@ -29,7 +32,7 @@ struct SearchBarView: View {
   @Bindable var viewModel: SearchViewModel
   var onSubmit: () -> Void
   var onDismiss: () -> Void
-  
+
   @Environment(DirectoryStore.self) private var directoryStore
   @State private var stats: AppDatabase.Stats?
 
@@ -47,10 +50,12 @@ struct SearchBarView: View {
             .font(.title2)
         }
         .buttonStyle(.plain)
-        .simultaneousGesture(TapGesture().onEnded {
-          onDismiss()
-          NSApplication.shared.activate(ignoringOtherApps: true)
-        })
+        .simultaneousGesture(
+          TapGesture().onEnded {
+            onDismiss()
+            NSApplication.shared.activate(ignoringOtherApps: true)
+          }
+        )
         .help("All directories are disabled. Click to open settings.")
       } else {
         Image(systemName: "magnifyingglass")
@@ -59,7 +64,9 @@ struct SearchBarView: View {
       }
 
       TextField(
-        allDirectoriesDisabled ? "All directories disabled" : "Search \(stats?.totalEnabledFiles ?? 0) files...",
+        allDirectoriesDisabled
+          ? "All directories disabled"
+          : "Search \(stats?.totalEnabledFiles ?? 0) files...",
         text: $viewModel.query
       )
       .textFieldStyle(.plain)

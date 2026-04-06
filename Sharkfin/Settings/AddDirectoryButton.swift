@@ -1,5 +1,5 @@
-import SwiftUI
 import AppKit
+import SwiftUI
 
 struct AddDirectoryButton: View {
   @Environment(DirectoryStore.self) private var store
@@ -22,7 +22,11 @@ struct AddDirectoryButton: View {
     panel.prompt = "Add"
 
     // Accessory checkbox for immediate indexing
-    let checkbox = NSButton(checkboxWithTitle: "Index immediately once added", target: nil, action: nil)
+    let checkbox = NSButton(
+      checkboxWithTitle: "Index immediately once added",
+      target: nil,
+      action: nil
+    )
     checkbox.state = .on
     let container = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 32))
     checkbox.frame.origin = NSPoint(x: 4, y: 4)

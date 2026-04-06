@@ -4,24 +4,25 @@ struct AdvancedSettingsView: View {
   /// All `@AppStorage` keys used for dialog suppression toggles.
   /// Add new keys here as more "Don't show again" dialogs are introduced.
   private static let suppressionKeys = [
-    "suppressDisableDirectoryWarning",
+    "suppressDisableDirectoryWarning"
   ]
-  
+
   private static let defaultExcludedFolders = [
     "node_modules", "__pycache__",
   ]
-  
+
   @Environment(IndexingService.self) private var indexingService
   @Environment(DirectoryWatcherService.self) private var directoryWatcher
   @AppStorage("watchDirectories") private var watchDirectories = true
   @AppStorage("indexOnLaunch") private var indexOnLaunch = true
-  @AppStorage("ignoreHiddenDirectories") private var ignoreHiddenDirectories = true
+  @AppStorage("ignoreHiddenDirectories") private var ignoreHiddenDirectories =
+    true
   @State private var excludedFolderNames: [String] = []
   @State private var newFolderName = ""
   @State private var stats: AppDatabase.Stats?
   @State private var showResetConfirmation = false
   @State private var showResetViewStateConfirmation = false
-  
+
   private var activeJobCount: Int {
     indexingService.progressByDirectory.values.filter { progress in
       switch progress.phase {
@@ -30,24 +31,31 @@ struct AdvancedSettingsView: View {
       }
     }.count
   }
-  
+
   var body: some View {
     Form {
       Section("Indexing") {
         Toggle(isOn: $watchDirectories) {
           Text("Watch for changes")
-          Text("Automatically index enabled directories after file system changes.")
+          Text(
+            "Automatically index enabled directories after file system changes."
+          )
         }
         .onChange(of: watchDirectories) { _, _ in
           directoryWatcher.restartIfNeeded()
         }
         Toggle(isOn: $indexOnLaunch) {
           Text("Index on launch")
-          Text("Automatically index enabled directories when Sharkfin launches.")
+          Text(
+            "Automatically index enabled directories when Sharkfin launches."
+          )
         }
-        Toggle("Ignore files in hidden directories", isOn: $ignoreHiddenDirectories)
+        Toggle(
+          "Ignore files in hidden directories",
+          isOn: $ignoreHiddenDirectories
+        )
       }
-      
+
       Section {
         ForEach(excludedFolderNames, id: \.self) { name in
           HStack {
@@ -63,12 +71,12 @@ struct AdvancedSettingsView: View {
             .buttonStyle(.borderless)
           }
         }
-        
+
         HStack {
           TextField("Folder name", text: $newFolderName)
             .font(.body.monospaced())
             .onSubmit { addFolder() }
-          
+
           Button {
             addFolder()
           } label: {
@@ -81,41 +89,45 @@ struct AdvancedSettingsView: View {
       } header: {
         Text("Excluded Folders")
       } footer: {
-        Text("Files inside directories matching these names will be skipped during indexing.")
+        Text(
+          "Files inside directories matching these names will be skipped during indexing."
+        )
       }
-      
+
       Section("Database information") {
         if let stats {
           LabeledContent("Indexed files") {
             Text("\(stats.totalFiles)")
               .monospacedDigit()
           }
-          
+
           LabeledContent("Embeddings") {
             Text("\(stats.totalEmbeddings)")
               .monospacedDigit()
           }
-          
+
           LabeledContent("Directories") {
-            Text("\(stats.enabledDirectories) of \(stats.totalDirectories) enabled")
-              .monospacedDigit()
+            Text(
+              "\(stats.enabledDirectories) of \(stats.totalDirectories) enabled"
+            )
+            .monospacedDigit()
           }
-          
+
           LabeledContent("Source file size") {
             Text(formattedBytes(stats.totalSizeBytes))
               .monospacedDigit()
           }
-          
+
           LabeledContent("Database size") {
             Text(formattedBytes(stats.databaseSizeBytes))
               .monospacedDigit()
           }
-          
+
           LabeledContent("Thumbnails size") {
             Text(formattedBytes(stats.thumbnailsSizeBytes))
               .monospacedDigit()
           }
-          
+
           LabeledContent("Last indexed") {
             if let date = stats.lastIndexedAt {
               Text(date, format: .relative(presentation: .named))
@@ -124,7 +136,7 @@ struct AdvancedSettingsView: View {
                 .foregroundStyle(.secondary)
             }
           }
-          
+
           if activeJobCount > 0 {
             LabeledContent("Active jobs") {
               HStack(spacing: 6) {
@@ -140,32 +152,39 @@ struct AdvancedSettingsView: View {
             .frame(maxWidth: .infinity)
         }
       }
-      
-      Section(header: Text("Storage"), footer: Text("Application data (local database, models, and thumbnails) is stored in this directory.")) {
+
+      Section(
+        header: Text("Storage"),
+        footer: Text(
+          "Application data (local database, models, and thumbnails) is stored in this directory."
+        )
+      ) {
         HStack {
           Text(AppDatabase.dataDirectoryURL.path(percentEncoded: false))
             .foregroundStyle(.secondary)
             .textSelection(.enabled)
-          
+
           Spacer()
-          
+
           Button("Open in Finder") {
             NSWorkspace.shared.open(AppDatabase.dataDirectoryURL)
           }
         }
       }
-      
+
       Section("Reset") {
         HStack {
           VStack(alignment: .leading, spacing: 2) {
             Text("Reset All Warnings")
-            Text("Show confirmation dialogs that were previously dismissed with \"Don't show again.\"")
-              .font(.caption)
-              .foregroundStyle(.secondary)
+            Text(
+              "Show confirmation dialogs that were previously dismissed with \"Don't show again.\""
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
           }
-          
+
           Spacer()
-          
+
           Button("Reset") {
             showResetConfirmation = true
           }
@@ -175,32 +194,41 @@ struct AdvancedSettingsView: View {
                 UserDefaults.standard.removeObject(forKey: key)
               }
             }
-            Button("Cancel", role: .cancel) { }
+            Button("Cancel", role: .cancel) {}
           } message: {
-            Text("All previously suppressed confirmation dialogs will be shown again.")
+            Text(
+              "All previously suppressed confirmation dialogs will be shown again."
+            )
           }
         }
-        
+
         HStack {
           VStack(alignment: .leading, spacing: 2) {
             Text("Reset View State")
-            Text("Restore dismissed views like the welcome screen so they appear again.")
-              .font(.caption)
-              .foregroundStyle(.secondary)
+            Text(
+              "Restore dismissed views like the welcome screen so they appear again."
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
           }
-          
+
           Spacer()
-          
+
           Button("Reset") {
             showResetViewStateConfirmation = true
           }
-          .alert("Reset View State?", isPresented: $showResetViewStateConfirmation) {
+          .alert(
+            "Reset View State?",
+            isPresented: $showResetViewStateConfirmation
+          ) {
             Button("Reset") {
               UserDefaults.standard.removeObject(forKey: "hasSeenWelcome")
             }
-            Button("Cancel", role: .cancel) { }
+            Button("Cancel", role: .cancel) {}
           } message: {
-            Text("Dismissed views such as the welcome screen will be shown again.")
+            Text(
+              "Dismissed views such as the welcome screen will be shown again."
+            )
           }
         }
       }
@@ -214,7 +242,7 @@ struct AdvancedSettingsView: View {
       Task { await refreshStats() }
     }
   }
-  
+
   private func refreshStats() async {
     do {
       let db = AppDatabase.shared
@@ -224,15 +252,16 @@ struct AdvancedSettingsView: View {
       print("Failed to fetch database stats: \(error)")
     }
   }
-  
+
   private func formattedBytes(_ bytes: Int64) -> String {
     ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
   }
-  
+
   private func loadExcludedFolders() {
-    guard let json = UserDefaults.standard.string(forKey: "excludedFolderNames"),
-          let data = json.data(using: .utf8),
-          let array = try? JSONDecoder().decode([String].self, from: data)
+    guard
+      let json = UserDefaults.standard.string(forKey: "excludedFolderNames"),
+      let data = json.data(using: .utf8),
+      let array = try? JSONDecoder().decode([String].self, from: data)
     else {
       // First launch: populate with defaults
       excludedFolderNames = Self.defaultExcludedFolders
@@ -241,14 +270,15 @@ struct AdvancedSettingsView: View {
     }
     excludedFolderNames = array
   }
-  
+
   private func saveExcludedFolders() {
     if let data = try? JSONEncoder().encode(excludedFolderNames),
-       let json = String(data: data, encoding: .utf8) {
+      let json = String(data: data, encoding: .utf8)
+    {
       UserDefaults.standard.set(json, forKey: "excludedFolderNames")
     }
   }
-  
+
   private func addFolder() {
     let name = newFolderName.trimmingCharacters(in: .whitespaces)
     guard !name.isEmpty, !excludedFolderNames.contains(name) else { return }
@@ -256,7 +286,7 @@ struct AdvancedSettingsView: View {
     saveExcludedFolders()
     newFolderName = ""
   }
-  
+
   private func removeFolder(_ name: String) {
     excludedFolderNames.removeAll { $0 == name }
     saveExcludedFolders()

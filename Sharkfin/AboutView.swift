@@ -2,7 +2,8 @@ import SwiftUI
 
 struct AboutView: View {
   private var version: String {
-    Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
+    Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
+      ?? "Unknown"
   }
 
   private var build: String {
@@ -18,8 +19,11 @@ struct AboutView: View {
         .font(.callout)
         .foregroundColor(.secondary)
 
-      Link("GitHub Repository", destination: URL(string: "https://github.com/xplato/sharkfin")!)
-        .font(.callout)
+      Link(
+        "GitHub Repository",
+        destination: URL(string: "https://github.com/xplato/sharkfin")!
+      )
+      .font(.callout)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .multilineTextAlignment(.center)

@@ -25,7 +25,9 @@ struct CLIPModelSpec: Identifiable {
   }
 
   func downloadURL(for file: ModelFile) -> URL {
-    URL(string: "https://huggingface.co/\(repoID)/resolve/main/\(file.filename)")!
+    URL(
+      string: "https://huggingface.co/\(repoID)/resolve/main/\(file.filename)"
+    )!
   }
 
   struct ModelFile {
@@ -75,7 +77,10 @@ final class CLIPModelManager {
   private let fileManager = FileManager.default
 
   static let modelsDirectoryURL: URL = {
-    AppDatabase.dataDirectoryURL.appendingPathComponent("models", isDirectory: true)
+    AppDatabase.dataDirectoryURL.appendingPathComponent(
+      "models",
+      isDirectory: true
+    )
   }()
 
   init() {
@@ -123,39 +128,53 @@ final class CLIPModelManager {
   // MARK: - Convenience Accessors
 
   var textModelURL: URL? {
-    guard modelStates[CLIPModelSpec.textEncoder.id] == .downloaded else { return nil }
+    guard modelStates[CLIPModelSpec.textEncoder.id] == .downloaded else {
+      return nil
+    }
     return Self.modelsDirectoryURL
       .appendingPathComponent(CLIPModelSpec.textEncoder.id)
       .appendingPathComponent("model.onnx")
   }
 
   var textTokenizerFolderURL: URL? {
-    guard modelStates[CLIPModelSpec.textEncoder.id] == .downloaded else { return nil }
+    guard modelStates[CLIPModelSpec.textEncoder.id] == .downloaded else {
+      return nil
+    }
     return Self.modelsDirectoryURL
       .appendingPathComponent(CLIPModelSpec.textEncoder.id)
   }
 
   var visionModelURL: URL? {
-    guard modelStates[CLIPModelSpec.visionEncoder.id] == .downloaded else { return nil }
+    guard modelStates[CLIPModelSpec.visionEncoder.id] == .downloaded else {
+      return nil
+    }
     return Self.modelsDirectoryURL
       .appendingPathComponent(CLIPModelSpec.visionEncoder.id)
       .appendingPathComponent("model.onnx")
   }
 
   var isReady: Bool {
-    modelStates[CLIPModelSpec.textEncoder.id] == .downloaded &&
-    modelStates[CLIPModelSpec.visionEncoder.id] == .downloaded
+    modelStates[CLIPModelSpec.textEncoder.id] == .downloaded
+      && modelStates[CLIPModelSpec.visionEncoder.id] == .downloaded
   }
 
   // MARK: - Download Logic
 
-  private func performDownload(_ model: CLIPModelSpec, downloader: FileDownloader) async {
+  private func performDownload(
+    _ model: CLIPModelSpec,
+    downloader: FileDownloader
+  ) async {
     let modelDir = Self.modelsDirectoryURL.appendingPathComponent(model.id)
 
     do {
-      try fileManager.createDirectory(at: modelDir, withIntermediateDirectories: true)
+      try fileManager.createDirectory(
+        at: modelDir,
+        withIntermediateDirectories: true
+      )
     } catch {
-      modelStates[model.id] = .error("Failed to create directory: \(error.localizedDescription)")
+      modelStates[model.id] = .error(
+        "Failed to create directory: \(error.localizedDescription)"
+      )
       return
     }
 
@@ -183,7 +202,9 @@ final class CLIPModelManager {
         let bytesForFile = Int64(fileProgress * Double(file.sizeBytes))
         let overall = Double(baseBytes + bytesForFile) / Double(totalBytes)
         Task { @MainActor in
-          self.modelStates[model.id] = .downloading(progress: min(overall, 0.99))
+          self.modelStates[model.id] = .downloading(
+            progress: min(overall, 0.99)
+          )
         }
       }
 
@@ -208,19 +229,25 @@ final class CLIPModelManager {
 
   // MARK: - File Management
 
-  private func checkDownloadStatus(for model: CLIPModelSpec) -> ModelDownloadState {
+  private func checkDownloadStatus(for model: CLIPModelSpec)
+    -> ModelDownloadState
+  {
     let modelDir = Self.modelsDirectoryURL.appendingPathComponent(model.id)
     let allExist = model.files.allSatisfy { file in
-      fileManager.fileExists(atPath: modelDir.appendingPathComponent(file.filename).path)
+      fileManager.fileExists(
+        atPath: modelDir.appendingPathComponent(file.filename).path
+      )
     }
     return allExist ? .downloaded : .notDownloaded
   }
 
   private func cleanupTemporaryFiles() {
-    guard let enumerator = fileManager.enumerator(
-      at: Self.modelsDirectoryURL,
-      includingPropertiesForKeys: nil
-    ) else { return }
+    guard
+      let enumerator = fileManager.enumerator(
+        at: Self.modelsDirectoryURL,
+        includingPropertiesForKeys: nil
+      )
+    else { return }
     for case let fileURL as URL in enumerator {
       if fileURL.pathExtension == "tmp" {
         try? fileManager.removeItem(at: fileURL)
@@ -230,10 +257,12 @@ final class CLIPModelManager {
 
   private func cleanupPartialDownload(_ model: CLIPModelSpec) {
     let modelDir = Self.modelsDirectoryURL.appendingPathComponent(model.id)
-    guard let contents = try? fileManager.contentsOfDirectory(
-      at: modelDir,
-      includingPropertiesForKeys: nil
-    ) else { return }
+    guard
+      let contents = try? fileManager.contentsOfDirectory(
+        at: modelDir,
+        includingPropertiesForKeys: nil
+      )
+    else { return }
     for fileURL in contents where fileURL.pathExtension == "tmp" {
       try? fileManager.removeItem(at: fileURL)
     }
@@ -254,7 +283,9 @@ enum DownloadResult {
 /// with resume data, and timeouts suitable for large model files.
 /// The HuggingFace Xet CDN tends to drop connections on large files, so we
 /// retry aggressively with resume data to incrementally complete the download.
-final class FileDownloader: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
+final class FileDownloader: NSObject, URLSessionDownloadDelegate,
+  @unchecked Sendable
+{
   private var continuation: CheckedContinuation<DownloadResult, Never>?
   private var progressHandler: ((Double) -> Void)?
   private var destinationURL: URL?
@@ -388,7 +419,8 @@ final class FileDownloader: NSObject, URLSessionDownloadDelegate, @unchecked Sen
     let nsError = error as NSError
 
     // Capture resume data for retry
-    if let data = nsError.userInfo[NSURLSessionDownloadTaskResumeData] as? Data {
+    if let data = nsError.userInfo[NSURLSessionDownloadTaskResumeData] as? Data
+    {
       self.resumeData = data
       self.consecutiveResumeFails = 0
     } else if self.resumeData != nil {

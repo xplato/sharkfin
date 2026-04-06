@@ -91,11 +91,13 @@ final class SearchViewModel {
   private func getOrCreateSearchService() async throws -> SearchService {
     if let existing = searchService { return existing }
     guard let modelURL = modelManager.textModelURL,
-          let tokenizerURL = modelManager.textTokenizerFolderURL else {
+      let tokenizerURL = modelManager.textTokenizerFolderURL
+    else {
       throw CLIPError.modelNotReady
     }
     let encoder = try await CLIPTextEncoder(
-      modelPath: modelURL, tokenizerFolder: tokenizerURL
+      modelPath: modelURL,
+      tokenizerFolder: tokenizerURL
     )
     let service = SearchService(database: database, textEncoder: encoder)
     searchService = service

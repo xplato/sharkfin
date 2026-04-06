@@ -1,5 +1,5 @@
-import GRDB
 import Foundation
+import GRDB
 
 nonisolated struct IndexedFile: Codable, Identifiable, Sendable {
   var id: Int64?
@@ -15,7 +15,7 @@ nonisolated struct IndexedFile: Codable, Identifiable, Sendable {
   var height: Int?
   var indexedAt: Date
   var thumbnailPath: String?
-  
+
   enum CodingKeys: String, CodingKey {
     case id, path, directoryId, filename
     case fileExtension

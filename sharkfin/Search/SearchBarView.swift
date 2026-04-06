@@ -8,7 +8,7 @@ private struct SpinnerView: View {
       .trim(from: 0, to: 0.7)
       .stroke(
         AngularGradient(
-          gradient: Gradient(colors: [.blue.opacity(0), .blue]),
+          gradient: Gradient(colors: [Color.accentColor.opacity(0), .accentColor]),
           center: .center,
           startAngle: .zero,
           endAngle: .degrees(252)

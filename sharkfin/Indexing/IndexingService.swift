@@ -240,6 +240,7 @@ final class IndexingService {
     }
 
     onProgress(IndexingProgress(phase: .complete(processed), total: total, processed: processed))
+    await NotificationCenter.default.post(name: .searchCacheDidInvalidate, object: nil)
   }
 
   // MARK: - Single File Processing

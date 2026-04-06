@@ -154,6 +154,7 @@ final class AppDatabase: Sendable {
         try directory.update(db)
       }
     }
+    NotificationCenter.default.post(name: .searchCacheDidInvalidate, object: nil)
   }
 
   // MARK: - Stats

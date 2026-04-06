@@ -1,7 +1,16 @@
 import Foundation
 import GRDB
+import Accelerate
+import os
+
+extension Notification.Name {
+  static let searchCacheDidInvalidate = Notification.Name("searchCacheDidInvalidate")
+}
 
 /// Encodes text queries with CLIP and ranks stored embeddings by cosine similarity.
+///
+/// Embeddings are cached in a contiguous float buffer after the first query.
+/// Dot products are computed via a single `vDSP_mmul` call (Accelerate).
 final class SearchService: @unchecked Sendable {
   
   private let database: AppDatabase
@@ -11,127 +20,189 @@ final class SearchService: @unchecked Sendable {
   private nonisolated static let scoreFloor: Float = 0.18
   private nonisolated static let scoreCeiling: Float = 0.35
   
+  // MARK: - Embedding cache
+  
+  private let cache = OSAllocatedUnfairLock<EmbeddingCache?>(initialState: nil)
+  private var notificationObserver: (any NSObjectProtocol)?
+  
   init(database: AppDatabase, textEncoder: CLIPTextEncoder) {
     self.database = database
     self.textEncoder = textEncoder
+    
+    notificationObserver = NotificationCenter.default.addObserver(
+      forName: .searchCacheDidInvalidate,
+      object: nil,
+      queue: nil
+    ) { [weak self] _ in
+      self?.invalidateCache()
+    }
+  }
+  
+  deinit {
+    if let notificationObserver {
+      NotificationCenter.default.removeObserver(notificationObserver)
+    }
+  }
+  
+  nonisolated func invalidateCache() {
+    cache.withLock { $0 = nil }
+    print("[Search] Cache invalidated")
   }
   
   nonisolated func search(query: String) async throws -> [SearchResult] {
-    // 1. Encode query text on background thread
+    // 1. Encode query text
     let queryEmbedding = try textEncoder.encode(text: query)
-    print("[Search] Query embedding: \(queryEmbedding.count) dims, norm=\(sqrt(queryEmbedding.reduce(0) { $0 + $1 * $1 }))")
     
-    // 2. Load all embeddings + file info from DB
-    let rows: [EmbeddingRow] = try await database.dbQueue.read { db in
-      try EmbeddingRow.fetchAll(db, sql: """
-                SELECT e.fileId, e.embedding, f.filename, f.path, f.thumbnailPath
-                FROM fileEmbeddings e
-                JOIN files f ON f.id = e.fileId
-                JOIN directories d ON d.id = f.directoryId
-                WHERE d.enabled = 1
-                """)
+    // 2. Get cached embeddings (loads from DB on first call)
+    let cached = try await getCache()
+    guard cached.count > 0, cached.dims == queryEmbedding.count else { return [] }
+    
+    // 3. Compute all dot products via matrix × vector multiply
+    //    embeddings is (N × dims), query is (dims × 1), result is (N × 1)
+    var scores = [Float](repeating: 0, count: cached.count)
+    cached.embeddings.withUnsafeBufferPointer { embBuf in
+      queryEmbedding.withUnsafeBufferPointer { qBuf in
+        vDSP_mmul(
+          embBuf.baseAddress!, 1,
+          qBuf.baseAddress!, 1,
+          &scores, 1,
+          vDSP_Length(cached.count), 1, vDSP_Length(cached.dims)
+        )
+      }
     }
-    print("[Search] Loaded \(rows.count) embeddings from DB")
     
-    // 3. Compute cosine similarity (dot product for L2-normalized vectors)
+    // 4. Filter by minimum score, normalize relevance, collect results
     var results: [SearchResult] = []
-    var maxScore: Float = -1
-    var dimMismatchCount = 0
-    
-    for row in rows {
-      let fileEmbedding: [Float] = row.embedding.withUnsafeBytes { buffer in
-        Array(buffer.bindMemory(to: Float.self))
-      }
-      
-      guard fileEmbedding.count == queryEmbedding.count else {
-        dimMismatchCount += 1
-        continue
-      }
-      
-      var rawScore: Float = 0
-      for i in 0..<queryEmbedding.count {
-        rawScore += queryEmbedding[i] * fileEmbedding[i]
-      }
-      
-      if rawScore > maxScore { maxScore = rawScore }
-      
+    for i in 0..<cached.count {
+      let rawScore = scores[i]
       guard rawScore >= Self.minRawScore else { continue }
-      
       let relevance = max(0, min(1, (rawScore - Self.scoreFloor) / (Self.scoreCeiling - Self.scoreFloor)))
-      
       results.append(SearchResult(
-        id: row.fileId,
-        filename: row.filename,
-        path: row.path,
-        thumbnailPath: row.thumbnailPath,
+        id: cached.fileIds[i],
+        filename: cached.filenames[i],
+        path: cached.paths[i],
+        thumbnailPath: cached.thumbnailPaths[i],
         rawScore: rawScore,
         relevance: relevance
       ))
     }
     
-    print("[Search] Results: \(results.count)/\(rows.count), maxScore=\(maxScore), dimMismatch=\(dimMismatchCount)")
     results.sort { $0.relevance > $1.relevance }
     return Array(results.prefix(50))
   }
+  
   /// Find files visually similar to a given file using embedding cosine similarity.
   nonisolated func findSimilar(toFileId fileId: Int64, limit: Int = 4) async throws -> [SearchResult] {
-    // Load the target file's embedding
-    let targetRow: EmbeddingRow? = try await database.dbQueue.read { db in
-      try EmbeddingRow.fetchOne(db, sql: """
-        SELECT e.fileId, e.embedding, f.filename, f.path, f.thumbnailPath
-        FROM fileEmbeddings e
-        JOIN files f ON f.id = e.fileId
-        JOIN directories d ON d.id = f.directoryId
-        WHERE e.fileId = ? AND d.enabled = 1
-        """, arguments: [fileId])
+    let cached = try await getCache()
+    guard cached.count > 0 else { return [] }
+    
+    // Find the target file's embedding in the cache
+    guard let targetIndex = cached.fileIds.firstIndex(of: fileId) else { return [] }
+    let offset = targetIndex * cached.dims
+    let targetEmbedding = Array(cached.embeddings[offset..<(offset + cached.dims)])
+    
+    // Compute all dot products via matrix × vector multiply
+    var scores = [Float](repeating: 0, count: cached.count)
+    cached.embeddings.withUnsafeBufferPointer { embBuf in
+      targetEmbedding.withUnsafeBufferPointer { qBuf in
+        vDSP_mmul(
+          embBuf.baseAddress!, 1,
+          qBuf.baseAddress!, 1,
+          &scores, 1,
+          vDSP_Length(cached.count), 1, vDSP_Length(cached.dims)
+        )
+      }
     }
     
-    guard let target = targetRow else { return [] }
-    
-    let targetEmbedding: [Float] = target.embedding.withUnsafeBytes { buffer in
-      Array(buffer.bindMemory(to: Float.self))
+    // Collect results, excluding the target file itself
+    var results: [SearchResult] = []
+    for i in 0..<cached.count {
+      guard cached.fileIds[i] != fileId else { continue }
+      let score = scores[i]
+      results.append(SearchResult(
+        id: cached.fileIds[i],
+        filename: cached.filenames[i],
+        path: cached.paths[i],
+        thumbnailPath: cached.thumbnailPaths[i],
+        rawScore: score,
+        relevance: score
+      ))
     }
     
-    // Load all other embeddings
+    results.sort { $0.relevance > $1.relevance }
+    return Array(results.prefix(limit))
+  }
+  
+  // MARK: - Cache management
+  
+  private nonisolated func getCache() async throws -> EmbeddingCache {
+    if let existing = cache.withLock({ $0 }) {
+      return existing
+    }
+    
+    let loaded = try await loadCache()
+    cache.withLock { $0 = loaded }
+    return loaded
+  }
+  
+  private nonisolated func loadCache() async throws -> EmbeddingCache {
     let rows: [EmbeddingRow] = try await database.dbQueue.read { db in
       try EmbeddingRow.fetchAll(db, sql: """
         SELECT e.fileId, e.embedding, f.filename, f.path, f.thumbnailPath
         FROM fileEmbeddings e
         JOIN files f ON f.id = e.fileId
         JOIN directories d ON d.id = f.directoryId
-        WHERE e.fileId != ? AND d.enabled = 1
-        """, arguments: [fileId])
+        WHERE d.enabled = 1
+        """)
     }
     
-    // Compute similarity and find top N
-    var scored: [(SearchResult, Float)] = []
+    guard let firstRow = rows.first else {
+      return EmbeddingCache(embeddings: [], fileIds: [], filenames: [], paths: [], thumbnailPaths: [], count: 0, dims: 0)
+    }
+    
+    let dims = firstRow.embedding.count / MemoryLayout<Float>.size
+    var embeddings = [Float]()
+    embeddings.reserveCapacity(rows.count * dims)
+    var fileIds = [Int64]()
+    fileIds.reserveCapacity(rows.count)
+    var filenames = [String]()
+    filenames.reserveCapacity(rows.count)
+    var paths = [String]()
+    paths.reserveCapacity(rows.count)
+    var thumbnailPaths = [String?]()
+    thumbnailPaths.reserveCapacity(rows.count)
+    
     for row in rows {
-      let embedding: [Float] = row.embedding.withUnsafeBytes { buffer in
+      let floats: [Float] = row.embedding.withUnsafeBytes { buffer in
         Array(buffer.bindMemory(to: Float.self))
       }
-      guard embedding.count == targetEmbedding.count else { continue }
-      
-      var score: Float = 0
-      for i in 0..<targetEmbedding.count {
-        score += targetEmbedding[i] * embedding[i]
-      }
-      
-      scored.append((SearchResult(
-        id: row.fileId,
-        filename: row.filename,
-        path: row.path,
-        thumbnailPath: row.thumbnailPath,
-        rawScore: score,
-        relevance: score
-      ), score))
+      guard floats.count == dims else { continue }
+      embeddings.append(contentsOf: floats)
+      fileIds.append(row.fileId)
+      filenames.append(row.filename)
+      paths.append(row.path)
+      thumbnailPaths.append(row.thumbnailPath)
     }
     
-    scored.sort { $0.1 > $1.1 }
-    return Array(scored.prefix(limit).map(\.0))
+    print("[Search] Cached \(fileIds.count) embeddings (\(dims) dims, \(embeddings.count * MemoryLayout<Float>.size / 1024)KB)")
+    return EmbeddingCache(
+      embeddings: embeddings, fileIds: fileIds, filenames: filenames,
+      paths: paths, thumbnailPaths: thumbnailPaths, count: fileIds.count, dims: dims
+    )
   }
 }
 
-// MARK: - Internal row type for the JOIN query
+// MARK: - Internal types
+
+private struct EmbeddingCache: Sendable {
+  let embeddings: [Float] // Contiguous N × dims buffer
+  let fileIds: [Int64]
+  let filenames: [String]
+  let paths: [String]
+  let thumbnailPaths: [String?]
+  let count: Int
+  let dims: Int
+}
 
 private nonisolated struct EmbeddingRow: FetchableRecord, Decodable, Sendable {
   var fileId: Int64

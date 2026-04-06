@@ -13,8 +13,7 @@ struct SearchPanelView: View {
         SearchBarView(
           viewModel: viewModel,
           onSubmit: { viewModel.submitSearch() },
-          onDismiss: { onDismiss() },
-          onOpenSettings: { onOpenSettings() }
+          onDismiss: { onDismiss() }
         )
 
         if let selected = searchController.selectedResult {

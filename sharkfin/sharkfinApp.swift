@@ -123,6 +123,16 @@ final class AppState {
     hideSearch()
     NSApplication.shared.activate(ignoringOtherApps: true)
     settingsOpener?()
+    // When the settings window is already open, the opener alone won't
+    // bring it to the front. Explicitly make it key on the next tick
+    // so the window is resolved.
+    DispatchQueue.main.async {
+      for window in NSApplication.shared.windows
+      where !(window is SearchPanel) && window.isVisible {
+        window.makeKeyAndOrderFront(nil)
+        break
+      }
+    }
   }
 
   private func getOrCreatePanel() -> SearchPanel {

@@ -4,8 +4,9 @@ struct SearchBarView: View {
   @Bindable var viewModel: SearchViewModel
   var onSubmit: () -> Void
   var onDismiss: () -> Void
-  var onOpenSettings: () -> Void
+  
   @Environment(DirectoryStore.self) private var directoryStore
+  @State private var stats: AppDatabase.Stats?
 
   private var allDirectoriesDisabled: Bool {
     !directoryStore.directories.isEmpty
@@ -15,14 +16,16 @@ struct SearchBarView: View {
   var body: some View {
     HStack(spacing: 12) {
       if allDirectoriesDisabled {
-        Button {
-          onOpenSettings()
-        } label: {
+        SettingsLink {
           Image(systemName: "exclamationmark.triangle.fill")
             .foregroundStyle(.yellow)
             .font(.title2)
         }
         .buttonStyle(.plain)
+        .simultaneousGesture(TapGesture().onEnded {
+          onDismiss()
+          NSApplication.shared.activate(ignoringOtherApps: true)
+        })
         .help("All directories are disabled. Click to open settings.")
       } else {
         Image(systemName: "magnifyingglass")
@@ -31,7 +34,7 @@ struct SearchBarView: View {
       }
 
       TextField(
-        allDirectoriesDisabled ? "All directories disabled" : "Search files...",
+        allDirectoriesDisabled ? "All directories disabled" : "Search \(stats?.totalFiles ?? 0) files...",
         text: $viewModel.query
       )
       .textFieldStyle(.plain)
@@ -43,17 +46,11 @@ struct SearchBarView: View {
         ProgressView()
           .controlSize(.small)
       }
-
-      Button {
-        onOpenSettings()
-      } label: {
-        Image(systemName: "ellipsis")
-          .font(.title3)
-          .foregroundStyle(.secondary)
-      }
-      .buttonStyle(.plain)
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 12)
+    .task {
+      stats = try? AppDatabase.shared.fetchStats()
+    }
   }
 }

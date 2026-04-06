@@ -17,6 +17,7 @@ struct AdvancedSettingsView: View {
   @State private var newFolderName = ""
   @State private var stats: AppDatabase.Stats?
   @State private var showResetConfirmation = false
+  @State private var showResetViewStateConfirmation = false
 
   private var activeJobCount: Int {
     indexingService.progressByDirectory.values.filter { progress in
@@ -140,7 +141,7 @@ struct AdvancedSettingsView: View {
         }
       }
 
-      Section("Warnings") {
+      Section("Reset") {
         HStack {
           VStack(alignment: .leading, spacing: 2) {
             Text("Reset All Warnings")
@@ -163,6 +164,29 @@ struct AdvancedSettingsView: View {
             Button("Cancel", role: .cancel) { }
           } message: {
             Text("All previously suppressed confirmation dialogs will be shown again.")
+          }
+        }
+
+        HStack {
+          VStack(alignment: .leading, spacing: 2) {
+            Text("Reset View State")
+            Text("Restore dismissed views like the welcome screen so they appear again.")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+          }
+
+          Spacer()
+
+          Button("Reset") {
+            showResetViewStateConfirmation = true
+          }
+          .alert("Reset View State?", isPresented: $showResetViewStateConfirmation) {
+            Button("Reset") {
+              UserDefaults.standard.removeObject(forKey: "hasSeenWelcome")
+            }
+            Button("Cancel", role: .cancel) { }
+          } message: {
+            Text("Dismissed views such as the welcome screen will be shown again.")
           }
         }
       }

@@ -20,6 +20,14 @@ struct sharkfinApp: App {
     _appState = State(initialValue: AppState(
       database: .shared, modelManager: manager, directoryStore: store
     ))
+
+    // Auto-open settings with welcome screen if the app isn't set up
+    if !manager.isReady && store.directories.isEmpty {
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        NSApp.activate(ignoringOtherApps: true)
+      }
+    }
   }
 
   var body: some Scene {
@@ -42,14 +50,20 @@ final class AppState {
   private var searchPanel: SearchPanel?
   private var searchViewModel: SearchViewModel
   private var searchController = SearchController()
+  let modelManager: CLIPModelManager
   let directoryStore: DirectoryStore
   private var resignKeyObserver: Any?
   private var settingsOpener: (() -> Void)?
+
+  var needsSetup: Bool {
+    !modelManager.isReady && directoryStore.directories.isEmpty
+  }
 
   init(database: AppDatabase, modelManager: CLIPModelManager, directoryStore: DirectoryStore) {
     self.searchViewModel = SearchViewModel(
       database: database, modelManager: modelManager
     )
+    self.modelManager = modelManager
     self.directoryStore = directoryStore
     KeyboardShortcuts.onKeyUp(for: .activateSearch) { [self] in
       activateSearch()
@@ -74,6 +88,10 @@ final class AppState {
   }
 
   func activateSearch() {
+    if needsSetup {
+      openSettings()
+      return
+    }
     if let panel = searchPanel, panel.isVisible {
       hideSearch()
     } else {
@@ -122,7 +140,11 @@ final class AppState {
   func openSettings() {
     hideSearch()
     NSApplication.shared.activate(ignoringOtherApps: true)
-    settingsOpener?()
+    if let settingsOpener {
+      settingsOpener()
+    } else {
+      NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+    }
     // When the settings window is already open, the opener alone won't
     // bring it to the front. Explicitly make it key on the next tick
     // so the window is resolved.

@@ -36,7 +36,7 @@ https://github.com/user-attachments/assets/b502dd63-7f29-4257-bbe7-11e8697a72c6
 
 ## Installation
 
-Installing Sharkfin for general usage is currently on pause until Apple approves my developer account (been pending for a bit). In the meantime, you can build the app from source using Xcode by following the instructions in the Developing section below.
+⚠️ Installing Sharkfin for general usage is currently on pause until Apple approves my developer account (been pending for a bit). In the meantime, you can build the app from source using Xcode by following the instructions in the Developing section below.
 
 ## Usage
 

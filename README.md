@@ -10,6 +10,24 @@ Performing several example searches on my local index of ~18,000 files (source s
 
 Note: The UI is very likely to have changed since this demo video was recorded.
 
+## Features and Notes
+
+- **Local-only:** indexing, searching, and all other app functionality apart from the initial CLIP model download is **entirely local.**
+- **Natural language searching:** Search indexed files with natural language. Currently, only images are supported.
+- **High performance:** Indexing and searching are both highly optimized to leverage the built-in neural engine in macOS. See the screenshots and videos section below for a demo. 
+
+## Implementation
+
+TODO.
+
+## Demos
+
+### Indexing
+
+Performing indexing on two test directories containing several hundred images total. The average filesize for the images in testdir is 3.88 MB and 5.49 MB for testdir2 (i.e. rather large image files).
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/drwQT6ipCaU?si=78Nam_8kEjSkrwpX" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 ## Developing
 
 ### Prerequisites

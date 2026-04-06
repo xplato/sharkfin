@@ -2,7 +2,7 @@
 
 Native macOS app for semantic search of local files. Currently only supports images (JPG, PNG, HEIC, WEBP, SVG, etc.).
 
-## Features and Notes
+## Features
 
 - **Local-only:** indexing, searching, and all other app functionality apart from the initial CLIP model download is **entirely local.**
 - **Natural language searching:** Search indexed files with natural language. Currently, only images are supported.

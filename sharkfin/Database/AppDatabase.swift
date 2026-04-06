@@ -87,7 +87,7 @@ final class AppDatabase: Sendable {
   }
   
   /// The app's data directory in Application Support.
-  static let dataDirectoryURL: URL = {
+  nonisolated static let dataDirectoryURL: URL = {
     let appSupportURL = FileManager.default.urls(
       for: .applicationSupportDirectory,
       in: .userDomainMask

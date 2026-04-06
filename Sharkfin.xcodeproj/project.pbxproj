@@ -29,10 +29,19 @@
 /* Begin PBXFileReference section */
 		6A17ACA42F82C78E002F4666 /* Sharkfin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Sharkfin.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6A4E0D7D2F847B6F00456F8A /* SharkfinTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SharkfinTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		6A4E0D952F847D7F00456F8A /* SharkfinTests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = SharkfinTests.xctestplan; sourceTree = "<group>"; };
 		6A7C10C32F835C8000F58732 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		6A7C10C72F83655000F58732 /* Sharkfin.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = Sharkfin.icon; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		6A4E0D962F847FA100456F8A /* Exceptions for "SharkfinTests" folder in "SharkfinTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				SharkfinTests.xctestplan,
+			);
+			target = 6A4E0D7C2F847B6F00456F8A /* SharkfinTests */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		6A17ACA62F82C78E002F4666 /* Sharkfin */ = {
@@ -42,6 +51,9 @@
 		};
 		6A4E0D7E2F847B6F00456F8A /* SharkfinTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				6A4E0D962F847FA100456F8A /* Exceptions for "SharkfinTests" folder in "SharkfinTests" target */,
+			);
 			path = SharkfinTests;
 			sourceTree = "<group>";
 		};
@@ -73,7 +85,6 @@
 		6A17AC9B2F82C78E002F4666 = {
 			isa = PBXGroup;
 			children = (
-				6A4E0D952F847D7F00456F8A /* SharkfinTests.xctestplan */,
 				6A17ACA62F82C78E002F4666 /* Sharkfin */,
 				6A4E0D7E2F847B6F00456F8A /* SharkfinTests */,
 				6A17ACA52F82C78E002F4666 /* Products */,

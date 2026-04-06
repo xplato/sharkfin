@@ -12,16 +12,18 @@ final class SearchPanel: NSPanel {
   private let dragRegionHeight: CGFloat = 50
   /// Minimum mouse movement (points) before committing to a drag.
   private let dragThreshold: CGFloat = 3
-  /// Snap detection tolerance (points).
-  private let snapTolerance: CGFloat = 4
+  /// How close (points) the natural position must be to a snap point to engage.
+  private let snapTolerance: CGFloat = 6
+  /// How far (points) past the snap point the user must drag to break free.
+  private let snapBreakout: CGFloat = 9
 
   private var storedMouseDown: NSEvent?
   private var dragOrigin: NSPoint?
   private var frameAtDragStart: NSRect?
   private var isDragging = false
 
-  private var wasAtHorizontalCenter = false
-  private var wasAtVerticalOrigin = false
+  private var snappedToHCenter = false
+  private var snappedToVOrigin = false
 
   // MARK: - Init
 
@@ -70,8 +72,8 @@ final class SearchPanel: NSPanel {
         dragOrigin = NSEvent.mouseLocation
         frameAtDragStart = frame
         isDragging = false
-        wasAtHorizontalCenter = isAtHorizontalCenter
-        wasAtVerticalOrigin = isAtVerticalOrigin
+        snappedToHCenter = false
+        snappedToVOrigin = false
         // Don't forward yet — wait for drag or click resolution
         return
       }
@@ -91,11 +93,43 @@ final class SearchPanel: NSPanel {
         isDragging = true
       }
 
-      setFrameOrigin(NSPoint(
-        x: startFrame.origin.x + deltaX,
-        y: startFrame.origin.y + deltaY
-      ))
-      checkSnapPoints()
+      var newX = startFrame.origin.x + deltaX
+      var newY = startFrame.origin.y + deltaY
+
+      // Horizontal center snap
+      if let screen = screen ?? NSScreen.main {
+        let screenCenterX = screen.visibleFrame.midX
+        let naturalCenterX = newX + frame.width / 2
+        let dist = abs(naturalCenterX - screenCenterX)
+
+        if snappedToHCenter {
+          if dist > snapBreakout {
+            snappedToHCenter = false
+          } else {
+            newX = screenCenterX - frame.width / 2
+          }
+        } else if dist <= snapTolerance {
+          snappedToHCenter = true
+          newX = screenCenterX - frame.width / 2
+          NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+        }
+      }
+
+      // Vertical origin snap
+      let vDist = abs(newY - defaultOriginY)
+      if snappedToVOrigin {
+        if vDist > snapBreakout {
+          snappedToVOrigin = false
+        } else {
+          newY = defaultOriginY
+        }
+      } else if vDist <= snapTolerance {
+        snappedToVOrigin = true
+        newY = defaultOriginY
+        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+      }
+
+      setFrameOrigin(NSPoint(x: newX, y: newY))
       return
 
     case .leftMouseUp:
@@ -124,31 +158,6 @@ final class SearchPanel: NSPanel {
     super.sendEvent(event)
   }
 
-  // MARK: - Snap detection & haptics
-
-  private var isAtHorizontalCenter: Bool {
-    guard let screen = screen ?? NSScreen.main else { return false }
-    return abs(frame.midX - screen.visibleFrame.midX) <= snapTolerance
-  }
-
-  private var isAtVerticalOrigin: Bool {
-    abs(frame.origin.y - defaultOriginY) <= snapTolerance
-  }
-
-  private func checkSnapPoints() {
-    let atHCenter = isAtHorizontalCenter
-    let atVOrigin = isAtVerticalOrigin
-
-    if atHCenter && !wasAtHorizontalCenter {
-      NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
-    }
-    if atVOrigin && !wasAtVerticalOrigin {
-      NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
-    }
-
-    wasAtHorizontalCenter = atHCenter
-    wasAtVerticalOrigin = atVOrigin
-  }
 }
 
 extension Notification.Name {

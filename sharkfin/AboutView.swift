@@ -11,7 +11,6 @@ struct AboutView: View {
 
   var body: some View {
     VStack(spacing: 12) {
-      Spacer().frame(height: 20)
       Text("Sharkfin")
         .font(.largeTitle)
 
@@ -22,7 +21,7 @@ struct AboutView: View {
       Link("GitHub Repository", destination: URL(string: "https://github.com/xplato/sharkfin")!)
         .font(.callout)
     }
-    .frame(maxHeight: .infinity, alignment: .top)
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
     .multilineTextAlignment(.center)
   }
 }

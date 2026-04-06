@@ -37,6 +37,14 @@ struct sharkfinApp: App {
         }
     }
 
+    Window("About Sharkfin", id: "about") {
+      AboutView()
+        .frame(width: 300, height: 200)
+    }
+    .windowResizability(.contentSize)
+    .windowStyle(.titleBar)
+    .defaultPosition(.center)
+
     Settings {
       SettingsView()
         .environment(directoryStore)
@@ -209,6 +217,7 @@ final class AppState {
 struct MenuBarContent: View {
   let appState: AppState
   @Environment(\.openSettings) private var openSettings
+  @Environment(\.openWindow) private var openWindow
 
   var body: some View {
     let _ = appState.setSettingsOpener { openSettings() }
@@ -223,6 +232,11 @@ struct MenuBarContent: View {
     .keyboardShortcut(",")
 
     Divider()
+
+    Button("About Sharkfin") {
+      openWindow(id: "about")
+      NSApp.activate(ignoringOtherApps: true)
+    }
 
     Button("Quit") { NSApplication.shared.terminate(nil) }
       .keyboardShortcut("Q")

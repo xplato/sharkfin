@@ -8,7 +8,6 @@ struct SettingsView: View {
     case general
     case shortcuts
     case advanced
-    case about
   }
   
   var body: some View {
@@ -37,12 +36,6 @@ struct SettingsView: View {
             Label("Advanced", systemImage: "hammer")
           }
           .tag(Tab.advanced)
-        
-        AboutView()
-          .tabItem {
-            Label("About", systemImage: "info.circle")
-          }
-          .tag(Tab.about)
       }
       .frame(minWidth: 400, idealWidth: 500, maxWidth: 600,
              minHeight: 500, idealHeight: 600, maxHeight: 900)

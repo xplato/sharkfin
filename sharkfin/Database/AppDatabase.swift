@@ -160,6 +160,7 @@ final class AppDatabase: Sendable {
 
   nonisolated struct Stats: Sendable, Equatable {
     var totalFiles: Int
+    var totalEnabledFiles: Int
     var totalEmbeddings: Int
     var totalDirectories: Int
     var enabledDirectories: Int
@@ -188,6 +189,8 @@ final class AppDatabase: Sendable {
 
     return try dbQueue.read { db in
       let totalFiles = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM files") ?? 0
+      let totalEnabledFiles = try Int.fetchOne(
+        db, sql: "SELECT COUNT(*) FROM files WHERE directoryId IN (SELECT id FROM directories WHERE enabled = 1)") ?? 0
       let totalEmbeddings = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM fileEmbeddings") ?? 0
       let totalDirectories = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM directories") ?? 0
       let enabledDirectories = try Int.fetchOne(
@@ -199,6 +202,7 @@ final class AppDatabase: Sendable {
 
       return Stats(
         totalFiles: totalFiles,
+        totalEnabledFiles: totalEnabledFiles,
         totalEmbeddings: totalEmbeddings,
         totalDirectories: totalDirectories,
         enabledDirectories: enabledDirectories,

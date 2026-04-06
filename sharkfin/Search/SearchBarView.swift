@@ -59,7 +59,7 @@ struct SearchBarView: View {
       }
 
       TextField(
-        allDirectoriesDisabled ? "All directories disabled" : "Search \(stats?.totalFiles ?? 0) files...",
+        allDirectoriesDisabled ? "All directories disabled" : "Search \(stats?.totalEnabledFiles ?? 0) files...",
         text: $viewModel.query
       )
       .textFieldStyle(.plain)

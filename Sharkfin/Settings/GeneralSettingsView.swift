@@ -25,13 +25,19 @@ struct GeneralSettingsView: View {
             }
           }
       }
-
-      Section(header: Text("Automatic Indexing"), footer: Text("Watch for changes uses macOS file system events to detect new, modified, or deleted files in real time.")) {
-        Toggle("Watch for changes", isOn: $watchDirectories)
-          .onChange(of: watchDirectories) { _, _ in
-            directoryWatcher.restartIfNeeded()
-          }
-        Toggle("Index on launch", isOn: $indexOnLaunch)
+      
+      Section("Automatic Indexing") {
+        Toggle(isOn: $watchDirectories) {
+          Text("Watch for changes")
+          Text("Automatically index enabled directories after file system changes.")
+        }
+        .onChange(of: watchDirectories) { _, _ in
+          directoryWatcher.restartIfNeeded()
+        }
+        Toggle(isOn: $indexOnLaunch) {
+          Text("Index on launch")
+          Text("Automatically index enabled directories when Sharkfin launches.")
+        }
       }
       
       Section(header: Text("Directories"), footer: Text("After indexing, the contents of these directories will be included in search results.")) {

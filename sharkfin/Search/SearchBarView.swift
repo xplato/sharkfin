@@ -77,5 +77,8 @@ struct SearchBarView: View {
     .task {
       stats = try? AppDatabase.shared.fetchStats()
     }
+    .onChange(of: directoryStore.directories) {
+      stats = try? AppDatabase.shared.fetchStats()
+    }
   }
 }

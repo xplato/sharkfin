@@ -1,7 +1,7 @@
 import GRDB
 import Foundation
 
-nonisolated struct SharkfinDirectory: Codable, Identifiable, Sendable {
+nonisolated struct SharkfinDirectory: Codable, Identifiable, Sendable, Equatable {
   var id: Int64?
   var path: String
   var label: String?

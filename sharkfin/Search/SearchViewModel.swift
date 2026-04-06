@@ -72,7 +72,9 @@ final class SearchViewModel {
     state = .searching
     do {
       let service = try await getOrCreateSearchService()
-      let searchResults = try await service.search(query: query)
+      let searchResults = try await Task.detached(priority: .userInitiated) {
+        try await service.search(query: query)
+      }.value
       guard !Task.isCancelled else { return }
       results = searchResults
       state = searchResults.isEmpty ? .noResults : .results

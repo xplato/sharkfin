@@ -18,7 +18,7 @@
                BlueprintIdentifier = "6A17ACA32F82C78E002F4666"
                BuildableName = "Sharkfin.app"
                BlueprintName = "Sharkfin"
-               ReferencedContainer = "container:sharkfin.xcodeproj">
+               ReferencedContainer = "container:Sharkfin.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -48,7 +48,7 @@
             BlueprintIdentifier = "6A17ACA32F82C78E002F4666"
             BuildableName = "Sharkfin.app"
             BlueprintName = "Sharkfin"
-            ReferencedContainer = "container:sharkfin.xcodeproj">
+            ReferencedContainer = "container:Sharkfin.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -65,7 +65,7 @@
             BlueprintIdentifier = "6A17ACA32F82C78E002F4666"
             BuildableName = "Sharkfin.app"
             BlueprintName = "Sharkfin"
-            ReferencedContainer = "container:sharkfin.xcodeproj">
+            ReferencedContainer = "container:Sharkfin.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

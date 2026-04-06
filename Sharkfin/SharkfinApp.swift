@@ -45,7 +45,7 @@ struct SharkfinApp: App {
 
     Window("About Sharkfin", id: "about") {
       AboutView()
-        .frame(width: 300, height: 200)
+        .frame(width: 500, height: 260)
     }
     .windowResizability(.contentSize)
     .windowStyle(.titleBar)

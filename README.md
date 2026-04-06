@@ -14,7 +14,7 @@ Native macOS app for semantic search of local files. Currently only supports ima
 
 Performing several example searches on my local index of >18,000 files (source size: ~50 GB, database size: ~100 MB).
 
-https://github.com/user-attachments/assets/009f2332-2eda-4bbe-8179-35e478763c90
+https://github.com/user-attachments/assets/b9de95a4-aaed-4876-bc39-3c4e3b554462
 
 Note: The UI is very likely to have changed since this demo video was recorded.
 

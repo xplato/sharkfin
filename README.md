@@ -26,7 +26,9 @@ TODO.
 
 Performing indexing on two test directories containing several hundred images total. The average filesize for the images in testdir is 3.88 MB and 5.49 MB for testdir2 (i.e. rather large image files).
 
-[![Indexing demo](https://img.youtube.com/vi/drwQT6ipCaU/hqdefault.jpg)](https://youtu.be/drwQT6ipCaU)
+[![Indexing demo](https://img.youtube.com/vi/drwQT6ipCaU/maxresdefault.jpg)](https://youtu.be/drwQT6ipCaU)
+
+(^ click to open in YouTube)
 
 ## Developing
 

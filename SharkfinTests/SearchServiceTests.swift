@@ -211,10 +211,13 @@ struct SearchServiceTests {
     )
     try db.addDirectory(&disabledDir)
 
+    let enabledDirId = enabledDir.id!
+    let disabledDirId = disabledDir.id!
+
     try await db.dbQueue.write { dbConn in
       var f1 = IndexedFile(
         path: "/enabled/a.jpg",
-        directoryId: enabledDir.id!,
+        directoryId: enabledDirId,
         filename: "visible.jpg",
         fileExtension: "jpg",
         sizeBytes: 100,
@@ -232,7 +235,7 @@ struct SearchServiceTests {
 
       var f2 = IndexedFile(
         path: "/disabled/b.jpg",
-        directoryId: disabledDir.id!,
+        directoryId: disabledDirId,
         filename: "hidden.jpg",
         fileExtension: "jpg",
         sizeBytes: 100,

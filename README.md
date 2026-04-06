@@ -42,7 +42,7 @@ Screenshots below include UI from Sharkfin that may differ from the UI of the cu
 
 Sharkfin requires downloading CLIP models from Hugging Face to perform indexing. These are models I've cloned onto my personal HF account.
 
-[downloading models image]
+<img width="1272" height="494" alt="CleanShot 2026-04-06 at 17 33 26@2x" src="https://github.com/user-attachments/assets/a931977e-278c-4416-9717-a786ac09de12" />
 
 Note that the in-app download logic is a bit hacky because HF's Xet CDN is really unreliable. With that said, downloading *does* appear to be working. If you encounter issues downloading the models in-app, you can instead download them from HF manually and put them in Sharkfin's data directory.
 
@@ -74,7 +74,7 @@ Note that the in-app download logic is a bit hacky because HF's Xet CDN is reall
 
 Sharkfin works on directories you add to the app. In the "General" tab of Sharkfin's settings, add relevant directories in the "Directories" section. Once added, indexing will automatically be performed. You can manually re-index the directory at anytime by pressing the refresh icon next to the enable toggle.
 
-[directory list image]
+<img width="1418" height="1386" alt="CleanShot 2026-04-06 at 17 32 09@2x" src="https://github.com/user-attachments/assets/0f0c8a04-27bf-4ba4-a8f2-999736ed1bf0" />
 
 **Indexing Performance and Functionality**
 
@@ -82,23 +82,23 @@ Depending on the number of files and their respective sizes, the initial index o
 
 Performing a new index is typically a lightweight operation, as any files that have already been indexed will be skipped. If you want to completely re-index a previously added directory, you can do so by clicking the trash icon of the directory. This will remove the directory from Sharkfin and delete all existing embeddings and thumbnails. You can then add it back.
 
-[indexing progress image]
+<img width="1368" height="932" alt="CleanShot 2026-04-06 at 17 32 51@2x" src="https://github.com/user-attachments/assets/d671d04d-7f74-4e1b-92c8-586185db9a61" />
 
 **Enabled Directories**
 
 The toggle in the directory row controls the enabled or disabled state of the directory. When disabled, Sharkfin will exclude files in that directory from the search results; disabling a directory simply hides results, it doesn't affect the existing indexes and embeddings.
 
-[enabled toggle image]
+<img width="1240" height="282" alt="CleanShot 2026-04-06 at 17 32 58@2x" src="https://github.com/user-attachments/assets/d6d92901-59da-46fd-845d-a6cb9c87ed98" />
 
 ### 3. Search
 
 Once models have been downloaded and directories have been added, you can now search your files using more semantic expressions. By default, Sharkfin is activated with Shift+Command+Space, but this shortcut can be changed in the "Shortcuts" tab in Sharkfin settings.
 
-[searchbar image]
+<img width="1614" height="1364" alt="CleanShot 2026-04-06 at 17 31 33@2x" src="https://github.com/user-attachments/assets/d47ee893-6f1a-4271-a0b0-75353f272ae9" />
 
 ### Welcome Screen
 
-[welcome screen image]
+<img width="1200" height="1176" alt="CleanShot 2026-04-06 at 17 07 26@2x" src="https://github.com/user-attachments/assets/884bf74f-9515-4343-b93a-6ba25ad642da" />
 
 ## Developing
 

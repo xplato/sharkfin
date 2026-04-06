@@ -1,17 +1,28 @@
 import SwiftUI
 
 struct AboutView: View {
+  private var version: String {
+    Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
+  }
+
+  private var build: String {
+    Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"
+  }
+
   var body: some View {
-    VStack(spacing: 8) {
+    VStack(spacing: 12) {
+      Spacer().frame(height: 20)
       Text("Sharkfin")
         .font(.largeTitle)
-        .lineSpacing(50)
-        .lineLimit(nil)
-      
-      Text("This is the caption text below the title.")
+
+      Text("Version \(version) (\(build))")
         .font(.callout)
         .foregroundColor(.secondary)
+
+      Link("GitHub Repository", destination: URL(string: "https://github.com/xplato/sharkfin")!)
+        .font(.callout)
     }
+    .frame(maxHeight: .infinity, alignment: .top)
     .multilineTextAlignment(.center)
   }
 }

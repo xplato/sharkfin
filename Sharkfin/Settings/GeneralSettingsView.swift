@@ -3,9 +3,6 @@ import ServiceManagement
 
 struct GeneralSettingsView: View {
   @Environment(DirectoryStore.self) private var directoryStore
-  @Environment(DirectoryWatcherService.self) private var directoryWatcher
-  @AppStorage("watchDirectories") private var watchDirectories = true
-  @AppStorage("indexOnLaunch") private var indexOnLaunch = true
   @State private var startAtLogin = SMAppService.mainApp.status == .enabled
   
   var body: some View {
@@ -24,20 +21,6 @@ struct GeneralSettingsView: View {
               startAtLogin = SMAppService.mainApp.status == .enabled
             }
           }
-      }
-      
-      Section("Automatic Indexing") {
-        Toggle(isOn: $watchDirectories) {
-          Text("Watch for changes")
-          Text("Automatically index enabled directories after file system changes.")
-        }
-        .onChange(of: watchDirectories) { _, _ in
-          directoryWatcher.restartIfNeeded()
-        }
-        Toggle(isOn: $indexOnLaunch) {
-          Text("Index on launch")
-          Text("Automatically index enabled directories when Sharkfin launches.")
-        }
       }
       
       Section(header: Text("Directories"), footer: Text("After indexing, the contents of these directories will be included in search results.")) {

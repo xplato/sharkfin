@@ -1,6 +1,6 @@
 <div align="center">
 
-# Sharfin
+# Sharkfin
 
 ### A better way to search files on Mac
 

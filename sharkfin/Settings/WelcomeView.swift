@@ -8,10 +8,9 @@ struct WelcomeView: View {
             Spacer()
 
             // App icon
-            Image(nsImage: NSApp.applicationIconImage)
+            Image(nsImage: NSWorkspace.shared.icon(forFile: Bundle.main.bundlePath))
                 .resizable()
                 .frame(width: 80, height: 80)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
 
             Spacer().frame(height: 24)

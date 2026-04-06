@@ -1,8 +1,6 @@
 import SwiftUI
 
 struct SettingsView: View {
-  @Environment(CLIPModelManager.self) private var modelManager
-  @Environment(DirectoryStore.self) private var directoryStore
   @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
   @State private var selection: Tab = .general
   
@@ -13,12 +11,8 @@ struct SettingsView: View {
     case about
   }
   
-  private var shouldShowWelcome: Bool {
-    !hasSeenWelcome && (!modelManager.isReady || directoryStore.directories.isEmpty)
-  }
-
   var body: some View {
-    if shouldShowWelcome {
+    if !hasSeenWelcome {
       WelcomeView {
         hasSeenWelcome = true
       }

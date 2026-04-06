@@ -9,6 +9,8 @@ struct sharkfinApp: App {
   @State private var indexingService: IndexingService
   @State private var appState: AppState
 
+  @Environment(\.openSettings) private var openSettings
+
   init() {
     let manager = CLIPModelManager()
     _modelManager = State(initialValue: manager)
@@ -20,19 +22,19 @@ struct sharkfinApp: App {
     _appState = State(initialValue: AppState(
       database: .shared, modelManager: manager, directoryStore: store
     ))
-
-    // Auto-open settings with welcome screen if the app isn't set up
-    if !manager.isReady && store.directories.isEmpty {
-      DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        NSApp.activate(ignoringOtherApps: true)
-      }
-    }
   }
 
   var body: some Scene {
-    MenuBarExtra("Sharkfin", systemImage: "magnifyingglass") {
+    MenuBarExtra("Sharkfin", image: "MenuBarIcon") {
       MenuBarContent(appState: appState)
+        .task {
+          // Auto-open settings with welcome screen on first launch
+          if !UserDefaults.standard.bool(forKey: "hasSeenWelcome") {
+            try? await Task.sleep(for: .milliseconds(300))
+            openSettings()
+            NSApp.activate(ignoringOtherApps: true)
+          }
+        }
     }
 
     Settings {
@@ -56,7 +58,7 @@ final class AppState {
   private var settingsOpener: (() -> Void)?
 
   var needsSetup: Bool {
-    !modelManager.isReady && directoryStore.directories.isEmpty
+    !UserDefaults.standard.bool(forKey: "hasSeenWelcome")
   }
 
   init(database: AppDatabase, modelManager: CLIPModelManager, directoryStore: DirectoryStore) {

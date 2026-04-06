@@ -8,7 +8,7 @@ struct GeneralSettingsView: View {
   
   var body: some View {
     Form {
-      Section("Features") {
+      Section("Functionality") {
         Toggle("Start at login", isOn: $startAtLogin)
           .onChange(of: startAtLogin) { _, newValue in
             do {
@@ -38,7 +38,7 @@ struct GeneralSettingsView: View {
         AddDirectoryButton()
       }
       
-      Section("Models") {
+      Section(header: Text("Models"), footer: Text("Models are downloaded from [huggingface.co/xplato](https://huggingface.co/xplato)")) {
         ForEach(CLIPModelSpec.all) { model in
           ModelRowView(model: model)
         }

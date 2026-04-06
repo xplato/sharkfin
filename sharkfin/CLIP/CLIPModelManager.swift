@@ -38,7 +38,7 @@ extension CLIPModelSpec {
   static let textEncoder = CLIPModelSpec(
     id: "clip-vit-base-patch32-text-onnx",
     displayName: "CLIP Text Encoder",
-    repoID: "kjsdu2/clip-vit-base-patch32-text-onnx",
+    repoID: "xplato/clip-vit-base-patch32-text-onnx",
     files: [
       ModelFile(filename: "model.onnx", sizeBytes: 254_000_000),
       ModelFile(filename: "tokenizer.json", sizeBytes: 2_220_000),
@@ -53,7 +53,7 @@ extension CLIPModelSpec {
   static let visionEncoder = CLIPModelSpec(
     id: "clip-vit-base-patch32-vision-onnx",
     displayName: "CLIP Vision Encoder",
-    repoID: "kjsdu2/clip-vit-base-patch32-vision-onnx",
+    repoID: "xplato/clip-vit-base-patch32-vision-onnx",
     files: [
       ModelFile(filename: "model.onnx", sizeBytes: 352_000_000),
       ModelFile(filename: "config.json", sizeBytes: 482),

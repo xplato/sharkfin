@@ -7,7 +7,14 @@ struct AdvancedSettingsView: View {
     "suppressDisableDirectoryWarning",
   ]
 
+  private static let defaultExcludedFolders = [
+    "node_modules", "__pycache__",
+  ]
+
   @Environment(IndexingService.self) private var indexingService
+  @AppStorage("ignoreHiddenDirectories") private var ignoreHiddenDirectories = true
+  @State private var excludedFolderNames: [String] = []
+  @State private var newFolderName = ""
   @State private var stats: AppDatabase.Stats?
   @State private var showResetConfirmation = false
 
@@ -22,6 +29,46 @@ struct AdvancedSettingsView: View {
 
   var body: some View {
     Form {
+      Section(header: Text("Indexing"), footer: Text("When enabled, any files within a hidden directory (starting with a dot) will be ignored.")) {
+        Toggle("Ignore files in hidden directories", isOn: $ignoreHiddenDirectories)
+      }
+
+      Section {
+        ForEach(excludedFolderNames, id: \.self) { name in
+          HStack {
+            Text(name)
+              .font(.body.monospaced())
+            Spacer()
+            Button {
+              removeFolder(name)
+            } label: {
+              Image(systemName: "minus.circle.fill")
+                .foregroundStyle(.red)
+            }
+            .buttonStyle(.borderless)
+          }
+        }
+
+        HStack {
+          TextField("Folder name", text: $newFolderName)
+            .font(.body.monospaced())
+            .onSubmit { addFolder() }
+
+          Button {
+            addFolder()
+          } label: {
+            Image(systemName: "plus.circle.fill")
+                .foregroundStyle(.green)
+          }
+          .buttonStyle(.borderless)
+          .disabled(newFolderName.trimmingCharacters(in: .whitespaces).isEmpty)
+        }
+      } header: {
+        Text("Excluded Folders")
+      } footer: {
+        Text("Files inside directories matching these names will be skipped during indexing.")
+      }
+
       Section("Database") {
         if let stats {
           LabeledContent("Indexed files") {
@@ -123,6 +170,7 @@ struct AdvancedSettingsView: View {
     .formStyle(.grouped)
     .task {
       await refreshStats()
+      loadExcludedFolders()
     }
     .onChange(of: activeJobCount) {
       Task { await refreshStats() }
@@ -141,5 +189,38 @@ struct AdvancedSettingsView: View {
 
   private func formattedBytes(_ bytes: Int64) -> String {
     ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
+  }
+
+  private func loadExcludedFolders() {
+    guard let json = UserDefaults.standard.string(forKey: "excludedFolderNames"),
+          let data = json.data(using: .utf8),
+          let array = try? JSONDecoder().decode([String].self, from: data)
+    else {
+      // First launch: populate with defaults
+      excludedFolderNames = Self.defaultExcludedFolders
+      saveExcludedFolders()
+      return
+    }
+    excludedFolderNames = array
+  }
+
+  private func saveExcludedFolders() {
+    if let data = try? JSONEncoder().encode(excludedFolderNames),
+       let json = String(data: data, encoding: .utf8) {
+      UserDefaults.standard.set(json, forKey: "excludedFolderNames")
+    }
+  }
+
+  private func addFolder() {
+    let name = newFolderName.trimmingCharacters(in: .whitespaces)
+    guard !name.isEmpty, !excludedFolderNames.contains(name) else { return }
+    excludedFolderNames.append(name)
+    saveExcludedFolders()
+    newFolderName = ""
+  }
+
+  private func removeFolder(_ name: String) {
+    excludedFolderNames.removeAll { $0 == name }
+    saveExcludedFolders()
   }
 }

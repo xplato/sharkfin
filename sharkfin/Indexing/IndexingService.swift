@@ -124,7 +124,22 @@ final class IndexingService {
 
     // Phase 1: Quick scan — enumerate files without hashing
     onProgress(IndexingProgress(phase: .scanning))
-    let allFiles = try FileScanner.scan(directory: url)
+
+    let defaults = UserDefaults.standard
+    let skipHidden = defaults.object(forKey: "ignoreHiddenDirectories") as? Bool ?? true
+    let excludedNames: Set<String> = {
+      guard let json = defaults.string(forKey: "excludedFolderNames"),
+            let data = json.data(using: .utf8),
+            let array = try? JSONDecoder().decode([String].self, from: data)
+      else { return [] }
+      return Set(array)
+    }()
+
+    let allFiles = try FileScanner.scan(
+      directory: url,
+      skipHiddenFiles: skipHidden,
+      excludedFolderNames: excludedNames
+    )
 
     try Task.checkCancellation()
 

@@ -17,17 +17,36 @@ nonisolated enum FileScanner {
 
   /// Walk directory recursively and return all supported image files.
   /// This is a fast scan that only reads filesystem metadata (no file content hashing).
-  static func scan(directory: URL) throws -> [QuickScannedFile] {
+  static func scan(
+    directory: URL,
+    skipHiddenFiles: Bool = true,
+    excludedFolderNames: Set<String> = []
+  ) throws -> [QuickScannedFile] {
     let fm = FileManager.default
+    var options: FileManager.DirectoryEnumerationOptions = []
+    if skipHiddenFiles {
+      options.insert(.skipsHiddenFiles)
+    }
     guard let enumerator = fm.enumerator(
       at: directory,
       includingPropertiesForKeys: [.fileSizeKey, .contentModificationDateKey, .isRegularFileKey],
-      options: [.skipsHiddenFiles]
+      options: options
     ) else { return [] }
 
+    let directoryPath = directory.standardizedFileURL.path(percentEncoded: false)
     var results: [QuickScannedFile] = []
 
     for case let fileURL as URL in enumerator {
+      // Check if any path component after the base directory matches an excluded folder name
+      if !excludedFolderNames.isEmpty {
+        let filePath = fileURL.standardizedFileURL.path(percentEncoded: false)
+        let relativePath = String(filePath.dropFirst(directoryPath.count))
+        let components = relativePath.split(separator: "/").dropLast() // drop the filename
+        if components.contains(where: { excludedFolderNames.contains(String($0)) }) {
+          continue
+        }
+      }
+
       let ext = fileURL.pathExtension.lowercased()
       guard supportedExtensions.contains(ext) else { continue }
 

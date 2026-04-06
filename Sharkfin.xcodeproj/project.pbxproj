@@ -11,12 +11,25 @@
 		6A17ACE22F82DAC2002F4666 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = 6A17ACE12F82DAC2002F4666 /* GRDB */; };
 		6A17AD4C2F82FA69002F4666 /* onnxruntime in Frameworks */ = {isa = PBXBuildFile; productRef = 6A17AD4B2F82FA69002F4666 /* onnxruntime */; };
 		6A17AD532F82FE81002F4666 /* Transformers in Frameworks */ = {isa = PBXBuildFile; productRef = 6A17AD522F82FE81002F4666 /* Transformers */; };
+		6A4E0D942F847C2B00456F8A /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = 6A4E0D932F847C2B00456F8A /* GRDB */; };
 		6A7C10C42F835C8000F58732 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 6A7C10C32F835C8000F58732 /* README.md */; };
 		6A7C10C82F83655000F58732 /* Sharkfin.icon in Resources */ = {isa = PBXBuildFile; fileRef = 6A7C10C72F83655000F58732 /* Sharkfin.icon */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		6A4E0D812F847B6F00456F8A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 6A17AC9C2F82C78E002F4666 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6A17ACA32F82C78E002F4666;
+			remoteInfo = Sharkfin;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		6A17ACA42F82C78E002F4666 /* Sharkfin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Sharkfin.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6A4E0D7D2F847B6F00456F8A /* SharkfinTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SharkfinTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		6A4E0D952F847D7F00456F8A /* SharkfinTests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = SharkfinTests.xctestplan; sourceTree = "<group>"; };
 		6A7C10C32F835C8000F58732 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		6A7C10C72F83655000F58732 /* Sharkfin.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = Sharkfin.icon; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -25,6 +38,11 @@
 		6A17ACA62F82C78E002F4666 /* Sharkfin */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Sharkfin;
+			sourceTree = "<group>";
+		};
+		6A4E0D7E2F847B6F00456F8A /* SharkfinTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SharkfinTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -41,16 +59,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		6A4E0D7A2F847B6F00456F8A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6A4E0D942F847C2B00456F8A /* GRDB in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		6A17AC9B2F82C78E002F4666 = {
 			isa = PBXGroup;
 			children = (
+				6A4E0D952F847D7F00456F8A /* SharkfinTests.xctestplan */,
 				6A17ACA62F82C78E002F4666 /* Sharkfin */,
+				6A4E0D7E2F847B6F00456F8A /* SharkfinTests */,
 				6A17ACA52F82C78E002F4666 /* Products */,
 				6A7C10C32F835C8000F58732 /* README.md */,
 				6A7C10C72F83655000F58732 /* Sharkfin.icon */,
+				6A4E0D922F847C2B00456F8A /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -58,8 +87,16 @@
 			isa = PBXGroup;
 			children = (
 				6A17ACA42F82C78E002F4666 /* Sharkfin.app */,
+				6A4E0D7D2F847B6F00456F8A /* SharkfinTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		6A4E0D922F847C2B00456F8A /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -91,6 +128,30 @@
 			productReference = 6A17ACA42F82C78E002F4666 /* Sharkfin.app */;
 			productType = "com.apple.product-type.application";
 		};
+		6A4E0D7C2F847B6F00456F8A /* SharkfinTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6A4E0D832F847B6F00456F8A /* Build configuration list for PBXNativeTarget "SharkfinTests" */;
+			buildPhases = (
+				6A4E0D792F847B6F00456F8A /* Sources */,
+				6A4E0D7A2F847B6F00456F8A /* Frameworks */,
+				6A4E0D7B2F847B6F00456F8A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				6A4E0D822F847B6F00456F8A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				6A4E0D7E2F847B6F00456F8A /* SharkfinTests */,
+			);
+			name = SharkfinTests;
+			packageProductDependencies = (
+				6A4E0D932F847C2B00456F8A /* GRDB */,
+			);
+			productName = SharkfinTests;
+			productReference = 6A4E0D7D2F847B6F00456F8A /* SharkfinTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -103,6 +164,10 @@
 				TargetAttributes = {
 					6A17ACA32F82C78E002F4666 = {
 						CreatedOnToolsVersion = 26.4;
+					};
+					6A4E0D7C2F847B6F00456F8A = {
+						CreatedOnToolsVersion = 26.4;
+						TestTargetID = 6A17ACA32F82C78E002F4666;
 					};
 				};
 			};
@@ -127,6 +192,7 @@
 			projectRoot = "";
 			targets = (
 				6A17ACA32F82C78E002F4666 /* Sharkfin */,
+				6A4E0D7C2F847B6F00456F8A /* SharkfinTests */,
 			);
 		};
 /* End PBXProject section */
@@ -141,6 +207,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		6A4E0D7B2F847B6F00456F8A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -151,7 +224,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		6A4E0D792F847B6F00456F8A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		6A4E0D822F847B6F00456F8A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6A17ACA32F82C78E002F4666 /* Sharkfin */;
+			targetProxy = 6A4E0D812F847B6F00456F8A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		6A17ACAD2F82C78E002F4666 /* Debug */ = {
@@ -382,6 +470,48 @@
 			};
 			name = Release;
 		};
+		6A4E0D842F847B6F00456F8A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 494W8XUXTU;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = lgx.SharkfinTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Sharkfin.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Sharkfin";
+			};
+			name = Debug;
+		};
+		6A4E0D852F847B6F00456F8A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 494W8XUXTU;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = lgx.SharkfinTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Sharkfin.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Sharkfin";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -399,6 +529,15 @@
 			buildConfigurations = (
 				6A17ACB02F82C78E002F4666 /* Debug */,
 				6A17ACB12F82C78E002F4666 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6A4E0D832F847B6F00456F8A /* Build configuration list for PBXNativeTarget "SharkfinTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6A4E0D842F847B6F00456F8A /* Debug */,
+				6A4E0D852F847B6F00456F8A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -460,6 +599,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 6A17AD512F82FE81002F4666 /* XCRemoteSwiftPackageReference "swift-transformers" */;
 			productName = Transformers;
+		};
+		6A4E0D932F847C2B00456F8A /* GRDB */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6A17ACE02F82DAC2002F4666 /* XCRemoteSwiftPackageReference "GRDB.swift" */;
+			productName = GRDB;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -2,8 +2,13 @@ import Foundation
 import OnnxRuntimeBindings
 import Tokenizers
 
+/// Abstraction for text-to-embedding encoding, enabling test doubles.
+nonisolated protocol TextEncoding: Sendable {
+  func encode(text: String) throws -> [Float]
+}
+
 /// Wraps the ONNX Runtime text session + BPE tokenizer for CLIP text encoding.
-final class CLIPTextEncoder: @unchecked Sendable {
+final class CLIPTextEncoder: @unchecked Sendable, TextEncoding {
 
   nonisolated(unsafe) private let session: ORTSession
   private nonisolated let tokenizer: any Tokenizer

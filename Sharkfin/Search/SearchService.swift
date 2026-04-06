@@ -16,7 +16,7 @@ extension Notification.Name {
 final class SearchService: @unchecked Sendable {
 
   private let database: AppDatabase
-  private let textEncoder: CLIPTextEncoder
+  private let textEncoder: any TextEncoding
 
   private nonisolated static let minRawScore: Float = 0.16
   private nonisolated static let scoreFloor: Float = 0.18
@@ -27,7 +27,7 @@ final class SearchService: @unchecked Sendable {
   private let cache = OSAllocatedUnfairLock<EmbeddingCache?>(initialState: nil)
   private var notificationObserver: (any NSObjectProtocol)?
 
-  init(database: AppDatabase, textEncoder: CLIPTextEncoder) {
+  init(database: AppDatabase, textEncoder: any TextEncoding) {
     self.database = database
     self.textEncoder = textEncoder
 

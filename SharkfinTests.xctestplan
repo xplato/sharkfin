@@ -1,0 +1,24 @@
+{
+  "configurations" : [
+    {
+      "id" : "448E93A4-4684-46F4-BC67-F6BC31302BBD",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:Sharkfin.xcodeproj",
+        "identifier" : "6A4E0D7C2F847B6F00456F8A",
+        "name" : "SharkfinTests"
+      }
+    }
+  ],
+  "version" : 1
+}

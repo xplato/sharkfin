@@ -9,6 +9,7 @@ struct sharkfinApp: App {
   @State private var indexingService: IndexingService
   @State private var appState: AppState
 
+  @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
   @Environment(\.openSettings) private var openSettings
 
   init() {
@@ -25,16 +26,10 @@ struct sharkfinApp: App {
   }
 
   var body: some Scene {
+    let _ = { appDelegate.settingsOpener = { openSettings() } }()
+
     MenuBarExtra("Sharkfin", image: "MenuBarIcon") {
       MenuBarContent(appState: appState)
-        .task {
-          // Auto-open settings with welcome screen on first launch
-          if !UserDefaults.standard.bool(forKey: "hasSeenWelcome") {
-            try? await Task.sleep(for: .milliseconds(300))
-            openSettings()
-            NSApp.activate(ignoringOtherApps: true)
-          }
-        }
     }
 
     Window("About Sharkfin", id: "about") {
@@ -211,6 +206,44 @@ final class AppState {
       }
     }
     return nil
+  }
+}
+
+@MainActor
+class AppDelegate: NSObject, NSApplicationDelegate {
+  private var welcomeWindow: NSWindow?
+  var settingsOpener: (() -> Void)?
+
+  func applicationDidFinishLaunching(_ notification: Notification) {
+    guard !UserDefaults.standard.bool(forKey: "hasSeenWelcome") else { return }
+
+    let welcomeView = WelcomeView { [weak self] in
+      UserDefaults.standard.set(true, forKey: "hasSeenWelcome")
+      // Defer window teardown so the button action finishes
+      // before the hosting view hierarchy is destroyed.
+      DispatchQueue.main.async {
+        self?.welcomeWindow?.close()
+        self?.welcomeWindow = nil
+        // Open settings after dismissing the welcome window
+        self?.settingsOpener?()
+        NSApp.activate(ignoringOtherApps: true)
+      }
+    }
+
+    let window = NSWindow(
+      contentRect: NSRect(x: 0, y: 0, width: 440, height: 520),
+      styleMask: [.titled, .closable],
+      backing: .buffered,
+      defer: false
+    )
+    window.isReleasedWhenClosed = false
+    window.contentView = NSHostingView(rootView: welcomeView)
+    window.title = "Welcome to Sharkfin"
+    window.center()
+    window.makeKeyAndOrderFront(nil)
+    NSApp.activate(ignoringOtherApps: true)
+
+    self.welcomeWindow = window
   }
 }
 

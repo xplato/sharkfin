@@ -77,11 +77,15 @@ struct SearchPanelView: View {
 
   // MARK: - Navigation
 
+  @AppStorage("preserveSearchFilter") private var preserveSearchFilter = true
+
   private func handleEscape() {
     if searchController.selectedResult != nil {
       searchController.clearSelection()
     } else if viewModel.state != .idle {
       viewModel.clearSearch()
+    } else if !preserveSearchFilter && !viewModel.filters.isEmpty {
+      viewModel.filters = SearchFilters()
     } else {
       onDismiss()
     }

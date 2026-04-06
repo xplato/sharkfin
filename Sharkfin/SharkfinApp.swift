@@ -124,6 +124,7 @@ final class AppState {
   }
 
   private func showSearch() {
+    searchViewModel.cancelFilterClear()
     let panel = getOrCreatePanel()
 
     // Only set the default position on first show; subsequent shows
@@ -159,6 +160,9 @@ final class AppState {
 
   private func hideSearch() {
     searchPanel?.orderOut(nil)
+    if !UserDefaults.standard.bool(forKey: "preserveSearchFilter") {
+      searchViewModel.scheduleFilterClear()
+    }
   }
 
   func setSettingsOpener(_ opener: @escaping () -> Void) {

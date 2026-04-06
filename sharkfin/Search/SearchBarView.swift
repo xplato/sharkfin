@@ -1,5 +1,30 @@
 import SwiftUI
 
+private struct SpinnerView: View {
+  @State private var rotation = 0.0
+
+  var body: some View {
+    Circle()
+      .trim(from: 0, to: 0.7)
+      .stroke(
+        AngularGradient(
+          gradient: Gradient(colors: [.blue.opacity(0), .blue]),
+          center: .center,
+          startAngle: .zero,
+          endAngle: .degrees(252)
+        ),
+        style: StrokeStyle(lineWidth: 3, lineCap: .round)
+      )
+      .frame(width: 18, height: 18)
+      .rotationEffect(.degrees(rotation))
+      .onAppear {
+        withAnimation(.linear(duration: 0.8).repeatForever(autoreverses: false)) {
+          rotation = 360
+        }
+      }
+  }
+}
+
 struct SearchBarView: View {
   @Bindable var viewModel: SearchViewModel
   var onSubmit: () -> Void
@@ -43,8 +68,8 @@ struct SearchBarView: View {
       .disabled(allDirectoriesDisabled)
 
       if viewModel.state == .searching {
-        ProgressView()
-          .controlSize(.small)
+        SpinnerView()
+          .transition(.identity)
       }
     }
     .padding(.horizontal, 16)

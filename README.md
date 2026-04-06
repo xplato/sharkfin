@@ -1,8 +1,14 @@
 <div align="center">
 
-# Sharkfin
+<div id="user-content-toc">
+  <ul align="center" style="list-style: none;">
+    <summary>
+      <h1>Sharkfin</h1>
+    </summary>
+  </ul>
+</div>
 
-### A better way to search files on Mac
+**A better way to search files on Mac**
 
 <img width="1920" height="1080" alt="Sharkfin Header" src="https://github.com/user-attachments/assets/b9e6999b-7992-40dc-9dc9-b41d48051510" />
 

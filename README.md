@@ -154,15 +154,17 @@ All data is stored locally in a SQLite database (via [GRDB](https://github.com/g
 
 Generally, I've found the results to be pretty good—sometimes surprisingly so (see the "woman as a flamingo" example above). However, in other cases the results are quite strange. Here's an example:
 
-[image 1]
+<img width="1464" height="1226" alt="CleanShot 2026-04-06 at 17 53 34@2x" src="https://github.com/user-attachments/assets/b9caadb5-04f5-4f79-b880-f279d8be0d57" />
 
 It's returning rather abstract vectors. While I don't necessarily have any images of an ostensible airplane plilot, I do have images that are quite close to that, both in terms of implicit meaning and explicit text.
 
-[image 2]
+<img width="1420" height="1186" alt="CleanShot 2026-04-06 at 17 56 23@2x" src="https://github.com/user-attachments/assets/97da4b51-57e0-4a0b-b977-470c371eff1b" />
 
-or, also
+or, more explicitly:
 
-[image 3]
+<img width="1640" height="1154" alt="CleanShot 2026-04-06 at 17 54 00@2x" src="https://github.com/user-attachments/assets/6a83b325-7e19-4339-a811-15c44e208e1c" />
+
+Neither of these two images were included in the search results for "pilot."
 
 Improving the quality of search results is, of course, a priority moving forward.
 

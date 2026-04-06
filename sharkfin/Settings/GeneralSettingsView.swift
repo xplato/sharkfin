@@ -1,12 +1,27 @@
 import SwiftUI
+import ServiceManagement
 
 struct GeneralSettingsView: View {
   @Environment(DirectoryStore.self) private var directoryStore
   @AppStorage("watchDirectories") private var watchDirectories = false
+  @State private var startAtLogin = SMAppService.mainApp.status == .enabled
   
   var body: some View {
     Form {
       Section("Features") {
+        Toggle("Start at login", isOn: $startAtLogin)
+          .onChange(of: startAtLogin) { _, newValue in
+            do {
+              if newValue {
+                try SMAppService.mainApp.register()
+              } else {
+                try SMAppService.mainApp.unregister()
+              }
+            } catch {
+              // Revert the toggle if the operation fails
+              startAtLogin = SMAppService.mainApp.status == .enabled
+            }
+          }
         Toggle("Watch for changes", isOn: $watchDirectories)
       }
       

@@ -20,10 +20,16 @@ struct SharkfinApp: App {
     _indexingService = State(initialValue: indexing)
     let store = DirectoryStore(database: .shared)
     _directoryStore = State(initialValue: store)
-    _directoryWatcher = State(initialValue: DirectoryWatcherService())
+    let watcher = DirectoryWatcherService()
+    _directoryWatcher = State(initialValue: watcher)
     _appState = State(initialValue: AppState(
       database: .shared, modelManager: manager, directoryStore: store
     ))
+
+    // Give the AppDelegate references so it can start services on launch
+    appDelegate.directoryWatcher = watcher
+    appDelegate.directoryStore = store
+    appDelegate.indexingService = indexing
   }
 
   var body: some Scene {
@@ -31,19 +37,6 @@ struct SharkfinApp: App {
 
     MenuBarExtra("Sharkfin", image: "MenuBarIcon") {
       MenuBarContent(appState: appState)
-        .task {
-          // Start FSEvents directory watcher
-          directoryWatcher.start(
-            directoryStore: directoryStore,
-            indexingService: indexingService
-          )
-
-          // Index on launch if enabled
-          let indexOnLaunch = UserDefaults.standard.object(forKey: "indexOnLaunch") as? Bool ?? true
-          if indexOnLaunch, indexingService.modelsReady {
-            indexingService.indexAllEnabled(from: directoryStore)
-          }
-        }
     }
 
     Window("About Sharkfin", id: "about") {
@@ -233,8 +226,23 @@ final class AppState {
 class AppDelegate: NSObject, NSApplicationDelegate {
   private var welcomeWindow: NSWindow?
   var settingsOpener: (() -> Void)?
+  var directoryWatcher: DirectoryWatcherService?
+  var directoryStore: DirectoryStore?
+  var indexingService: IndexingService?
 
   func applicationDidFinishLaunching(_ notification: Notification) {
+    // Start FSEvents directory watcher and index on launch
+    if let watcher = directoryWatcher,
+       let store = directoryStore,
+       let indexing = indexingService {
+      watcher.start(directoryStore: store, indexingService: indexing)
+
+      let indexOnLaunch = UserDefaults.standard.object(forKey: "indexOnLaunch") as? Bool ?? true
+      if indexOnLaunch, indexing.modelsReady {
+        indexing.indexAllEnabled(from: store)
+      }
+    }
+
     guard !UserDefaults.standard.bool(forKey: "hasSeenWelcome") else { return }
 
     let welcomeView = WelcomeView { [weak self] in

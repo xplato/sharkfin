@@ -4,6 +4,7 @@ struct SearchBarView: View {
   @Bindable var viewModel: SearchViewModel
   var onSubmit: () -> Void
   var onDismiss: () -> Void
+  var onOpenSettings: () -> Void
   @Environment(DirectoryStore.self) private var directoryStore
 
   private var allDirectoriesDisabled: Bool {
@@ -14,13 +15,14 @@ struct SearchBarView: View {
   var body: some View {
     HStack(spacing: 12) {
       if allDirectoriesDisabled {
-        SettingsLink {
+        Button {
+          onOpenSettings()
+        } label: {
           Image(systemName: "exclamationmark.triangle.fill")
             .foregroundStyle(.yellow)
             .font(.title2)
         }
         .buttonStyle(.plain)
-        .simultaneousGesture(TapGesture().onEnded { onDismiss() })
         .help("All directories are disabled. Click to open settings.")
       } else {
         Image(systemName: "magnifyingglass")
@@ -42,13 +44,14 @@ struct SearchBarView: View {
           .controlSize(.small)
       }
 
-      SettingsLink {
+      Button {
+        onOpenSettings()
+      } label: {
         Image(systemName: "ellipsis")
           .font(.title3)
           .foregroundStyle(.secondary)
       }
       .buttonStyle(.plain)
-      .simultaneousGesture(TapGesture().onEnded { onDismiss() })
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 12)

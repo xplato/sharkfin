@@ -44,6 +44,7 @@ final class AppState {
   private var searchController = SearchController()
   let directoryStore: DirectoryStore
   private var resignKeyObserver: Any?
+  private var settingsOpener: (() -> Void)?
 
   init(database: AppDatabase, modelManager: CLIPModelManager, directoryStore: DirectoryStore) {
     self.searchViewModel = SearchViewModel(
@@ -114,10 +115,14 @@ final class AppState {
     searchPanel?.orderOut(nil)
   }
 
+  func setSettingsOpener(_ opener: @escaping () -> Void) {
+    settingsOpener = opener
+  }
+
   func openSettings() {
     hideSearch()
     NSApplication.shared.activate(ignoringOtherApps: true)
-    NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+    settingsOpener?()
   }
 
   private func getOrCreatePanel() -> SearchPanel {
@@ -132,6 +137,9 @@ final class AppState {
         viewModel: searchViewModel,
         onDismiss: { [weak self] in
           self?.hideSearch()
+        },
+        onOpenSettings: { [weak self] in
+          self?.openSettings()
         }
       )
       .environment(searchController)
@@ -166,8 +174,11 @@ final class AppState {
 
 struct MenuBarContent: View {
   let appState: AppState
+  @Environment(\.openSettings) private var openSettings
 
   var body: some View {
+    let _ = appState.setSettingsOpener { openSettings() }
+
     Button("Open Search") {
       appState.activateSearch()
     }

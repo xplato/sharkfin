@@ -4,6 +4,7 @@ struct SearchPanelView: View {
   @Bindable var viewModel: SearchViewModel
   @Environment(SearchController.self) private var searchController
   var onDismiss: () -> Void
+  var onOpenSettings: () -> Void
 
   var body: some View {
     VStack(spacing: 0) {
@@ -12,7 +13,8 @@ struct SearchPanelView: View {
         SearchBarView(
           viewModel: viewModel,
           onSubmit: { viewModel.submitSearch() },
-          onDismiss: { onDismiss() }
+          onDismiss: { onDismiss() },
+          onOpenSettings: { onOpenSettings() }
         )
 
         if let selected = searchController.selectedResult {
@@ -51,8 +53,7 @@ struct SearchPanelView: View {
     }
     .onKeyPress(phases: .down) { keyPress in
       if keyPress.key == "," && keyPress.modifiers == .command {
-        onDismiss()
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        onOpenSettings()
         return .handled
       }
       return .ignored

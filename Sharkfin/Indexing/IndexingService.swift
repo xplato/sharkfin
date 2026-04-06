@@ -94,6 +94,14 @@ final class IndexingService {
     }
   }
 
+  /// Re-indexes all enabled directories from the given store.
+  func indexAllEnabled(from store: DirectoryStore) {
+    for dir in store.directories where dir.enabled {
+      guard let id = dir.id, !isIndexing(id) else { continue }
+      indexDirectory(dir)
+    }
+  }
+
   func cancelIndexing(_ directoryId: Int64) {
     activeTasks[directoryId]?.cancel()
     activeTasks[directoryId] = nil

@@ -3,10 +3,11 @@ import KeyboardShortcuts
 import Quartz
 
 @main
-struct sharkfinApp: App {
+struct SharkfinApp: App {
   @State private var directoryStore: DirectoryStore
   @State private var modelManager: CLIPModelManager
   @State private var indexingService: IndexingService
+  @State private var directoryWatcher: DirectoryWatcherService
   @State private var appState: AppState
 
   @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
@@ -15,11 +16,11 @@ struct sharkfinApp: App {
   init() {
     let manager = CLIPModelManager()
     _modelManager = State(initialValue: manager)
-    _indexingService = State(initialValue: IndexingService(
-      database: .shared, modelManager: manager
-    ))
+    let indexing = IndexingService(database: .shared, modelManager: manager)
+    _indexingService = State(initialValue: indexing)
     let store = DirectoryStore(database: .shared)
     _directoryStore = State(initialValue: store)
+    _directoryWatcher = State(initialValue: DirectoryWatcherService())
     _appState = State(initialValue: AppState(
       database: .shared, modelManager: manager, directoryStore: store
     ))
@@ -30,6 +31,19 @@ struct sharkfinApp: App {
 
     MenuBarExtra("Sharkfin", image: "MenuBarIcon") {
       MenuBarContent(appState: appState)
+        .task {
+          // Start FSEvents directory watcher
+          directoryWatcher.start(
+            directoryStore: directoryStore,
+            indexingService: indexingService
+          )
+
+          // Index on launch if enabled
+          let indexOnLaunch = UserDefaults.standard.object(forKey: "indexOnLaunch") as? Bool ?? true
+          if indexOnLaunch, indexingService.modelsReady {
+            indexingService.indexAllEnabled(from: directoryStore)
+          }
+        }
     }
 
     Window("About Sharkfin", id: "about") {
@@ -45,6 +59,7 @@ struct sharkfinApp: App {
         .environment(directoryStore)
         .environment(modelManager)
         .environment(indexingService)
+        .environment(directoryWatcher)
     }
   }
 }

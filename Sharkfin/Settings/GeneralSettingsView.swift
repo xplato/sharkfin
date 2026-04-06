@@ -3,7 +3,9 @@ import ServiceManagement
 
 struct GeneralSettingsView: View {
   @Environment(DirectoryStore.self) private var directoryStore
-  @AppStorage("watchDirectories") private var watchDirectories = false
+  @Environment(DirectoryWatcherService.self) private var directoryWatcher
+  @AppStorage("watchDirectories") private var watchDirectories = true
+  @AppStorage("indexOnLaunch") private var indexOnLaunch = true
   @State private var startAtLogin = SMAppService.mainApp.status == .enabled
   
   var body: some View {
@@ -22,7 +24,14 @@ struct GeneralSettingsView: View {
               startAtLogin = SMAppService.mainApp.status == .enabled
             }
           }
+      }
+
+      Section(header: Text("Automatic Indexing"), footer: Text("Watch for changes uses macOS file system events to detect new, modified, or deleted files in real time.")) {
         Toggle("Watch for changes", isOn: $watchDirectories)
+          .onChange(of: watchDirectories) { _, _ in
+            directoryWatcher.restartIfNeeded()
+          }
+        Toggle("Index on launch", isOn: $indexOnLaunch)
       }
       
       Section(header: Text("Directories"), footer: Text("After indexing, the contents of these directories will be included in search results.")) {

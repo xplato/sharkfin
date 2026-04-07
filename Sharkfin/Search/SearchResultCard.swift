@@ -15,7 +15,7 @@ struct SearchResultCard: View {
           .overlay {
             Image(nsImage: nsImage)
               .resizable()
-              .aspectRatio(contentMode: .fill)
+              .aspectRatio(contentMode: .fit)
           }
           .clipShape(RoundedRectangle(cornerRadius: 8))
           .background(

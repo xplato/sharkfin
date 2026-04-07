@@ -32,7 +32,7 @@ struct SettingsView: View {
 
         AdvancedSettingsView()
           .tabItem {
-            Label("Advanced", systemImage: "hammer")
+            Label("Advanced", systemImage: "slider.horizontal.3")
           }
           .tag(Tab.advanced)
       }

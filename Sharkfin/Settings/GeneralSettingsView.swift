@@ -6,7 +6,7 @@ struct GeneralSettingsView: View {
   @Environment(DirectoryStore.self) private var directoryStore
   @State private var startAtLogin = SMAppService.mainApp.status == .enabled
   @AppStorage("preserveSearchFilter") private var preserveSearchFilter = false
-  
+
   var body: some View {
     Form {
       Section("Functionality") {
@@ -25,18 +25,18 @@ struct GeneralSettingsView: View {
             }
           }
       }
-      
+
       Section("Search") {
         Toggle(isOn: $preserveSearchFilter) {
           Text("Preserve search filters")
           Text(
             preserveSearchFilter
-            ? "Search filters will not be cleared automatically."
-            : "Search filters will be cleared 15 seconds after closing the searchbar."
+              ? "Search filters will not be cleared automatically."
+              : "Search filters will be cleared 15 seconds after closing the searchbar."
           )
         }
       }
-      
+
       Section(
         header: Text("Directories"),
         footer: Text(
@@ -51,10 +51,10 @@ struct GeneralSettingsView: View {
             DirectoryRowView(directory: directory)
           }
         }
-        
+
         AddDirectoryButton()
       }
-      
+
       Section(
         header: Text("Models"),
         footer: Text(

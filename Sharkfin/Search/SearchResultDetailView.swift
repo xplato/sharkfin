@@ -10,9 +10,9 @@ struct SearchResultDetailView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      detailToolbar
-
       ScrollView {
+        detailToolbar
+
         HStack(alignment: .top, spacing: 16) {
           imagePreview
           metadataColumn
@@ -40,38 +40,29 @@ struct SearchResultDetailView: View {
   // MARK: - Toolbar
 
   private var detailToolbar: some View {
-    HStack(spacing: 12) {
-      Button {
-        searchController.clearSelection()
-      } label: {
-        Image(systemName: "chevron.left")
-          .font(.body.weight(.medium))
-      }
-      .buttonStyle(.plain)
-      .foregroundStyle(.secondary)
+    HStack(spacing: 4) {
+      ToolbarIconButton(
+        icon: "chevron.left",
+        font: .body.weight(.medium),
+        action: { searchController.clearSelection() }
+      )
 
       Spacer()
 
-      Button {
-        quickLook()
-      } label: {
-        Image(systemName: "arrow.up.left.and.arrow.down.right")
-      }
-      .buttonStyle(.plain)
-      .foregroundStyle(.secondary)
+      ToolbarIconButton(
+        icon: "arrow.up.left.and.arrow.down.right",
+        action: { quickLook() }
+      )
       .help("Quick Look")
 
-      Button {
-        revealInFinder()
-      } label: {
-        Image(systemName: "folder")
-      }
-      .buttonStyle(.plain)
-      .foregroundStyle(.secondary)
+      ToolbarIconButton(
+        icon: "folder",
+        action: { revealInFinder() }
+      )
       .help("Reveal in Finder")
     }
-    .padding(.horizontal, 20)
-    .padding(.vertical, 16)
+    .padding(.horizontal, 16)
+    .padding(.top, 10)
   }
 
   // MARK: - Image Preview
@@ -266,6 +257,31 @@ private struct FileMetadataInfo {
       modified: modified,
       created: created
     )
+  }
+}
+
+// MARK: - Toolbar Icon Button
+
+private struct ToolbarIconButton: View {
+  let icon: String
+  var font: Font = .body
+  let action: () -> Void
+  @State private var isHovered = false
+
+  var body: some View {
+    Button(action: action) {
+      Image(systemName: icon)
+        .font(font)
+        .frame(width: 30, height: 30)
+        .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .foregroundStyle(isHovered ? .primary : .secondary)
+    .background(
+      RoundedRectangle(cornerRadius: 6)
+        .fill(isHovered ? Color.primary.opacity(0.08) : .clear)
+    )
+    .onHover { isHovered = $0 }
   }
 }
 

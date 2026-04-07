@@ -6,7 +6,6 @@ struct SettingsView: View {
 
   enum Tab: Hashable {
     case general
-    case shortcuts
     case advanced
   }
 
@@ -30,12 +29,6 @@ struct SettingsView: View {
             Label("General", systemImage: "gearshape")
           }
           .tag(Tab.general)
-
-        KeyboardShortcutsView()
-          .tabItem {
-            Label("Shortcuts", systemImage: "keyboard")
-          }
-          .tag(Tab.shortcuts)
 
         AdvancedSettingsView()
           .tabItem {

@@ -1,3 +1,4 @@
+import KeyboardShortcuts
 import ServiceManagement
 import SwiftUI
 
@@ -9,6 +10,7 @@ struct GeneralSettingsView: View {
   var body: some View {
     Form {
       Section("Functionality") {
+        KeyboardShortcuts.Recorder("Show searchbar", name: .activateSearch)
         Toggle("Start at login", isOn: $startAtLogin)
           .onChange(of: startAtLogin) { _, newValue in
             do {
@@ -28,7 +30,9 @@ struct GeneralSettingsView: View {
         Toggle(isOn: $preserveSearchFilter) {
           Text("Preserve search filters")
           Text(
-            preserveSearchFilter ? "Search filters will not be cleared automatically." : "Search filters will be cleared 15 seconds after closing the searchbar."
+            preserveSearchFilter
+            ? "Search filters will not be cleared automatically."
+            : "Search filters will be cleared 15 seconds after closing the searchbar."
           )
         }
       }

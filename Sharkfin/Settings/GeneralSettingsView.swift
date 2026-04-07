@@ -6,6 +6,7 @@ struct GeneralSettingsView: View {
   @Environment(DirectoryStore.self) private var directoryStore
   @State private var startAtLogin = SMAppService.mainApp.status == .enabled
   @AppStorage("preserveSearchFilter") private var preserveSearchFilter = false
+  @AppStorage("searchResultColumns") private var searchResultColumns = 4
 
   var body: some View {
     Form {
@@ -34,6 +35,12 @@ struct GeneralSettingsView: View {
               ? "Search filters will not be cleared automatically."
               : "Search filters will be cleared 15 seconds after closing the searchbar."
           )
+        }
+
+        Picker("Result columns", selection: $searchResultColumns) {
+          Text("3").tag(3)
+          Text("4").tag(4)
+          Text("5").tag(5)
         }
       }
 

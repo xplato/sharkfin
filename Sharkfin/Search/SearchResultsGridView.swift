@@ -5,10 +5,11 @@ struct SearchResultsGridView: View {
   var hasMore: Bool = false
   var onShowMore: (() -> Void)?
 
-  private let columns = Array(
-    repeating: GridItem(.flexible(), spacing: 12),
-    count: 4
-  )
+  @AppStorage("searchResultColumns") private var columnCount = 4
+
+  private var columns: [GridItem] {
+    Array(repeating: GridItem(.flexible(), spacing: 12), count: columnCount)
+  }
 
   var body: some View {
     ScrollView {

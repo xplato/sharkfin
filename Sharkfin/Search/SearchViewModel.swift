@@ -25,8 +25,7 @@ final class SearchViewModel {
   private(set) var results: [SearchResult] = []
   private(set) var availableFileTypes: [String] = []
 
-  private static let resultsPageSize = 48
-  private var displayLimit: Int = resultsPageSize
+  private var displayLimit: Int = SearchViewModel.pageSize()
 
   var displayedResults: [SearchResult] {
     Array(results.prefix(displayLimit))
@@ -37,7 +36,14 @@ final class SearchViewModel {
   }
 
   func showMoreResults() {
-    displayLimit += Self.resultsPageSize
+    displayLimit += Self.pageSize()
+  }
+
+  /// Returns a page size close to 50 that is evenly divisible by the column count.
+  private static func pageSize() -> Int {
+    let columns = UserDefaults.standard.integer(forKey: "searchResultColumns")
+    let count = (3...5).contains(columns) ? columns : 4
+    return (50 / count) * count
   }
 
   private let database: AppDatabase
@@ -96,7 +102,7 @@ final class SearchViewModel {
     searchTask?.cancel()
     query = ""
     results = []
-    displayLimit = Self.resultsPageSize
+    displayLimit = Self.pageSize()
     state = .idle
   }
 
@@ -121,7 +127,7 @@ final class SearchViewModel {
 
   private func executeSearch(_ query: String) async {
     state = .searching
-    displayLimit = Self.resultsPageSize
+    displayLimit = Self.pageSize()
     let currentFilters = filters
     do {
       let service = try await getOrCreateSearchService()

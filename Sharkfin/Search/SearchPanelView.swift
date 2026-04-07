@@ -16,17 +16,22 @@ struct SearchPanelView: View {
           onDismiss: { onDismiss() }
         )
 
-        if let selected = searchController.selectedResult {
+        if !viewModel.results.isEmpty {
           Divider()
-          SearchResultDetailView(result: selected)
-        } else if !viewModel.results.isEmpty {
-          Divider()
-          SearchResultsGridView(
-            results: viewModel.displayedResults,
-            hasMore: viewModel.hasMoreResults,
-            scrollToTopToken: viewModel.query,
-            onShowMore: { viewModel.showMoreResults() }
-          )
+          ZStack {
+            SearchResultsGridView(
+              results: viewModel.displayedResults,
+              hasMore: viewModel.hasMoreResults,
+              scrollToTopToken: viewModel.query,
+              onShowMore: { viewModel.showMoreResults() }
+            )
+            .opacity(searchController.selectedResult == nil ? 1 : 0)
+            .allowsHitTesting(searchController.selectedResult == nil)
+
+            if let selected = searchController.selectedResult {
+              SearchResultDetailView(result: selected)
+            }
+          }
           .frame(maxHeight: 700)
         } else if viewModel.state == .noResults {
           Divider()

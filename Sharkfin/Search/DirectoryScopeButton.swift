@@ -6,6 +6,7 @@ struct DirectoryScopeButton: View {
   @Environment(DirectoryStore.self) private var directoryStore
   @Environment(\.colorScheme) private var colorScheme
   @State private var trees: [DirectoryTree] = []
+  @State private var rebuildToken = 0
   
   private var isActive: Bool { scope != nil }
   
@@ -38,8 +39,11 @@ struct DirectoryScopeButton: View {
     )
     .fixedSize()
     .menuIndicator(.hidden)
-    .task(id: directoryStore.directories.map(\.id)) {
+    .task(id: TreeBuildID(dirIds: directoryStore.directories.map(\.id), token: rebuildToken)) {
       trees = await buildTrees()
+    }
+    .onReceive(NotificationCenter.default.publisher(for: .searchCacheDidInvalidate)) { _ in
+      rebuildToken += 1
     }
   }
   
@@ -87,6 +91,11 @@ struct DirectoryScopeButton: View {
 }
 
 // MARK: - Tree data
+
+private struct TreeBuildID: Equatable {
+  let dirIds: [Int64?]
+  let token: Int
+}
 
 private struct DirectoryTree: Identifiable {
   let directoryId: Int64

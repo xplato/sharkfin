@@ -4,12 +4,11 @@ struct SearchResultCard: View {
   let result: SearchResult
   @Environment(SearchController.self) private var searchController
   @State private var isHovering = false
-
+  
   var body: some View {
-    VStack(spacing: 4) {
-      // Thumbnail
+    Group {
       if let thumbPath = result.thumbnailPath,
-        let nsImage = NSImage(contentsOfFile: thumbPath)
+         let nsImage = NSImage(contentsOfFile: thumbPath)
       {
         Color.clear
           .aspectRatio(1, contentMode: .fit)
@@ -18,23 +17,13 @@ struct SearchResultCard: View {
               .resizable()
               .aspectRatio(contentMode: .fill)
           }
-          .clipShape(UnevenRoundedRectangle(
-            topLeadingRadius: 8,
-            bottomLeadingRadius: 0,
-            bottomTrailingRadius: 0,
-            topTrailingRadius: 8
-          ))
+          .clipShape(RoundedRectangle(cornerRadius: 8))
           .background(
             Color.primary.opacity(0.06),
-            in: UnevenRoundedRectangle(
-              topLeadingRadius: 8,
-              bottomLeadingRadius: 0,
-              bottomTrailingRadius: 0,
-              topTrailingRadius: 8
-            )
+            in: RoundedRectangle(cornerRadius: 8)
           )
       } else {
-        RoundedRectangle(cornerRadius: 6)
+        RoundedRectangle(cornerRadius: 8)
           .fill(.quaternary)
           .aspectRatio(1, contentMode: .fit)
           .overlay {
@@ -43,18 +32,7 @@ struct SearchResultCard: View {
               .foregroundStyle(.secondary)
           }
       }
-
-      // File info
-      HStack(spacing: 4) {
-        Text(result.filename)
-          .font(.caption)
-          .lineLimit(1)
-          .truncationMode(.middle)
-          .foregroundStyle(isHovering ? .primary : .secondary)
-      }
-      .padding(.horizontal, 6)
     }
-    .padding(.bottom, 6)
     .contentShape(Rectangle())
     .background(
       RoundedRectangle(cornerRadius: 8)

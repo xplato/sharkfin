@@ -14,7 +14,7 @@
 
 ### 
 
-Sharkfin is a native macOS app for semantic search of local files. Currently only supports images (JPG, PNG, HEIC, WEBP, SVG, etc.).
+Sharkfin is a native macOS app for semantic search of local files. Currently only supports images (#1).
 
 </div>
 

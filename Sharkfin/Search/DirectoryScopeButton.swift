@@ -3,26 +3,21 @@ import SwiftUI
 struct DirectoryScopeButton: View {
   @Binding var scope: String?
   @Environment(DirectoryStore.self) private var directoryStore
-  
+  @State private var trees: [DirectoryTree] = []
+
   private var isActive: Bool { scope != nil }
-  
+
   private var buttonLabel: String {
     guard let scope else { return "Scope" }
     return URL(fileURLWithPath: scope).lastPathComponent
   }
-  
+
   var body: some View {
     Menu {
-      let enabledDirs = directoryStore.directories.filter(\.enabled)
-      ForEach(enabledDirs) { directory in
-        DirectorySubmenu(
-          path: directory.path,
-          label: directory.label ?? URL(fileURLWithPath: directory.path).lastPathComponent,
-          bookmark: directory.bookmark,
-          scope: $scope
-        )
+      ForEach(trees) { tree in
+        DirectoryNodeMenu(node: tree.root, scope: $scope)
       }
-      
+
       if isActive {
         Divider()
         Button("Clear Scope") {
@@ -35,86 +30,129 @@ struct DirectoryScopeButton: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 5)
         .foregroundStyle(isActive ? .white : .secondary)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
     .background(
       isActive
-      ? AnyShapeStyle(Color.accentColor)
-      : AnyShapeStyle(.clear),
+        ? AnyShapeStyle(Color.accentColor)
+        : AnyShapeStyle(.clear),
       in: RoundedRectangle(cornerRadius: 6)
     )
     .fixedSize()
     .menuIndicator(.hidden)
-    .simultaneousGesture(
-      TapGesture().modifiers(.command).onEnded {
-        scope = nil
+    .task(id: directoryStore.directories.map(\.id)) {
+      trees = await buildTrees()
+    }
+  }
+
+  private func buildTrees() async -> [DirectoryTree] {
+    let dirs = directoryStore.directories.filter(\.enabled)
+    return await Task.detached(priority: .userInitiated) {
+      await withTaskGroup(of: DirectoryTree?.self) { group in
+        for dir in dirs {
+          group.addTask {
+            let label =
+              dir.label
+              ?? URL(fileURLWithPath: dir.path).lastPathComponent
+            let children = enumerateChildren(
+              at: dir.path,
+              bookmark: dir.bookmark,
+              depth: 0
+            )
+            return DirectoryTree(
+              directoryId: dir.id ?? 0,
+              root: DirectoryNode(
+                name: label,
+                path: dir.path,
+                children: children
+              )
+            )
+          }
+        }
+        var result: [DirectoryTree] = []
+        for await tree in group {
+          if let tree { result.append(tree) }
+        }
+        let idOrder = dirs.compactMap(\.id)
+        result.sort { a, b in
+          (idOrder.firstIndex(of: a.directoryId) ?? .max)
+            < (idOrder.firstIndex(of: b.directoryId) ?? .max)
+        }
+        return result
       }
-    )
+    }.value
   }
 }
 
-// MARK: - Recursive submenu for directory tree
+// MARK: - Tree data
 
-private struct DirectorySubmenu: View {
+private struct DirectoryTree: Identifiable {
+  let directoryId: Int64
+  let root: DirectoryNode
+  var id: Int64 { directoryId }
+}
+
+private struct DirectoryNode: Identifiable {
+  let name: String
   let path: String
-  let label: String
-  let bookmark: Data?
+  let children: [DirectoryNode]
+  var id: String { path }
+}
+
+// MARK: - Recursive menu view (reads pre-built tree, no I/O)
+
+private struct DirectoryNodeMenu: View {
+  let node: DirectoryNode
   @Binding var scope: String?
-  
+
   var body: some View {
-    let subdirs = listSubdirectories(at: path, bookmark: bookmark)
-    if subdirs.isEmpty {
+    if node.children.isEmpty {
       Button {
-        scope = path
+        scope = node.path
       } label: {
         HStack {
-          Text(label)
+          Text(node.name)
           Spacer()
-          if scope == path {
+          if scope == node.path {
             Image(systemName: "checkmark")
           }
         }
       }
     } else {
-      Menu(label) {
+      Menu(node.name) {
         Button {
-          scope = path
+          scope = node.path
         } label: {
           HStack {
-            Text("All of \(label)")
+            Text("All of \(node.name)")
             Spacer()
-            if scope == path {
+            if scope == node.path {
               Image(systemName: "checkmark")
             }
           }
         }
         Divider()
-        ForEach(subdirs, id: \.path) { subdir in
-          DirectorySubmenu(
-            path: subdir.path,
-            label: subdir.name,
-            bookmark: bookmark,
-            scope: $scope
-          )
+        ForEach(node.children) { child in
+          DirectoryNodeMenu(node: child, scope: $scope)
         }
       }
     }
   }
 }
 
-// MARK: - Filesystem helpers
+// MARK: - Async filesystem enumeration
 
-private struct SubdirectoryEntry: Hashable {
-  let name: String
-  let path: String
-}
+nonisolated private let maxDepth = 4
 
-private func listSubdirectories(at path: String, bookmark: Data?) -> [SubdirectoryEntry] {
-  let url = URL(fileURLWithPath: path)
-  
-  // Resolve security-scoped bookmark if available
+nonisolated private func enumerateChildren(
+  at path: String,
+  bookmark: Data?,
+  depth: Int
+) -> [DirectoryNode] {
+  guard depth < maxDepth else { return [] }
+
+  // Resolve bookmark once at the top level
   var accessURL: URL?
-  if let bookmark {
+  if depth == 0, let bookmark {
     var isStale = false
     if let resolved = try? URL(
       resolvingBookmarkData: bookmark,
@@ -128,18 +166,40 @@ private func listSubdirectories(at path: String, bookmark: Data?) -> [Subdirecto
     }
   }
   defer { accessURL?.stopAccessingSecurityScopedResource() }
-  
+
+  let url = URL(fileURLWithPath: path)
   let fm = FileManager.default
-  guard let contents = try? fm.contentsOfDirectory(
-    at: url,
-    includingPropertiesForKeys: [.isDirectoryKey],
-    options: [.skipsHiddenFiles]
-  ) else {
+  guard
+    let contents = try? fm.contentsOfDirectory(
+      at: url,
+      includingPropertiesForKeys: [.isDirectoryKey],
+      options: [.skipsHiddenFiles, .skipsPackageDescendants]
+    )
+  else {
     return []
   }
-  
-  return contents
-    .filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }
-    .map { SubdirectoryEntry(name: $0.lastPathComponent, path: $0.path) }
-    .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+
+  var nodes: [DirectoryNode] = []
+  for item in contents {
+    guard
+      (try? item.resourceValues(forKeys: [.isDirectoryKey]).isDirectory)
+        == true
+    else { continue }
+    let children = enumerateChildren(
+      at: item.path,
+      bookmark: nil,
+      depth: depth + 1
+    )
+    nodes.append(
+      DirectoryNode(
+        name: item.lastPathComponent,
+        path: item.path,
+        children: children
+      )
+    )
+  }
+  nodes.sort {
+    $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+  }
+  return nodes
 }

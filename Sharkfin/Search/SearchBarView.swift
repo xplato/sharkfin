@@ -43,10 +43,6 @@ struct SearchBarView: View {
 
   var body: some View {
     HStack(spacing: 12) {
-      if !directoryStore.directories.isEmpty {
-        DirectoryScopeButton(scope: $viewModel.filters.directoryScope)
-      }
-
       if allDirectoriesDisabled {
         SettingsLink {
           Image(systemName: "exclamationmark.triangle.fill")
@@ -65,6 +61,10 @@ struct SearchBarView: View {
         Image(systemName: "magnifyingglass")
           .foregroundStyle(.secondary)
           .font(.title2)
+      }
+
+      if !directoryStore.directories.isEmpty {
+        DirectoryScopeButton(scope: $viewModel.filters.directoryScope)
       }
 
       TextField(
@@ -93,15 +93,25 @@ struct SearchBarView: View {
     .padding(.horizontal, 16)
     .padding(.vertical, 12)
     .task {
-      enabledFileCount = (try? AppDatabase.shared.fetchEnabledFileCount()) ?? 0
+      updateFileCount()
       viewModel.loadAvailableFileTypes()
     }
     .onChange(of: directoryStore.directories) {
-      enabledFileCount = (try? AppDatabase.shared.fetchEnabledFileCount()) ?? 0
+      updateFileCount()
       viewModel.loadAvailableFileTypes()
+    }
+    .onChange(of: viewModel.filters.directoryScope) {
+      updateFileCount()
     }
     .onChange(of: viewModel.filters) {
       viewModel.filtersChanged()
     }
+  }
+
+  private func updateFileCount() {
+    enabledFileCount =
+      (try? AppDatabase.shared.fetchEnabledFileCount(
+        scopePath: viewModel.filters.directoryScope
+      )) ?? 0
   }
 }

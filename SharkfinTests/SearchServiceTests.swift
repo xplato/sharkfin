@@ -278,4 +278,80 @@ struct SearchServiceTests {
     let results = try await service.findSimilar(toFileId: sourceId)
     #expect(results.allSatisfy { $0.id != sourceId })
   }
+
+  @Test func searchFiltersByDirectoryScope() async throws {
+    let db = try makeDatabase()
+    let vec = CLIPImageEncoder.l2Normalize(
+      [Float](repeating: 1.0, count: 512)
+    )
+
+    var dir = SharkfinDirectory(
+      path: "/photos",
+      label: nil,
+      enabled: true,
+      addedAt: Date(),
+      lastIndexedAt: Date(),
+      bookmark: nil
+    )
+    try db.addDirectory(&dir)
+    let dirId = dir.id!
+
+    try await db.dbQueue.write { dbConn in
+      for (i, file) in [
+        ("vacation/beach.jpg", "jpg"),
+        ("vacation/sunset.jpg", "jpg"),
+        ("work/headshot.jpg", "jpg"),
+      ].enumerated() {
+        var f = IndexedFile(
+          path: "/photos/\(file.0)",
+          directoryId: dirId,
+          filename: URL(fileURLWithPath: file.0).lastPathComponent,
+          fileExtension: file.1,
+          sizeBytes: 1000,
+          modifiedAt: Date(),
+          contentHash: "scope\(i)",
+          mimeType: nil,
+          width: 100,
+          height: 100,
+          indexedAt: Date(),
+          thumbnailPath: nil
+        )
+        try f.insert(dbConn)
+        let data = vec.withUnsafeBufferPointer { Data(buffer: $0) }
+        try FileEmbedding(fileId: f.id!, embedding: data).insert(dbConn)
+      }
+    }
+
+    let encoder = FakeTextEncoder(embedding: vec)
+    let service = SearchService(database: db, textEncoder: encoder)
+
+    // Scope to /photos/vacation — should only return vacation files
+    let vacationResults = try await service.search(
+      query: "test",
+      filters: SearchFilters(directoryScope: "/photos/vacation")
+    )
+    #expect(vacationResults.count == 2)
+    #expect(vacationResults.allSatisfy { $0.path.contains("vacation") })
+
+    // Scope to /photos — should return all 3 files
+    let allResults = try await service.search(
+      query: "test",
+      filters: SearchFilters(directoryScope: "/photos")
+    )
+    #expect(allResults.count == 3)
+
+    // Trailing slash (matches real directory storage format) — should also work
+    let trailingSlashResults = try await service.search(
+      query: "test",
+      filters: SearchFilters(directoryScope: "/photos/")
+    )
+    #expect(trailingSlashResults.count == 3)
+
+    // Scope to unrelated directory — should return nothing
+    let noResults = try await service.search(
+      query: "test",
+      filters: SearchFilters(directoryScope: "/other")
+    )
+    #expect(noResults.isEmpty)
+  }
 }

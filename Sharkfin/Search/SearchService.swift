@@ -85,7 +85,9 @@ final class SearchService: @unchecked Sendable {
 
     // 4. Filter by minimum score, apply filters, normalize relevance, collect results
     let filterByType = !filters.fileTypes.isEmpty
-    let filterByScope = filters.directoryScope != nil
+    let scopePrefix = filters.directoryScope.map {
+      ($0.hasSuffix("/") ? $0 : $0 + "/")
+    }
     var results: [SearchResult] = []
     for i in 0..<cached.count {
       let rawScore = scores[i]
@@ -95,8 +97,8 @@ final class SearchService: @unchecked Sendable {
           continue
         }
       }
-      if filterByScope, let scope = filters.directoryScope {
-        guard cached.paths[i].hasPrefix(scope) else { continue }
+      if let scopePrefix {
+        guard cached.paths[i].hasPrefix(scopePrefix) else { continue }
       }
       let relevance = max(
         0,

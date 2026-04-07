@@ -52,7 +52,7 @@ struct SearchFilterButton: View {
     .background(
       isActive
         ? AnyShapeStyle(Color.accentColor)
-        : AnyShapeStyle(.quaternary),
+      : AnyShapeStyle(.clear),
       in: RoundedRectangle(cornerRadius: 6)
     )
     .fixedSize()

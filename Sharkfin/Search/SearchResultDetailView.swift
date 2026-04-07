@@ -98,7 +98,7 @@ struct SearchResultDetailView: View {
   private var metadataColumn: some View {
     VStack(alignment: .leading, spacing: 12) {
       Text(result.filename)
-        .font(.title3.weight(.medium))
+        .font(.title2.weight(.medium))
 
       if let info = fileInfo {
         metadataTable(info)

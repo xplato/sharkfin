@@ -43,6 +43,10 @@ struct SearchBarView: View {
 
   var body: some View {
     HStack(spacing: 12) {
+      if !directoryStore.directories.isEmpty {
+        DirectoryScopeButton(scope: $viewModel.filters.directoryScope)
+      }
+
       if allDirectoriesDisabled {
         SettingsLink {
           Image(systemName: "exclamationmark.triangle.fill")

@@ -118,8 +118,8 @@ final class CLIPTextEncoder: @unchecked Sendable, TextEncoding {
       Array(buffer.bindMemory(to: Float.self))
     }
 
-    if embedding.count > 512 {
-      embedding = Array(embedding.prefix(512))
+    if embedding.count > CLIPImageEncoder.embeddingDimension {
+      embedding = Array(embedding.prefix(CLIPImageEncoder.embeddingDimension))
     }
 
     return CLIPImageEncoder.l2Normalize(embedding)

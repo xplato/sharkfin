@@ -39,9 +39,9 @@ struct SearchPanelView: View {
         }
       }
       .background(.ultraThinMaterial)
-      .clipShape(RoundedRectangle(cornerRadius: 12))
+      .clipShape(RoundedRectangle(cornerRadius: SearchPanel.cornerRadius))
       .overlay {
-        RoundedRectangle(cornerRadius: 12)
+        RoundedRectangle(cornerRadius: SearchPanel.cornerRadius)
           .strokeBorder(.white.opacity(0.2), lineWidth: 0.5)
       }
       .animation(.easeInOut(duration: 0.2), value: viewModel.state)
@@ -52,7 +52,7 @@ struct SearchPanelView: View {
 
       Spacer(minLength: 0)
     }
-    .frame(width: 680)
+    .frame(width: SearchPanel.panelWidth)
     .onChange(of: viewModel.query) {
       if searchController.selectedResult != nil {
         searchController.clearSelection()
@@ -87,7 +87,8 @@ struct SearchPanelView: View {
 
   // MARK: - Navigation
 
-  @AppStorage("preserveSearchFilter") private var preserveSearchFilter = true
+  @AppStorage(StorageKey.preserveSearchFilter) private
+    var preserveSearchFilter = true
 
   private func handleEscape() {
     if searchController.selectedResult != nil {

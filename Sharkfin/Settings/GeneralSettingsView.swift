@@ -5,8 +5,10 @@ import SwiftUI
 struct GeneralSettingsView: View {
   @Environment(DirectoryStore.self) private var directoryStore
   @State private var startAtLogin = SMAppService.mainApp.status == .enabled
-  @AppStorage("preserveSearchFilter") private var preserveSearchFilter = false
-  @AppStorage("searchResultColumns") private var searchResultColumns = 4
+  @AppStorage(StorageKey.preserveSearchFilter) private
+    var preserveSearchFilter = false
+  @AppStorage(StorageKey.searchResultColumns) private var searchResultColumns =
+    4
 
   var body: some View {
     Form {

@@ -6,7 +6,7 @@ struct SearchResultsGridView: View {
   var scrollToTopToken: String = ""
   var onShowMore: (() -> Void)?
 
-  @AppStorage("searchResultColumns") private var columnCount = 4
+  @AppStorage(StorageKey.searchResultColumns) private var columnCount = 4
 
   private var columns: [GridItem] {
     Array(repeating: GridItem(.flexible(), spacing: 12), count: columnCount)

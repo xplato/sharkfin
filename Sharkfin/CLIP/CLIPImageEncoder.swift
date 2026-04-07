@@ -4,6 +4,9 @@ import OnnxRuntimeBindings
 /// Wraps the ONNX Runtime vision session for CLIP image encoding.
 final class CLIPImageEncoder: @unchecked Sendable {
 
+  /// Number of dimensions in a CLIP embedding vector.
+  nonisolated static let embeddingDimension = 512
+
   nonisolated(unsafe) private let session: ORTSession
   private nonisolated let outputName: String
 
@@ -54,9 +57,9 @@ final class CLIPImageEncoder: @unchecked Sendable {
       Array(buffer.bindMemory(to: Float.self))
     }
 
-    // Take only 512 dims if output is larger
-    if embedding.count > 512 {
-      embedding = Array(embedding.prefix(512))
+    // Take only the expected dims if output is larger
+    if embedding.count > Self.embeddingDimension {
+      embedding = Array(embedding.prefix(Self.embeddingDimension))
     }
 
     return Self.l2Normalize(embedding)

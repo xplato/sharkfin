@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
-  @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
+  @AppStorage(StorageKey.hasSeenWelcome) private var hasSeenWelcome = false
   @State private var selection: Tab = .general
 
   enum Tab: Hashable {

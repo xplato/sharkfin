@@ -52,7 +52,7 @@ struct AboutView: View {
         }
       }
       .controlSize(.large)
-      .padding(.leading, 128 + 24) // icon width + HStack spacing
+      .padding(.leading, 128 + 24)  // icon width + HStack spacing
     }
     .padding(.top, 24)
     .padding(.horizontal, 20)

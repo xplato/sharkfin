@@ -144,9 +144,10 @@ final class IndexingService {
 
     let defaults = UserDefaults.standard
     let skipHidden =
-      defaults.object(forKey: "ignoreHiddenDirectories") as? Bool ?? true
+      defaults.object(forKey: StorageKey.ignoreHiddenDirectories) as? Bool
+      ?? true
     let excludedNames: Set<String> = {
-      guard let json = defaults.string(forKey: "excludedFolderNames"),
+      guard let json = defaults.string(forKey: StorageKey.excludedFolderNames),
         let data = json.data(using: .utf8),
         let array = try? JSONDecoder().decode([String].self, from: data)
       else { return [] }

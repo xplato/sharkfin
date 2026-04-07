@@ -74,7 +74,7 @@ final class AppState {
   private var hasPositionedPanel = false
 
   var needsSetup: Bool {
-    !UserDefaults.standard.bool(forKey: "hasSeenWelcome")
+    !UserDefaults.standard.bool(forKey: StorageKey.hasSeenWelcome)
   }
 
   init(
@@ -134,8 +134,8 @@ final class AppState {
         $0.frame.contains(NSEvent.mouseLocation)
       }) ?? NSScreen.main ?? NSScreen.screens.first {
         let screenFrame = screen.visibleFrame
-        let panelWidth: CGFloat = 680
-        let panelHeight: CGFloat = 560
+        let panelWidth = SearchPanel.panelWidth
+        let panelHeight = SearchPanel.panelHeight
         let x = screenFrame.midX - panelWidth / 2
         let panelTopY = screenFrame.origin.y + screenFrame.height * 0.75 + 100
         let y = panelTopY - panelHeight
@@ -160,7 +160,7 @@ final class AppState {
 
   private func hideSearch() {
     searchPanel?.orderOut(nil)
-    if !UserDefaults.standard.bool(forKey: "preserveSearchFilter") {
+    if !UserDefaults.standard.bool(forKey: StorageKey.preserveSearchFilter) {
       searchViewModel.scheduleFilterClear()
     }
   }
@@ -193,7 +193,12 @@ final class AppState {
     if let existing = searchPanel { return existing }
 
     let panel = SearchPanel(
-      contentRect: NSRect(x: 0, y: 0, width: 680, height: 560)
+      contentRect: NSRect(
+        x: 0,
+        y: 0,
+        width: SearchPanel.panelWidth,
+        height: SearchPanel.panelHeight
+      )
     )
 
     let hostingView = NSHostingView(
@@ -215,7 +220,7 @@ final class AppState {
     // Round the corners at the AppKit layer level so the
     // window frame itself is clipped, not just the SwiftUI content.
     hostingView.wantsLayer = true
-    hostingView.layer?.cornerRadius = 12
+    hostingView.layer?.cornerRadius = SearchPanel.cornerRadius
     hostingView.layer?.cornerCurve = .continuous
     hostingView.layer?.masksToBounds = true
     self.searchPanel = panel
@@ -253,16 +258,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       watcher.start(directoryStore: store, indexingService: indexing)
 
       let indexOnLaunch =
-        UserDefaults.standard.object(forKey: "indexOnLaunch") as? Bool ?? true
+        UserDefaults.standard.object(forKey: StorageKey.indexOnLaunch) as? Bool
+        ?? true
       if indexOnLaunch, indexing.modelsReady {
         indexing.indexAllEnabled(from: store)
       }
     }
 
-    guard !UserDefaults.standard.bool(forKey: "hasSeenWelcome") else { return }
+    guard !UserDefaults.standard.bool(forKey: StorageKey.hasSeenWelcome) else {
+      return
+    }
 
     let welcomeView = WelcomeView { [weak self] in
-      UserDefaults.standard.set(true, forKey: "hasSeenWelcome")
+      UserDefaults.standard.set(true, forKey: StorageKey.hasSeenWelcome)
       // Defer window teardown so the button action finishes
       // before the hosting view hierarchy is destroyed.
       DispatchQueue.main.async {

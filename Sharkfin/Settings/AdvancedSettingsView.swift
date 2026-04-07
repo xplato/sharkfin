@@ -13,9 +13,10 @@ struct AdvancedSettingsView: View {
 
   @Environment(IndexingService.self) private var indexingService
   @Environment(DirectoryWatcherService.self) private var directoryWatcher
-  @AppStorage("watchDirectories") private var watchDirectories = true
-  @AppStorage("indexOnLaunch") private var indexOnLaunch = true
-  @AppStorage("ignoreHiddenDirectories") private var ignoreHiddenDirectories =
+  @AppStorage(StorageKey.watchDirectories) private var watchDirectories = true
+  @AppStorage(StorageKey.indexOnLaunch) private var indexOnLaunch = true
+  @AppStorage(StorageKey.ignoreHiddenDirectories) private
+    var ignoreHiddenDirectories =
     true
   @State private var excludedFolderNames: [String] = []
   @State private var newFolderName = ""
@@ -222,7 +223,9 @@ struct AdvancedSettingsView: View {
             isPresented: $showResetViewStateConfirmation
           ) {
             Button("Reset") {
-              UserDefaults.standard.removeObject(forKey: "hasSeenWelcome")
+              UserDefaults.standard.removeObject(
+                forKey: StorageKey.hasSeenWelcome
+              )
             }
             Button("Cancel", role: .cancel) {}
           } message: {
@@ -259,7 +262,9 @@ struct AdvancedSettingsView: View {
 
   private func loadExcludedFolders() {
     guard
-      let json = UserDefaults.standard.string(forKey: "excludedFolderNames"),
+      let json = UserDefaults.standard.string(
+        forKey: StorageKey.excludedFolderNames
+      ),
       let data = json.data(using: .utf8),
       let array = try? JSONDecoder().decode([String].self, from: data)
     else {
@@ -275,7 +280,7 @@ struct AdvancedSettingsView: View {
     if let data = try? JSONEncoder().encode(excludedFolderNames),
       let json = String(data: data, encoding: .utf8)
     {
-      UserDefaults.standard.set(json, forKey: "excludedFolderNames")
+      UserDefaults.standard.set(json, forKey: StorageKey.excludedFolderNames)
     }
   }
 

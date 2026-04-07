@@ -25,7 +25,7 @@ final class SearchViewModel {
   private(set) var results: [SearchResult] = []
   private(set) var availableFileTypes: [String] = []
 
-  private static let resultsPageSize = 50
+  private static let resultsPageSize = 48
   private var displayLimit: Int = resultsPageSize
 
   var displayedResults: [SearchResult] {

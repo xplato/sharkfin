@@ -12,27 +12,31 @@ struct SearchResultCard: View {
         let nsImage = NSImage(contentsOfFile: thumbPath)
       {
         Color.clear
-          .frame(
-            minWidth: 0,
-            maxWidth: .infinity,
-            minHeight: 138,
-            maxHeight: 138
-          )
-          .overlay(alignment: .top) {
+          .aspectRatio(1, contentMode: .fit)
+          .overlay {
             Image(nsImage: nsImage)
               .resizable()
               .aspectRatio(contentMode: .fill)
-              .frame(minWidth: 0, maxWidth: .infinity)
           }
-          .clipShape(RoundedRectangle(cornerRadius: 6))
+          .clipShape(UnevenRoundedRectangle(
+            topLeadingRadius: 8,
+            bottomLeadingRadius: 0,
+            bottomTrailingRadius: 0,
+            topTrailingRadius: 8
+          ))
           .background(
             Color.primary.opacity(0.06),
-            in: RoundedRectangle(cornerRadius: 6)
+            in: UnevenRoundedRectangle(
+              topLeadingRadius: 8,
+              bottomLeadingRadius: 0,
+              bottomTrailingRadius: 0,
+              topTrailingRadius: 8
+            )
           )
       } else {
         RoundedRectangle(cornerRadius: 6)
           .fill(.quaternary)
-          .frame(height: 138)
+          .aspectRatio(1, contentMode: .fit)
           .overlay {
             Image(systemName: "photo")
               .font(.title2)
@@ -48,8 +52,9 @@ struct SearchResultCard: View {
           .truncationMode(.middle)
           .foregroundStyle(isHovering ? .primary : .secondary)
       }
+      .padding(.horizontal, 6)
     }
-    .padding(6)
+    .padding(.bottom, 6)
     .contentShape(Rectangle())
     .background(
       RoundedRectangle(cornerRadius: 8)

@@ -3,6 +3,7 @@ import SwiftUI
 struct DirectoryScopeButton: View {
   @Binding var scope: String?
   @Environment(DirectoryStore.self) private var directoryStore
+  @Environment(\.colorScheme) private var colorScheme
   @State private var trees: [DirectoryTree] = []
 
   private var isActive: Bool { scope != nil }
@@ -25,11 +26,8 @@ struct DirectoryScopeButton: View {
         }
       }
     } label: {
-      Text(buttonLabel)
-        .font(.subheadline.weight(.medium))
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .foregroundStyle(isActive ? .white : .secondary)
+      FilterButtonLabel(text: buttonLabel, isActive: isActive)
+        .environment(\.colorScheme, isActive ? .dark : colorScheme)
     }
     .background(
       isActive

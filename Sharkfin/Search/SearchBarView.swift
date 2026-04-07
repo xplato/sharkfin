@@ -63,10 +63,6 @@ struct SearchBarView: View {
           .font(.title2)
       }
 
-      if !directoryStore.directories.isEmpty {
-        DirectoryScopeButton(scope: $viewModel.filters.directoryScope)
-      }
-
       TextField(
         allDirectoriesDisabled
           ? "All directories disabled"
@@ -83,11 +79,17 @@ struct SearchBarView: View {
           .transition(.identity)
       }
 
-      if !viewModel.availableFileTypes.isEmpty {
-        SearchFilterButton(
-          selectedTypes: $viewModel.filters.fileTypes,
-          availableTypes: viewModel.availableFileTypes
-        )
+      HStack(spacing: 4) {
+        if !directoryStore.directories.isEmpty {
+          DirectoryScopeButton(scope: $viewModel.filters.directoryScope)
+        }
+
+        if !viewModel.availableFileTypes.isEmpty {
+          SearchFilterButton(
+            selectedTypes: $viewModel.filters.fileTypes,
+            availableTypes: viewModel.availableFileTypes
+          )
+        }
       }
     }
     .padding(.horizontal, 16)

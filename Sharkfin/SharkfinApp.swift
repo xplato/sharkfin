@@ -45,7 +45,7 @@ struct SharkfinApp: App {
 
     Window("About Sharkfin", id: "about") {
       AboutView()
-        .frame(width: 500, height: 260)
+        .frame(width: 500, height: 220)
     }
     .windowResizability(.contentSize)
     .windowStyle(.titleBar)
@@ -137,7 +137,7 @@ final class AppState {
         let panelWidth: CGFloat = 680
         let panelHeight: CGFloat = 560
         let x = screenFrame.midX - panelWidth / 2
-        let panelTopY = screenFrame.origin.y + screenFrame.height * 0.72 + 100
+        let panelTopY = screenFrame.origin.y + screenFrame.height * 0.75 + 100
         let y = panelTopY - panelHeight
         panel.setFrame(
           NSRect(x: x, y: y, width: panelWidth, height: panelHeight),

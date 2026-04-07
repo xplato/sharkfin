@@ -30,7 +30,7 @@
       shouldUseLaunchSchemeArgsEnv = "YES">
       <TestPlans>
          <TestPlanReference
-            reference = "container:SharkfinTests.xctestplan"
+            reference = "container:SharkfinTests/SharkfinTests.xctestplan"
             default = "YES">
          </TestPlanReference>
       </TestPlans>

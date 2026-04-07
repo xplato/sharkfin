@@ -24,6 +24,7 @@ struct SearchPanelView: View {
           SearchResultsGridView(
             results: viewModel.displayedResults,
             hasMore: viewModel.hasMoreResults,
+            scrollToTopToken: viewModel.query,
             onShowMore: { viewModel.showMoreResults() }
           )
           .frame(maxHeight: 700)

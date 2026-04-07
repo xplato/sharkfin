@@ -88,7 +88,7 @@ final class AppState {
     )
     self.modelManager = modelManager
     self.directoryStore = directoryStore
-    KeyboardShortcuts.onKeyUp(for: .activateSearch) { [self] in
+    KeyboardShortcuts.onKeyDown(for: .activateSearch) { [self] in
       activateSearch()
     }
 

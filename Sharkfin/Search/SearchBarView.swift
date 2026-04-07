@@ -34,7 +34,7 @@ struct SearchBarView: View {
   var onDismiss: () -> Void
 
   @Environment(DirectoryStore.self) private var directoryStore
-  @State private var stats: AppDatabase.Stats?
+  @State private var enabledFileCount: Int = 0
 
   private var allDirectoriesDisabled: Bool {
     !directoryStore.directories.isEmpty
@@ -66,7 +66,7 @@ struct SearchBarView: View {
       TextField(
         allDirectoriesDisabled
           ? "All directories disabled"
-          : "Search \(stats?.totalEnabledFiles ?? 0) files...",
+          : "Search \(enabledFileCount) files...",
         text: $viewModel.query
       )
       .textFieldStyle(.plain)
@@ -89,11 +89,11 @@ struct SearchBarView: View {
     .padding(.horizontal, 16)
     .padding(.vertical, 12)
     .task {
-      stats = try? AppDatabase.shared.fetchStats()
+      enabledFileCount = (try? AppDatabase.shared.fetchEnabledFileCount()) ?? 0
       viewModel.loadAvailableFileTypes()
     }
     .onChange(of: directoryStore.directories) {
-      stats = try? AppDatabase.shared.fetchStats()
+      enabledFileCount = (try? AppDatabase.shared.fetchEnabledFileCount()) ?? 0
       viewModel.loadAvailableFileTypes()
     }
     .onChange(of: viewModel.filters) {

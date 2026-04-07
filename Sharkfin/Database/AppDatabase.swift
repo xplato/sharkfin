@@ -243,6 +243,17 @@ final class AppDatabase: Sendable {
     }
   }
 
+  /// Lightweight query returning only the count of files in enabled directories.
+  func fetchEnabledFileCount() throws -> Int {
+    try dbQueue.read { db in
+      try Int.fetchOne(
+        db,
+        sql:
+          "SELECT COUNT(*) FROM files WHERE directoryId IN (SELECT id FROM directories WHERE enabled = 1)"
+      ) ?? 0
+    }
+  }
+
   // MARK: - File Type Queries
 
   /// Returns the distinct file extensions present in enabled directories, lowercased and sorted.

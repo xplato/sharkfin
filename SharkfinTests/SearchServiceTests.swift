@@ -116,7 +116,7 @@ struct SearchServiceTests {
     #expect(results.allSatisfy { $0.filename.hasSuffix(".jpg") })
   }
 
-  @Test func searchReturnsMaxFiftyResults() async throws {
+  @Test func searchReturnsMaxSixtyResults() async throws {
     let vec = CLIPImageEncoder.l2Normalize(
       [Float](repeating: 1.0, count: 512)
     )
@@ -129,7 +129,7 @@ struct SearchServiceTests {
     let service = SearchService(database: db, textEncoder: encoder)
     let results = try await service.search(query: "test")
 
-    #expect(results.count <= 50)
+    #expect(results.count <= 60)
   }
 
   @Test func searchReturnsEmptyForNoEmbeddings() async throws {

@@ -70,8 +70,8 @@ struct SearchResultDetailView: View {
       .foregroundStyle(.secondary)
       .help("Reveal in Finder")
     }
-    .padding(.horizontal, 16)
-    .padding(.vertical, 8)
+    .padding(.horizontal, 20)
+    .padding(.vertical, 16)
   }
 
   // MARK: - Image Preview

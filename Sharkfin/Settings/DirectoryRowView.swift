@@ -9,13 +9,8 @@ struct DirectoryRowView: View {
   @AppStorage("suppressDisableDirectoryWarning") private
     var suppressDisableWarning = false
 
-  /// Shorten the path for display: /Users/tristan/.../DirName
-  private var shortenedPath: String {
-    let path = directory.path
-    let components = path.split(separator: "/")
-    guard components.count > 3 else { return path }
-    return
-      "/\(components[0])/\(components[1])/\u{2026}/\(components.last ?? "")"
+  private var displayPath: String {
+    (directory.path as NSString).abbreviatingWithTildeInPath
   }
 
   private var progress: IndexingProgress? {
@@ -41,7 +36,7 @@ struct DirectoryRowView: View {
               ?? URL(fileURLWithPath: directory.path).lastPathComponent
           )
           .fontWeight(.medium)
-          Text("(\(shortenedPath))")
+          Text("(\(displayPath))")
             .font(.caption)
             .foregroundStyle(.tertiary)
             .lineLimit(1)

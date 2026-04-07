@@ -114,7 +114,7 @@ final class SearchService: @unchecked Sendable {
     }
 
     results.sort { $0.relevance > $1.relevance }
-    return Array(results.prefix(50))
+    return results
   }
 
   /// Find files visually similar to a given file using embedding cosine similarity.

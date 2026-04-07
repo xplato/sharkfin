@@ -21,8 +21,12 @@ struct SearchPanelView: View {
           SearchResultDetailView(result: selected)
         } else if !viewModel.results.isEmpty {
           Divider()
-          SearchResultsGridView(results: viewModel.results)
-            .frame(maxHeight: 700)
+          SearchResultsGridView(
+            results: viewModel.displayedResults,
+            hasMore: viewModel.hasMoreResults,
+            onShowMore: { viewModel.showMoreResults() }
+          )
+          .frame(maxHeight: 700)
         } else if viewModel.state == .noResults {
           Divider()
           noResultsView

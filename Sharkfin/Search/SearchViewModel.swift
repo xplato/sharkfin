@@ -25,6 +25,21 @@ final class SearchViewModel {
   private(set) var results: [SearchResult] = []
   private(set) var availableFileTypes: [String] = []
 
+  private static let resultsPageSize = 50
+  private var displayLimit: Int = resultsPageSize
+
+  var displayedResults: [SearchResult] {
+    Array(results.prefix(displayLimit))
+  }
+
+  var hasMoreResults: Bool {
+    results.count > displayLimit
+  }
+
+  func showMoreResults() {
+    displayLimit += Self.resultsPageSize
+  }
+
   private let database: AppDatabase
   private let modelManager: CLIPModelManager
   private var searchService: SearchService?
@@ -81,6 +96,7 @@ final class SearchViewModel {
     searchTask?.cancel()
     query = ""
     results = []
+    displayLimit = Self.resultsPageSize
     state = .idle
   }
 
@@ -105,6 +121,7 @@ final class SearchViewModel {
 
   private func executeSearch(_ query: String) async {
     state = .searching
+    displayLimit = Self.resultsPageSize
     let currentFilters = filters
     do {
       let service = try await getOrCreateSearchService()

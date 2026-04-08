@@ -1,11 +1,40 @@
 {
   "fill" : {
-    "automatic-gradient" : "extended-srgb:0.00000,0.53333,1.00000,1.00000"
+    "automatic-gradient" : "display-p3:0.00000,0.32157,0.47451,1.00000"
   },
   "groups" : [
     {
       "layers" : [
         {
+          "blend-mode-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : "normal"
+            }
+          ],
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : {
+                "linear-gradient" : [
+                  "display-p3:0.38403,0.64839,1.04685,1.00000",
+                  "srgb:0.00000,0.32157,0.47451,1.00000"
+                ],
+                "orientation" : {
+                  "start" : {
+                    "x" : 0.5,
+                    "y" : 0
+                  },
+                  "stop" : {
+                    "x" : 0.5426942773887324,
+                    "y" : 1.1136020235073312
+                  }
+                }
+              }
+            }
+          ],
+          "glass" : true,
+          "hidden" : false,
           "image-name" : "Sharkfin 800.svg",
           "name" : "Sharkfin 800",
           "position" : {

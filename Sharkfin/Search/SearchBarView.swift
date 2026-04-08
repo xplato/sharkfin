@@ -98,15 +98,23 @@ struct SearchBarView: View {
       }
       
       HStack(spacing: 6) {
-        if !directoryStore.directories.isEmpty {
-          DirectoryScopeButton(scope: $viewModel.filters.directoryScope)
-        }
-        
-        if !viewModel.availableFileTypes.isEmpty {
-          SearchFilterButton(
-            selectedTypes: $viewModel.filters.fileTypes,
-            availableTypes: viewModel.availableFileTypes
-          )
+        if allDirectoriesDisabled {
+          SettingsLink {
+            FilterButtonLabel(text: "Open Settings", isActive: false)
+          }
+          .buttonStyle(.plain)
+          .fixedSize()
+        } else {
+          if !directoryStore.directories.isEmpty {
+            DirectoryScopeButton(scope: $viewModel.filters.directoryScope)
+          }
+          
+          if !viewModel.availableFileTypes.isEmpty {
+            SearchFilterButton(
+              selectedTypes: $viewModel.filters.fileTypes,
+              availableTypes: viewModel.availableFileTypes
+            )
+          }
         }
       }
     }

@@ -52,7 +52,9 @@ https://github.com/user-attachments/assets/b502dd63-7f29-4257-bbe7-11e8697a72c6
 
 ## Installation
 
-⚠️ Installing Sharkfin for general usage is currently on pause until Apple approves my developer account (been pending for a bit). In the meantime, you can build the app from source using Xcode by following the instructions in the Developing section below.
+Sharkfin is currently in pre-release (beta) testing. With that said, the current build is *safe to use* for personal use, just keep in mind that you may encounter bugs. If so, please [open an issue](https://github.com/xplato/Sharkfin/issues).
+
+View the [Sharkfin 1.0 (pre-release)](https://github.com/xplato/Sharkfin/releases/tag/v1.0_pre-release) to download the installable DMG.
 
 ## Usage
 

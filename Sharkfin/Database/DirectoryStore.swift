@@ -23,7 +23,10 @@ final class DirectoryStore {
       in: database.dbQueue,
       scheduling: .immediate
     ) { error in
-      print("DirectoryStore observation error: \(error)")
+      LoggingService.shared.info(
+        "Observation error: \(error)",
+        category: "DirectoryStore"
+      )
     } onChange: { [weak self] directories in
       self?.directories = directories
     }

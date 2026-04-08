@@ -59,7 +59,10 @@ struct AddDirectoryButton: View {
         indexingService.indexDirectory(directory)
       }
     } catch {
-      print("Failed to add directory: \(error)")
+      LoggingService.shared.info(
+        "Failed to add directory: \(error)",
+        category: "Directory"
+      )
     }
   }
 }

@@ -143,7 +143,7 @@ final class SearchViewModel {
       // Keep previous results on cancellation
     } catch {
       guard !Task.isCancelled else { return }
-      print("[Search] Error: \(error)")
+      LoggingService.shared.info("Error: \(error)", category: "Search")
       results = []
       state = .noResults
     }

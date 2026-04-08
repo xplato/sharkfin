@@ -48,24 +48,34 @@ final class SearchService: @unchecked Sendable {
 
   nonisolated func invalidateCache() {
     cache.withLock { $0 = nil }
-    print("[Search] Cache invalidated")
+    LoggingService.shared.info("Cache invalidated", category: "Search")
   }
 
   nonisolated func search(
     query: String,
     filters: SearchFilters = SearchFilters()
   ) async throws -> [SearchResult] {
+    let log = LoggingService.shared
+    let profiling = log.isDebugEnabled
+    let clock: ContinuousClock? = profiling ? ContinuousClock() : nil
+    let totalStart = clock?.now
+
     // 1. Encode query text
+    let encodeStart = clock?.now
     let queryEmbedding = try textEncoder.encode(text: query)
+    let encodeDuration = encodeStart.map { clock!.now - $0 }
 
     // 2. Get cached embeddings (loads from DB on first call)
+    let cacheStart = clock?.now
     let cached = try await getCache()
+    let cacheDuration = cacheStart.map { clock!.now - $0 }
     guard cached.count > 0, cached.dims == queryEmbedding.count else {
       return []
     }
 
     // 3. Compute all dot products via matrix × vector multiply
     //    embeddings is (N × dims), query is (dims × 1), result is (N × 1)
+    let mmulStart = clock?.now
     var scores = [Float](repeating: 0, count: cached.count)
     cached.embeddings.withUnsafeBufferPointer { embBuf in
       queryEmbedding.withUnsafeBufferPointer { qBuf in
@@ -82,8 +92,10 @@ final class SearchService: @unchecked Sendable {
         )
       }
     }
+    let mmulDuration = mmulStart.map { clock!.now - $0 }
 
     // 4. Filter by minimum score, apply filters, normalize relevance, collect results
+    let filterStart = clock?.now
     let filterByType = !filters.fileTypes.isEmpty
     let scopePrefix = filters.directoryScope.map {
       ($0.hasSuffix("/") ? $0 : $0 + "/")
@@ -120,6 +132,23 @@ final class SearchService: @unchecked Sendable {
     }
 
     results.sort { $0.relevance > $1.relevance }
+
+    if profiling, let totalStart {
+      let filterDuration = filterStart.map { clock!.now - $0 }
+      let totalDuration = clock!.now - totalStart
+      log.debug(
+        """
+        "\(query)" — \(cached.count) embeddings, \(results.count) results
+          Text encode:  \(encodeDuration!)
+          Cache load:   \(cacheDuration!)
+          vDSP_mmul:    \(mmulDuration!)
+          Filter+sort:  \(filterDuration!)
+          Total:        \(totalDuration)
+        """,
+        category: "Search"
+      )
+    }
+
     return results
   }
 
@@ -245,8 +274,9 @@ final class SearchService: @unchecked Sendable {
       fileExtensions.append(row.fileExtension ?? "")
     }
 
-    print(
-      "[Search] Cached \(fileIds.count) embeddings (\(dims) dims, \(embeddings.count * MemoryLayout<Float>.size / 1024)KB)"
+    LoggingService.shared.info(
+      "Cached \(fileIds.count) embeddings (\(dims) dims, \(embeddings.count * MemoryLayout<Float>.size / 1024)KB)",
+      category: "Search"
     )
     return EmbeddingCache(
       embeddings: embeddings,

@@ -15,12 +15,16 @@ struct SharkfinApp: App {
   init() {
     let manager = CLIPModelManager()
     _modelManager = State(initialValue: manager)
+    
     let indexing = IndexingService(database: .shared, modelManager: manager)
     _indexingService = State(initialValue: indexing)
+    
     let store = DirectoryStore(database: .shared)
     _directoryStore = State(initialValue: store)
+    
     let watcher = DirectoryWatcherService()
     _directoryWatcher = State(initialValue: watcher)
+    
     _appState = State(
       initialValue: AppState(
         database: .shared,
@@ -63,11 +67,12 @@ struct SharkfinApp: App {
 @MainActor
 @Observable
 final class AppState {
+  let modelManager: CLIPModelManager
+  let directoryStore: DirectoryStore
+  
   private var searchPanel: SearchPanel?
   private var searchViewModel: SearchViewModel
   private var searchController = SearchController()
-  let modelManager: CLIPModelManager
-  let directoryStore: DirectoryStore
   private var resignKeyObserver: Any?
   private var settingsOpener: (() -> Void)?
   private var hasPositionedPanel = false
@@ -87,6 +92,7 @@ final class AppState {
     )
     self.modelManager = modelManager
     self.directoryStore = directoryStore
+    
     KeyboardShortcuts.onKeyDown(for: .activateSearch) { [self] in
       activateSearch()
     }
@@ -108,6 +114,7 @@ final class AppState {
       openSettings()
       return
     }
+    
     if let panel = searchPanel, panel.isVisible {
       hideSearch()
     } else {
@@ -291,6 +298,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 struct MenuBarContent: View {
   let appState: AppState
+  
   @Environment(\.openSettings) private var openSettings
   @Environment(\.openWindow) private var openWindow
   

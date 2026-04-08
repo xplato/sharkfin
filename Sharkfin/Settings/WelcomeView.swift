@@ -17,10 +17,7 @@ struct WelcomeView: View {
       
       // Welcome heading
       VStack(spacing: 4) {
-        Text("Welcome to")
-          .font(.title)
-          .foregroundStyle(Color.accentColor)
-        Text("Sharkfin")
+        Text("Welcome to Sharkfin")
           .font(.title)
           .fontWeight(.bold)
       }

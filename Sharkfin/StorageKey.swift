@@ -9,4 +9,5 @@ nonisolated enum StorageKey {
   static let indexOnLaunch = "indexOnLaunch"
   static let excludedFolderNames = "excludedFolderNames"
   static let ignoreHiddenDirectories = "ignoreHiddenDirectories"
+  static let debugMode = "debugMode"
 }

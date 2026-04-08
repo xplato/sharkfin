@@ -250,6 +250,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   var indexingService: IndexingService?
 
   func applicationDidFinishLaunching(_ notification: Notification) {
+    LoggingService.shared.info("App launched", category: "App")
+
     // Start FSEvents directory watcher and index on launch
     if let watcher = directoryWatcher,
       let store = directoryStore,

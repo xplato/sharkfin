@@ -391,7 +391,10 @@ final class IndexingService {
         try fileEmbedding.insert(db)
       }
     } catch {
-      print("Failed to index \(file.filename): \(error)")
+      LoggingService.shared.info(
+        "Failed to index \(file.filename): \(error)",
+        category: "Indexing"
+      )
     }
   }
 }

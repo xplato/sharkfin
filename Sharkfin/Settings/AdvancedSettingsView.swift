@@ -18,6 +18,7 @@ struct AdvancedSettingsView: View {
   @AppStorage(StorageKey.ignoreHiddenDirectories) private
     var ignoreHiddenDirectories =
     true
+  @AppStorage(StorageKey.debugMode) private var debugMode = false
   @State private var excludedFolderNames: [String] = []
   @State private var newFolderName = ""
   @State private var stats: AppDatabase.Stats?
@@ -173,6 +174,29 @@ struct AdvancedSettingsView: View {
         }
       }
 
+      Section("Logging") {
+        Toggle(isOn: $debugMode) {
+          Text("Debug mode")
+          Text(
+            "Log detailed profiling information such as search timing breakdowns."
+          )
+        }
+
+        HStack {
+          let logsURL = AppDatabase.dataDirectoryURL
+            .appendingPathComponent("logs")
+          Text(logsURL.path(percentEncoded: false))
+            .foregroundStyle(.secondary)
+            .textSelection(.enabled)
+
+          Spacer()
+
+          Button("Open in Finder") {
+            NSWorkspace.shared.open(logsURL)
+          }
+        }
+      }
+
       Section("Reset") {
         HStack {
           VStack(alignment: .leading, spacing: 2) {
@@ -252,7 +276,10 @@ struct AdvancedSettingsView: View {
       let fetched = try db.fetchStats()
       stats = fetched
     } catch {
-      print("Failed to fetch database stats: \(error)")
+      LoggingService.shared.info(
+        "Failed to fetch database stats: \(error)",
+        category: "Settings"
+      )
     }
   }
 

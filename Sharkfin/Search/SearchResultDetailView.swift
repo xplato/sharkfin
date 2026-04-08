@@ -10,13 +10,11 @@ struct SearchResultDetailView: View {
   var body: some View {
     VStack(spacing: 0) {
       ScrollView {
-        detailToolbar
-        
-        imagePreview
+        imagePreview.padding(.top, 24).padding(.horizontal, 24)
         
         metadataColumn
           .padding(.horizontal, 24)
-          .padding(.top, 24)
+          .padding(.top, 12)
           .padding(.bottom, 16)
       }
     }
@@ -34,21 +32,6 @@ struct SearchResultDetailView: View {
     
   }
   
-  // MARK: - Toolbar
-  
-  private var detailToolbar: some View {
-    HStack(spacing: 4) {
-      ToolbarIconButton(
-        icon: "chevron.left",
-        font: .body.weight(.medium),
-        action: { searchController.clearSelection() }
-      )
-      
-      Spacer()
-    }
-    .padding(.horizontal, 16)
-    .padding(.top, 10)
-  }
   
   // MARK: - Image Preview
   
@@ -58,12 +41,7 @@ struct SearchResultDetailView: View {
       Image(nsImage: image)
         .resizable()
         .aspectRatio(contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .background(
-          Color.primary.opacity(0.06),
-          in: RoundedRectangle(cornerRadius: 8)
-        )
-        .frame(maxWidth: .infinity, maxHeight: 600)
+        .frame(maxWidth: .infinity, maxHeight: 575)
         .onTapGesture { revealInFinder() }
         .help("Click to reveal in Finder")
     } else {
@@ -243,29 +221,6 @@ private struct FileMetadataInfo {
   }
 }
 
-// MARK: - Toolbar Icon Button
 
-private struct ToolbarIconButton: View {
-  let icon: String
-  var font: Font = .body
-  let action: () -> Void
-  @State private var isHovered = false
-  
-  var body: some View {
-    Button(action: action) {
-      Image(systemName: icon)
-        .font(font)
-        .frame(width: 30, height: 30)
-        .contentShape(Rectangle())
-    }
-    .buttonStyle(.plain)
-    .foregroundStyle(isHovered ? .primary : .secondary)
-    .background(
-      RoundedRectangle(cornerRadius: 6)
-        .fill(isHovered ? Color.primary.opacity(0.08) : .clear)
-    )
-    .onHover { isHovered = $0 }
-  }
-}
 
 

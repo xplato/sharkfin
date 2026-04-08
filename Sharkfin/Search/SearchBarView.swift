@@ -34,6 +34,7 @@ struct SearchBarView: View {
   var onDismiss: () -> Void
   
   @Environment(DirectoryStore.self) private var directoryStore
+  @Environment(SearchController.self) private var searchController
   @State private var enabledFileCount: Int = 0
   
   private var allDirectoriesDisabled: Bool {
@@ -43,11 +44,24 @@ struct SearchBarView: View {
   
   var body: some View {
     HStack(spacing: 12) {
-      if allDirectoriesDisabled {
+      if searchController.selectedResult != nil {
+        Button {
+          searchController.clearSelection()
+        } label: {
+          Image(systemName: "chevron.left")
+            .foregroundStyle(.secondary)
+            .font(.system(size: 18, weight: .medium))
+            .frame(width: 22, height: 22)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("Back to results")
+      } else if allDirectoriesDisabled {
         SettingsLink {
           Image(systemName: "exclamationmark.triangle.fill")
             .foregroundStyle(.yellow)
             .font(.system(size: 18))
+            .frame(width: 22, height: 22)
         }
         .buttonStyle(.plain)
         .simultaneousGesture(
@@ -61,6 +75,7 @@ struct SearchBarView: View {
         Image(systemName: "magnifyingglass")
           .foregroundStyle(.secondary)
           .font(.system(size: 18))
+          .frame(width: 22, height: 22)
       }
       
       TextField(

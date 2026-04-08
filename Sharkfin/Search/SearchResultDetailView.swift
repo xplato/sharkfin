@@ -41,7 +41,7 @@ struct SearchResultDetailView: View {
       Image(nsImage: image)
         .resizable()
         .aspectRatio(contentMode: .fit)
-        .frame(maxWidth: .infinity, maxHeight: 575)
+        .frame(maxWidth: .infinity, maxHeight: 525)
         .onTapGesture { revealInFinder() }
         .help("Click to reveal in Finder")
     } else {

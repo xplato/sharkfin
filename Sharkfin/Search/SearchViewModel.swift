@@ -58,8 +58,9 @@ final class SearchViewModel {
     self.modelManager = modelManager
   }
 
-  func loadAvailableFileTypes() {
-    availableFileTypes = (try? database.fetchAvailableFileTypes()) ?? []
+  func loadAvailableFileTypes() async {
+    let types = (try? await database.fetchAvailableFileTypes()) ?? []
+    availableFileTypes = types
     // Remove any selected types that are no longer available
     filters.fileTypes.formIntersection(availableFileTypes)
   }

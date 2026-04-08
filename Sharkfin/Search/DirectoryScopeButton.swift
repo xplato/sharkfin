@@ -7,20 +7,20 @@ struct DirectoryScopeButton: View {
   @Environment(\.colorScheme) private var colorScheme
   @State private var trees: [DirectoryTree] = []
   @State private var rebuildToken = 0
-  
+
   private var isActive: Bool { scope != nil }
-  
+
   private var buttonLabel: String {
     guard let scope else { return "Scope" }
     return URL(fileURLWithPath: scope).lastPathComponent
   }
-  
+
   var body: some View {
     Menu {
       ForEach(trees) { tree in
         DirectoryNodeMenu(node: tree.root, scope: $scope)
       }
-      
+
       if isActive {
         Divider()
         Button("Clear Scope") {
@@ -33,32 +33,39 @@ struct DirectoryScopeButton: View {
     }
     .background(
       isActive
-      ? AnyShapeStyle(Color.accentColor)
-      : AnyShapeStyle(.clear),
+        ? AnyShapeStyle(Color.accentColor)
+        : AnyShapeStyle(.clear),
       in: RoundedRectangle(cornerRadius: 6)
     )
     .fixedSize()
     .menuIndicator(.hidden)
-    .task(id: TreeBuildID(dirIds: directoryStore.directories.map(\.id), token: rebuildToken)) {
+    .task(
+      id: TreeBuildID(
+        dirIds: directoryStore.directories.map(\.id),
+        token: rebuildToken
+      )
+    ) {
       trees = await buildTrees()
     }
-    .onReceive(NotificationCenter.default.publisher(for: .searchCacheDidInvalidate)) { _ in
+    .onReceive(
+      NotificationCenter.default.publisher(for: .searchCacheDidInvalidate)
+    ) { _ in
       rebuildToken += 1
     }
   }
-  
+
   private func buildTrees() async -> [DirectoryTree] {
     let dirs = directoryStore.directories.filter(\.enabled)
     let database = AppDatabase.shared
     return await Task.detached(priority: .userInitiated) {
       let indexedDirPaths = fetchIndexedDirectoryPaths(database: database)
-      
+
       return await withTaskGroup(of: DirectoryTree?.self) { group in
         for dir in dirs {
           group.addTask {
             let label =
-            dir.label
-            ?? URL(fileURLWithPath: dir.path).lastPathComponent
+              dir.label
+              ?? URL(fileURLWithPath: dir.path).lastPathComponent
             let children = enumerateChildren(
               at: dir.path,
               bookmark: dir.bookmark,
@@ -82,7 +89,7 @@ struct DirectoryScopeButton: View {
         let idOrder = dirs.compactMap(\.id)
         result.sort { a, b in
           (idOrder.firstIndex(of: a.directoryId) ?? .max)
-          < (idOrder.firstIndex(of: b.directoryId) ?? .max)
+            < (idOrder.firstIndex(of: b.directoryId) ?? .max)
         }
         return result
       }
@@ -115,7 +122,7 @@ private struct DirectoryNode: Identifiable {
 private struct DirectoryNodeMenu: View {
   let node: DirectoryNode
   @Binding var scope: String?
-  
+
   var body: some View {
     if node.children.isEmpty {
       Button {
@@ -170,7 +177,7 @@ nonisolated private func fetchIndexedDirectoryPaths(
       )
     })
   else { return [] }
-  
+
   var dirPaths = Set<String>()
   for filePath in paths {
     var url = URL(fileURLWithPath: filePath)
@@ -194,7 +201,7 @@ nonisolated private func enumerateChildren(
   indexedDirPaths: Set<String>
 ) -> [DirectoryNode] {
   guard depth < maxDepth else { return [] }
-  
+
   // Resolve bookmark once at the top level
   var accessURL: URL?
   if depth == 0, let bookmark {
@@ -211,7 +218,7 @@ nonisolated private func enumerateChildren(
     }
   }
   defer { accessURL?.stopAccessingSecurityScopedResource() }
-  
+
   let url = URL(fileURLWithPath: path)
   let fm = FileManager.default
   guard
@@ -223,7 +230,7 @@ nonisolated private func enumerateChildren(
   else {
     return []
   }
-  
+
   var nodes: [DirectoryNode] = []
   for item in contents {
     guard

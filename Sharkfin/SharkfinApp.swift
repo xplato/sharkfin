@@ -9,10 +9,10 @@ struct SharkfinApp: App {
   @State private var indexingService: IndexingService
   @State private var directoryWatcher: DirectoryWatcherService
   @State private var appState: AppState
-
+  
   @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
   @Environment(\.openSettings) private var openSettings
-
+  
   init() {
     let manager = CLIPModelManager()
     _modelManager = State(initialValue: manager)
@@ -29,20 +29,20 @@ struct SharkfinApp: App {
         directoryStore: store
       )
     )
-
+    
     // Give the AppDelegate references so it can start services on launch
     appDelegate.directoryWatcher = watcher
     appDelegate.directoryStore = store
     appDelegate.indexingService = indexing
   }
-
+  
   var body: some Scene {
     let _ = { appDelegate.settingsOpener = { openSettings() } }()
-
+    
     MenuBarExtra("Sharkfin", image: "MenuBarIcon") {
       MenuBarContent(appState: appState)
     }
-
+    
     Window("About Sharkfin", id: "about") {
       AboutView()
         .frame(width: 500, height: 220)
@@ -50,7 +50,7 @@ struct SharkfinApp: App {
     .windowResizability(.contentSize)
     .windowStyle(.titleBar)
     .defaultPosition(.center)
-
+    
     Settings {
       SettingsView()
         .environment(directoryStore)
@@ -72,11 +72,11 @@ final class AppState {
   private var resignKeyObserver: Any?
   private var settingsOpener: (() -> Void)?
   private var hasPositionedPanel = false
-
+  
   var needsSetup: Bool {
     !UserDefaults.standard.bool(forKey: StorageKey.hasSeenWelcome)
   }
-
+  
   init(
     database: AppDatabase,
     modelManager: CLIPModelManager,
@@ -91,7 +91,7 @@ final class AppState {
     KeyboardShortcuts.onKeyDown(for: .activateSearch) { [self] in
       activateSearch()
     }
-
+    
     resignKeyObserver = NotificationCenter.default.addObserver(
       forName: .searchPanelDidResignKey,
       object: nil,
@@ -102,7 +102,7 @@ final class AppState {
       DispatchQueue.main.async {
         // Don't hide if Quick Look panel took focus
         if QLPreviewPanel.sharedPreviewPanelExists(),
-          QLPreviewPanel.shared().isVisible
+           QLPreviewPanel.shared().isVisible
         {
           return
         }
@@ -110,7 +110,7 @@ final class AppState {
       }
     }
   }
-
+  
   func activateSearch() {
     if needsSetup {
       openSettings()
@@ -122,11 +122,11 @@ final class AppState {
       showSearch()
     }
   }
-
+  
   private func showSearch() {
     searchViewModel.cancelFilterClear()
     let panel = getOrCreatePanel()
-
+    
     // Only set the default position on first show; subsequent shows
     // preserve the user's dragged position (resets on app relaunch).
     if !hasPositionedPanel {
@@ -137,7 +137,7 @@ final class AppState {
         let panelWidth = SearchPanel.panelWidth
         let panelHeight = SearchPanel.panelHeight
         let x = screenFrame.midX - panelWidth / 2
-        let panelTopY = screenFrame.origin.y + screenFrame.height * 0.75 + 100
+        let panelTopY = screenFrame.origin.y + screenFrame.height * 0.78 + 100
         let y = panelTopY - panelHeight
         panel.setFrame(
           NSRect(x: x, y: y, width: panelWidth, height: panelHeight),
@@ -147,9 +147,9 @@ final class AppState {
       }
       hasPositionedPanel = true
     }
-
+    
     panel.makeKeyAndOrderFront(nil)
-
+    
     // Focus the text field after the hosting view has laid out
     DispatchQueue.main.async {
       if let textField = self.findTextField(in: panel.contentView) {
@@ -157,18 +157,18 @@ final class AppState {
       }
     }
   }
-
+  
   private func hideSearch() {
     searchPanel?.orderOut(nil)
     if !UserDefaults.standard.bool(forKey: StorageKey.preserveSearchFilter) {
       searchViewModel.scheduleFilterClear()
     }
   }
-
+  
   func setSettingsOpener(_ opener: @escaping () -> Void) {
     settingsOpener = opener
   }
-
+  
   func openSettings() {
     hideSearch()
     NSApplication.shared.activate(ignoringOtherApps: true)
@@ -188,10 +188,10 @@ final class AppState {
       }
     }
   }
-
+  
   private func getOrCreatePanel() -> SearchPanel {
     if let existing = searchPanel { return existing }
-
+    
     let panel = SearchPanel(
       contentRect: NSRect(
         x: 0,
@@ -200,7 +200,7 @@ final class AppState {
         height: SearchPanel.panelHeight
       )
     )
-
+    
     let hostingView = NSHostingView(
       rootView: SearchPanelView(
         viewModel: searchViewModel,
@@ -214,9 +214,9 @@ final class AppState {
       .environment(searchController)
       .environment(directoryStore)
     )
-
+    
     panel.contentView = hostingView
-
+    
     // Round the corners at the AppKit layer level so the
     // window frame itself is clipped, not just the SwiftUI content.
     hostingView.wantsLayer = true
@@ -226,7 +226,7 @@ final class AppState {
     self.searchPanel = panel
     return panel
   }
-
+  
   private func findTextField(in view: NSView?) -> NSTextField? {
     guard let view else { return nil }
     if let textField = view as? NSTextField, textField.isEditable {
@@ -248,29 +248,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   var directoryWatcher: DirectoryWatcherService?
   var directoryStore: DirectoryStore?
   var indexingService: IndexingService?
-
+  
   func applicationDidFinishLaunching(_ notification: Notification) {
     LoggingService.shared.info("App launched", category: "App")
-
+    
     // Start FSEvents directory watcher and index on launch
     if let watcher = directoryWatcher,
-      let store = directoryStore,
-      let indexing = indexingService
+       let store = directoryStore,
+       let indexing = indexingService
     {
       watcher.start(directoryStore: store, indexingService: indexing)
-
+      
       let indexOnLaunch =
-        UserDefaults.standard.object(forKey: StorageKey.indexOnLaunch) as? Bool
-        ?? true
+      UserDefaults.standard.object(forKey: StorageKey.indexOnLaunch) as? Bool
+      ?? true
       if indexOnLaunch, indexing.modelsReady {
         indexing.indexAllEnabled(from: store)
       }
     }
-
+    
     guard !UserDefaults.standard.bool(forKey: StorageKey.hasSeenWelcome) else {
       return
     }
-
+    
     let welcomeView = WelcomeView { [weak self] in
       UserDefaults.standard.set(true, forKey: StorageKey.hasSeenWelcome)
       // Defer window teardown so the button action finishes
@@ -283,7 +283,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
       }
     }
-
+    
     let window = NSWindow(
       contentRect: NSRect(x: 0, y: 0, width: 440, height: 520),
       styleMask: [.titled, .closable],
@@ -296,7 +296,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     window.center()
     window.makeKeyAndOrderFront(nil)
     NSApp.activate(ignoringOtherApps: true)
-
+    
     self.welcomeWindow = window
   }
 }
@@ -305,26 +305,26 @@ struct MenuBarContent: View {
   let appState: AppState
   @Environment(\.openSettings) private var openSettings
   @Environment(\.openWindow) private var openWindow
-
+  
   var body: some View {
     let _ = appState.setSettingsOpener { openSettings() }
-
+    
     Button("Open Search") {
       appState.activateSearch()
     }
-
+    
     Button("Settings...") {
       appState.openSettings()
     }
     .keyboardShortcut(",")
-
+    
     Divider()
-
+    
     Button("About Sharkfin") {
       openWindow(id: "about")
       NSApp.activate(ignoringOtherApps: true)
     }
-
+    
     Button("Quit") { NSApplication.shared.terminate(nil) }
       .keyboardShortcut("Q")
   }

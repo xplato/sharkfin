@@ -4,24 +4,24 @@ struct ModelRowView: View {
   let model: CLIPModelSpec
   @Environment(CLIPModelManager.self) private var manager
   @State private var showDeleteConfirmation = false
-
+  
   private var state: ModelDownloadState {
     manager.modelStates[model.id] ?? .notDownloaded
   }
-
+  
   private var formattedSize: String {
     ByteCountFormatter.string(
       fromByteCount: model.totalSizeBytes,
       countStyle: .file
     )
   }
-
+  
   var body: some View {
     HStack(alignment: .center, spacing: 10) {
       Image(systemName: iconName)
         .foregroundStyle(iconColor)
         .font(.title3)
-
+      
       VStack(alignment: .leading, spacing: 4) {
         Text(model.displayName)
           .fontWeight(.medium)
@@ -29,14 +29,14 @@ struct ModelRowView: View {
           .font(.caption)
           .foregroundStyle(.tertiary)
       }
-
+      
       Spacer()
-
+      
       statusContent
     }
     .padding(.vertical, 6)
   }
-
+  
   private var iconName: String {
     switch state {
     case .downloaded: "checkmark.circle.fill"
@@ -45,7 +45,7 @@ struct ModelRowView: View {
     case .notDownloaded: "arrow.down.to.line"
     }
   }
-
+  
   private var iconColor: Color {
     switch state {
     case .downloaded: .green
@@ -54,7 +54,7 @@ struct ModelRowView: View {
     case .notDownloaded: .secondary
     }
   }
-
+  
   @ViewBuilder
   private var statusContent: some View {
     switch state {
@@ -62,7 +62,7 @@ struct ModelRowView: View {
       Button("Download") {
         manager.download(model)
       }
-
+      
     case .downloading(let progress):
       HStack(spacing: 8) {
         ProgressView(value: progress)
@@ -79,7 +79,7 @@ struct ModelRowView: View {
         }
         .buttonStyle(.borderless)
       }
-
+      
     case .downloaded:
       Button(role: .destructive) {
         showDeleteConfirmation = true
@@ -100,7 +100,7 @@ struct ModelRowView: View {
           "The model files will be deleted. You can re-download them at any time."
         )
       }
-
+      
     case .error(let message):
       HStack(spacing: 8) {
         Text(message)

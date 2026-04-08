@@ -4,7 +4,7 @@ import GRDB
 nonisolated struct FileEmbedding: Codable, Identifiable, Sendable {
   var fileId: Int64
   var embedding: Data
-
+  
   var id: Int64 { fileId }
 }
 

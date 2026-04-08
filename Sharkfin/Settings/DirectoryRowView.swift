@@ -7,33 +7,33 @@ struct DirectoryRowView: View {
   @State private var showDeleteConfirmation = false
   @State private var showDisableConfirmation = false
   @AppStorage("suppressDisableDirectoryWarning") private
-    var suppressDisableWarning = false
-
+  var suppressDisableWarning = false
+  
   private var displayPath: String {
     (directory.path as NSString).abbreviatingWithTildeInPath
   }
-
+  
   private var progress: IndexingProgress? {
     guard let id = directory.id else { return nil }
     return indexingService.progressByDirectory[id]
   }
-
+  
   private var isIndexing: Bool {
     guard let id = directory.id else { return false }
     return indexingService.isIndexing(id)
   }
-
+  
   var body: some View {
     HStack(alignment: .center, spacing: 10) {
       Image(systemName: "folder.fill")
         .foregroundStyle(.secondary)
         .font(.title3)
-
+      
       VStack(alignment: .leading, spacing: 4) {
         HStack(spacing: 6) {
           Text(
             directory.label
-              ?? URL(fileURLWithPath: directory.path).lastPathComponent
+            ?? URL(fileURLWithPath: directory.path).lastPathComponent
           )
           .fontWeight(.medium)
           Text("(\(displayPath))")
@@ -42,16 +42,16 @@ struct DirectoryRowView: View {
             .lineLimit(1)
             .truncationMode(.middle)
         }
-
+        
         if let progress {
           progressView(progress)
         } else if directory.lastIndexedAt == nil {
           notIndexedView
         }
       }
-
+      
       Spacer()
-
+      
       if isIndexing {
         Button {
           guard let id = directory.id else { return }
@@ -71,10 +71,10 @@ struct DirectoryRowView: View {
         .disabled(!indexingService.modelsReady)
         .help(
           indexingService.modelsReady
-            ? "Index now" : "Download vision model first"
+          ? "Index now" : "Download vision model first"
         )
       }
-
+      
       Toggle(
         "Enabled",
         isOn: Binding(
@@ -94,7 +94,7 @@ struct DirectoryRowView: View {
       )
       .toggleStyle(.switch)
       .labelsHidden()
-
+      
       Button(role: .destructive) {
         showDeleteConfirmation = true
       } label: {
@@ -133,7 +133,7 @@ struct DirectoryRowView: View {
     }
     .dialogSuppressionToggle(isSuppressed: $suppressDisableWarning)
   }
-
+  
   private var notIndexedView: some View {
     Text(
       "Not yet indexed — click \(Image(systemName: "arrow.clockwise")) to start"
@@ -146,7 +146,7 @@ struct DirectoryRowView: View {
       }
     }
   }
-
+  
   @ViewBuilder
   private func progressView(_ progress: IndexingProgress) -> some View {
     switch progress.phase {

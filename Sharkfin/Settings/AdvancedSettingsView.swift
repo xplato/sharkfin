@@ -6,25 +6,25 @@ struct AdvancedSettingsView: View {
   private static let suppressionKeys = [
     "suppressDisableDirectoryWarning"
   ]
-
+  
   private static let defaultExcludedFolders = [
     "node_modules", "__pycache__",
   ]
-
+  
   @Environment(IndexingService.self) private var indexingService
   @Environment(DirectoryWatcherService.self) private var directoryWatcher
   @AppStorage(StorageKey.watchDirectories) private var watchDirectories = true
   @AppStorage(StorageKey.indexOnLaunch) private var indexOnLaunch = true
   @AppStorage(StorageKey.ignoreHiddenDirectories) private
-    var ignoreHiddenDirectories =
-    true
+  var ignoreHiddenDirectories =
+  true
   @AppStorage(StorageKey.debugMode) private var debugMode = false
   @State private var excludedFolderNames: [String] = []
   @State private var newFolderName = ""
   @State private var stats: AppDatabase.Stats?
   @State private var showResetConfirmation = false
   @State private var showResetViewStateConfirmation = false
-
+  
   private var activeJobCount: Int {
     indexingService.progressByDirectory.values.filter { progress in
       switch progress.phase {
@@ -33,7 +33,7 @@ struct AdvancedSettingsView: View {
       }
     }.count
   }
-
+  
   var body: some View {
     Form {
       Section("Indexing") {
@@ -57,7 +57,7 @@ struct AdvancedSettingsView: View {
           isOn: $ignoreHiddenDirectories
         )
       }
-
+      
       Section {
         ForEach(excludedFolderNames, id: \.self) { name in
           HStack {
@@ -73,12 +73,12 @@ struct AdvancedSettingsView: View {
             .buttonStyle(.borderless)
           }
         }
-
+        
         HStack {
           TextField("Folder name", text: $newFolderName)
             .font(.body.monospaced())
             .onSubmit { addFolder() }
-
+          
           Button {
             addFolder()
           } label: {
@@ -95,41 +95,41 @@ struct AdvancedSettingsView: View {
           "Files inside directories matching these names will be skipped during indexing."
         )
       }
-
+      
       Section("Database information") {
         if let stats {
           LabeledContent("Indexed files") {
             Text("\(stats.totalFiles)")
               .monospacedDigit()
           }
-
+          
           LabeledContent("Embeddings") {
             Text("\(stats.totalEmbeddings)")
               .monospacedDigit()
           }
-
+          
           LabeledContent("Directories") {
             Text(
               "\(stats.enabledDirectories) of \(stats.totalDirectories) enabled"
             )
             .monospacedDigit()
           }
-
+          
           LabeledContent("Source file size") {
             Text(formattedBytes(stats.totalSizeBytes))
               .monospacedDigit()
           }
-
+          
           LabeledContent("Database size") {
             Text(formattedBytes(stats.databaseSizeBytes))
               .monospacedDigit()
           }
-
+          
           LabeledContent("Thumbnails size") {
             Text(formattedBytes(stats.thumbnailsSizeBytes))
               .monospacedDigit()
           }
-
+          
           LabeledContent("Last indexed") {
             if let date = stats.lastIndexedAt {
               Text(date, format: .relative(presentation: .named))
@@ -138,7 +138,7 @@ struct AdvancedSettingsView: View {
                 .foregroundStyle(.secondary)
             }
           }
-
+          
           if activeJobCount > 0 {
             LabeledContent("Active jobs") {
               HStack(spacing: 6) {
@@ -154,7 +154,7 @@ struct AdvancedSettingsView: View {
             .frame(maxWidth: .infinity)
         }
       }
-
+      
       Section(
         header: Text("Storage"),
         footer: Text(
@@ -165,15 +165,15 @@ struct AdvancedSettingsView: View {
           Text(AppDatabase.dataDirectoryURL.path(percentEncoded: false))
             .foregroundStyle(.secondary)
             .textSelection(.enabled)
-
+          
           Spacer()
-
+          
           Button("Open in Finder") {
             NSWorkspace.shared.open(AppDatabase.dataDirectoryURL)
           }
         }
       }
-
+      
       Section("Logging") {
         Toggle(isOn: $debugMode) {
           Text("Debug mode")
@@ -181,22 +181,22 @@ struct AdvancedSettingsView: View {
             "Log detailed profiling information such as search timing breakdowns."
           )
         }
-
+        
         HStack {
           let logsURL = AppDatabase.dataDirectoryURL
             .appendingPathComponent("logs")
           Text(logsURL.path(percentEncoded: false))
             .foregroundStyle(.secondary)
             .textSelection(.enabled)
-
+          
           Spacer()
-
+          
           Button("Open in Finder") {
             NSWorkspace.shared.open(logsURL)
           }
         }
       }
-
+      
       Section("Reset") {
         HStack {
           VStack(alignment: .leading, spacing: 2) {
@@ -207,9 +207,9 @@ struct AdvancedSettingsView: View {
             .font(.caption)
             .foregroundStyle(.secondary)
           }
-
+          
           Spacer()
-
+          
           Button("Reset") {
             showResetConfirmation = true
           }
@@ -226,7 +226,7 @@ struct AdvancedSettingsView: View {
             )
           }
         }
-
+        
         HStack {
           VStack(alignment: .leading, spacing: 2) {
             Text("Reset View State")
@@ -236,9 +236,9 @@ struct AdvancedSettingsView: View {
             .font(.caption)
             .foregroundStyle(.secondary)
           }
-
+          
           Spacer()
-
+          
           Button("Reset") {
             showResetViewStateConfirmation = true
           }
@@ -269,7 +269,7 @@ struct AdvancedSettingsView: View {
       Task { await refreshStats() }
     }
   }
-
+  
   private func refreshStats() async {
     do {
       let db = AppDatabase.shared
@@ -282,11 +282,11 @@ struct AdvancedSettingsView: View {
       )
     }
   }
-
+  
   private func formattedBytes(_ bytes: Int64) -> String {
     ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
   }
-
+  
   private func loadExcludedFolders() {
     guard
       let json = UserDefaults.standard.string(
@@ -302,15 +302,15 @@ struct AdvancedSettingsView: View {
     }
     excludedFolderNames = array
   }
-
+  
   private func saveExcludedFolders() {
     if let data = try? JSONEncoder().encode(excludedFolderNames),
-      let json = String(data: data, encoding: .utf8)
+       let json = String(data: data, encoding: .utf8)
     {
       UserDefaults.standard.set(json, forKey: StorageKey.excludedFolderNames)
     }
   }
-
+  
   private func addFolder() {
     let name = newFolderName.trimmingCharacters(in: .whitespaces)
     guard !name.isEmpty, !excludedFolderNames.contains(name) else { return }
@@ -318,7 +318,7 @@ struct AdvancedSettingsView: View {
     saveExcludedFolders()
     newFolderName = ""
   }
-
+  
   private func removeFolder(_ name: String) {
     excludedFolderNames.removeAll { $0 == name }
     saveExcludedFolders()

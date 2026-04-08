@@ -6,8 +6,8 @@ struct GeneralSettingsView: View {
   @Environment(DirectoryStore.self) private var directoryStore
   @State private var startAtLogin = SMAppService.mainApp.status == .enabled
   @AppStorage(StorageKey.searchResultColumns) private var searchResultColumns =
-    4
-
+  4
+  
   var body: some View {
     Form {
       Section("Functionality") {
@@ -26,7 +26,7 @@ struct GeneralSettingsView: View {
             }
           }
       }
-
+      
       Section("Search") {
         Picker("Result columns", selection: $searchResultColumns) {
           Text("3").tag(3)
@@ -34,7 +34,7 @@ struct GeneralSettingsView: View {
           Text("5").tag(5)
         }
       }
-
+      
       Section(
         header: Text("Directories"),
         footer: Text(
@@ -49,10 +49,10 @@ struct GeneralSettingsView: View {
             DirectoryRowView(directory: directory)
           }
         }
-
+        
         AddDirectoryButton()
       }
-
+      
       Section(
         header: Text("Models"),
         footer: Text(

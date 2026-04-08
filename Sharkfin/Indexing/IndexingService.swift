@@ -17,7 +17,7 @@ nonisolated struct IndexingProgress: Sendable, Equatable {
   var total: Int
   var processed: Int
   var currentFile: String
-
+  
   init(
     phase: IndexingPhase,
     total: Int = 0,
@@ -35,38 +35,38 @@ nonisolated struct IndexingProgress: Sendable, Equatable {
 @Observable
 final class IndexingService {
   private(set) var progressByDirectory: [Int64: IndexingProgress] = [:]
-
+  
   let database: AppDatabase
   private let modelManager: CLIPModelManager
   private var activeTasks: [Int64: Task<Void, Never>] = [:]
-
+  
   init(database: AppDatabase, modelManager: CLIPModelManager) {
     self.database = database
     self.modelManager = modelManager
   }
-
+  
   var modelsReady: Bool {
     modelManager.visionModelURL != nil
   }
-
+  
   func isIndexing(_ directoryId: Int64) -> Bool {
     activeTasks[directoryId] != nil
   }
-
+  
   func indexDirectory(_ directory: SharkfinDirectory) {
     guard let dirId = directory.id else { return }
     guard activeTasks[dirId] == nil else { return }
     guard let bookmark = directory.bookmark else { return }
-
+    
     guard let visionModelURL = modelManager.visionModelURL else {
       progressByDirectory[dirId] = IndexingProgress(
         phase: .error("Vision model not downloaded")
       )
       return
     }
-
+    
     progressByDirectory[dirId] = IndexingProgress(phase: .scanning)
-
+    
     let db = database
     activeTasks[dirId] = Task.detached { [weak self] in
       do {
@@ -102,7 +102,7 @@ final class IndexingService {
       }
     }
   }
-
+  
   /// Re-indexes all enabled directories from the given store.
   func indexAllEnabled(from store: DirectoryStore) {
     for dir in store.directories where dir.enabled {
@@ -110,14 +110,14 @@ final class IndexingService {
       indexDirectory(dir)
     }
   }
-
+  
   func cancelIndexing(_ directoryId: Int64) {
     activeTasks[directoryId]?.cancel()
     activeTasks[directoryId] = nil
   }
-
+  
   // MARK: - Indexing Pipeline
-
+  
   private nonisolated static func performIndexing(
     dirId: Int64,
     bookmark: Data,
@@ -135,33 +135,33 @@ final class IndexingService {
     )
     guard url.startAccessingSecurityScopedResource() else { return }
     defer { url.stopAccessingSecurityScopedResource() }
-
+    
     // Create CLIP encoder (off main thread — model loading can be slow)
     let encoder = try CLIPImageEncoder(modelPath: visionModelURL)
-
+    
     // Phase 1: Quick scan — enumerate files without hashing
     onProgress(IndexingProgress(phase: .scanning))
-
+    
     let defaults = UserDefaults.standard
     let skipHidden =
-      defaults.object(forKey: StorageKey.ignoreHiddenDirectories) as? Bool
-      ?? true
+    defaults.object(forKey: StorageKey.ignoreHiddenDirectories) as? Bool
+    ?? true
     let excludedNames: Set<String> = {
       guard let json = defaults.string(forKey: StorageKey.excludedFolderNames),
-        let data = json.data(using: .utf8),
-        let array = try? JSONDecoder().decode([String].self, from: data)
+            let data = json.data(using: .utf8),
+            let array = try? JSONDecoder().decode([String].self, from: data)
       else { return [] }
       return Set(array)
     }()
-
+    
     let allFiles = try FileScanner.scan(
       directory: url,
       skipHiddenFiles: skipHidden,
       excludedFolderNames: excludedNames
     )
-
+    
     try Task.checkCancellation()
-
+    
     // Phase 2: Diff against existing indexed files
     let existingFiles: [String: Date] = try await database.dbQueue.read { db in
       let rows = try Row.fetchAll(
@@ -177,7 +177,7 @@ final class IndexingService {
       }
       return dict
     }
-
+    
     // Clean up records for files that no longer exist on disk
     let scannedPaths = Set(allFiles.map(\.url.path))
     let deletedPaths = Set(existingFiles.keys).subtracting(scannedPaths)
@@ -191,7 +191,7 @@ final class IndexingService {
         }
       }
     }
-
+    
     // Filter to only new or modified files.
     // The database stores dates as text with millisecond precision, so the
     // round-tripped date loses sub-millisecond information. Use a small
@@ -200,7 +200,7 @@ final class IndexingService {
       guard let existingDate = existingFiles[file.url.path] else { return true }
       return file.modifiedAt.timeIntervalSince(existingDate) > 1.0
     }
-
+    
     if filesToProcess.isEmpty {
       try await database.dbQueue.write { db in
         if var dir = try SharkfinDirectory.fetchOne(db, id: dirId) {
@@ -211,17 +211,17 @@ final class IndexingService {
       onProgress(IndexingProgress(phase: .upToDate))
       return
     }
-
+    
     // Phase 3: Process files with bounded concurrency
     let total = filesToProcess.count
     onProgress(IndexingProgress(phase: .indexing, total: total))
-
+    
     let maxConcurrency = 8
     var processed = 0
-
+    
     await withTaskGroup(of: String.self) { group in
       var index = 0
-
+      
       // Seed initial batch
       while index < min(maxConcurrency, filesToProcess.count) {
         let file = filesToProcess[index]
@@ -236,7 +236,7 @@ final class IndexingService {
           return file.filename
         }
       }
-
+      
       // As each task completes, enqueue the next file
       for await filename in group {
         if Task.isCancelled { break }
@@ -249,7 +249,7 @@ final class IndexingService {
             currentFile: filename
           )
         )
-
+        
         if index < filesToProcess.count {
           let file = filesToProcess[index]
           index += 1
@@ -265,9 +265,9 @@ final class IndexingService {
         }
       }
     }
-
+    
     try Task.checkCancellation()
-
+    
     // Update directory last-indexed timestamp
     try await database.dbQueue.write { db in
       if var dir = try SharkfinDirectory.fetchOne(db, id: dirId) {
@@ -275,7 +275,7 @@ final class IndexingService {
         try dir.update(db)
       }
     }
-
+    
     onProgress(
       IndexingProgress(
         phase: .complete(processed),
@@ -288,9 +288,9 @@ final class IndexingService {
       object: nil
     )
   }
-
+  
   // MARK: - Single File Processing
-
+  
   private nonisolated static func processFile(
     _ file: QuickScannedFile,
     directoryId: Int64,
@@ -324,7 +324,7 @@ final class IndexingService {
         }
         return
       }
-
+      
       // Downscale if too large for CLIP
       let maxDim: CGFloat = 4096
       let finalImage: NSImage
@@ -341,32 +341,32 @@ final class IndexingService {
       } else {
         finalImage = image
       }
-
+      
       // 2. Content hash (for thumbnail naming and dedup)
       let contentHash = try FileScanner.hashFile(at: file.url)
-
+      
       // 3. CLIP preprocess + encode
       guard let tensorData = ImagePreprocessor.preprocess(finalImage) else {
         return
       }
       let embedding = try encoder.encode(pixelValues: tensorData)
-
+      
       // 4. Generate thumbnail
       let thumbnailPath = try ThumbnailGenerator.generateThumbnail(
         for: file.url,
         contentHash: contentHash
       )
-
+      
       // 5. Persist to database (single transaction)
       let embeddingData = embedding.withUnsafeBufferPointer { Data(buffer: $0) }
-
+      
       try database.dbQueue.write { db in
         // Remove existing record if re-indexing a modified file
         try db.execute(
           sql: "DELETE FROM files WHERE path = ? AND directoryId = ?",
           arguments: [file.url.path, directoryId]
         )
-
+        
         var indexedFile = IndexedFile(
           path: file.url.path,
           directoryId: directoryId,
@@ -382,7 +382,7 @@ final class IndexingService {
           thumbnailPath: thumbnailPath
         )
         try indexedFile.insert(db)
-
+        
         guard let fileId = indexedFile.id else { return }
         let fileEmbedding = FileEmbedding(
           fileId: fileId,

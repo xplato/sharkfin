@@ -5,15 +5,15 @@ import Observation
 @Observable
 final class DirectoryStore {
   private(set) var directories: [SharkfinDirectory] = []
-
+  
   let database: AppDatabase
   private var cancellable: AnyDatabaseCancellable?
-
+  
   init(database: AppDatabase) {
     self.database = database
     startObservation()
   }
-
+  
   private func startObservation() {
     let observation = ValueObservation.tracking { db in
       try SharkfinDirectory

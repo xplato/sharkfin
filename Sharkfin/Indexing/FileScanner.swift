@@ -10,11 +10,11 @@ nonisolated struct QuickScannedFile: Sendable {
 }
 
 nonisolated enum FileScanner {
-
+  
   static let supportedExtensions: Set<String> = [
     "jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", "tif", "svg", "heic",
   ]
-
+  
   /// Walk directory recursively and return all supported image files.
   /// This is a fast scan that only reads filesystem metadata (no file content hashing).
   static func scan(
@@ -36,12 +36,12 @@ nonisolated enum FileScanner {
         options: options
       )
     else { return [] }
-
+    
     let directoryPath = directory.standardizedFileURL.path(
       percentEncoded: false
     )
     var results: [QuickScannedFile] = []
-
+    
     for case let fileURL as URL in enumerator {
       // Check if any path component after the base directory matches an excluded folder name
       if !excludedFolderNames.isEmpty {
@@ -54,15 +54,15 @@ nonisolated enum FileScanner {
           continue
         }
       }
-
+      
       let ext = fileURL.pathExtension.lowercased()
       guard supportedExtensions.contains(ext) else { continue }
-
+      
       let resourceValues = try fileURL.resourceValues(
         forKeys: [.fileSizeKey, .contentModificationDateKey, .isRegularFileKey]
       )
       guard resourceValues.isRegularFile == true else { continue }
-
+      
       results.append(
         QuickScannedFile(
           url: fileURL,
@@ -73,10 +73,10 @@ nonisolated enum FileScanner {
         )
       )
     }
-
+    
     return results
   }
-
+  
   /// SHA256 hash of file contents as lowercase hex string.
   static func hashFile(at url: URL) throws -> String {
     let data = try Data(contentsOf: url)

@@ -4,7 +4,7 @@ import Testing
 @testable import Sharkfin
 
 struct ImagePreprocessorTests {
-
+  
   /// Creates a solid-color NSImage of the given size.
   nonisolated private func makeImage(width: Int, height: Int) -> NSImage {
     let image = NSImage(size: NSSize(width: width, height: height))
@@ -14,7 +14,7 @@ struct ImagePreprocessorTests {
     image.unlockFocus()
     return image
   }
-
+  
   @Test func preprocessReturnsCorrectTensorSize() {
     let image = makeImage(width: 300, height: 300)
     let data = ImagePreprocessor.preprocess(image)
@@ -22,21 +22,21 @@ struct ImagePreprocessorTests {
     // 3 channels × 224 × 224 × sizeof(Float)
     #expect(data?.count == 3 * 224 * 224 * MemoryLayout<Float>.size)
   }
-
+  
   @Test func preprocessHandlesPortraitImage() {
     let image = makeImage(width: 100, height: 400)
     let data = ImagePreprocessor.preprocess(image)
     #expect(data != nil)
     #expect(data?.count == 3 * 224 * 224 * MemoryLayout<Float>.size)
   }
-
+  
   @Test func preprocessHandlesLandscapeImage() {
     let image = makeImage(width: 800, height: 200)
     let data = ImagePreprocessor.preprocess(image)
     #expect(data != nil)
     #expect(data?.count == 3 * 224 * 224 * MemoryLayout<Float>.size)
   }
-
+  
   @Test func preprocessNormalizesPixelValues() {
     let image = makeImage(width: 224, height: 224)
     guard let data = ImagePreprocessor.preprocess(image) else {
@@ -52,7 +52,7 @@ struct ImagePreprocessorTests {
     #expect(maxVal < 5)
     #expect(minVal > -5)
   }
-
+  
   @Test func preprocessHandlesTinyImage() {
     let image = makeImage(width: 1, height: 1)
     let data = ImagePreprocessor.preprocess(image)

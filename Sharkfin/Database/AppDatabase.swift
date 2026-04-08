@@ -4,19 +4,19 @@ import GRDB
 /// Manages the SQLite database for Sharkfin.
 final class AppDatabase: Sendable {
   let dbQueue: DatabaseQueue
-
+  
   init(_ dbQueue: DatabaseQueue) throws {
     self.dbQueue = dbQueue
     try migrator.migrate(dbQueue)
   }
-
+  
   private var migrator: DatabaseMigrator {
     var migrator = DatabaseMigrator()
-
-    #if DEBUG
-      migrator.eraseDatabaseOnSchemaChange = true
-    #endif
-
+    
+#if DEBUG
+    migrator.eraseDatabaseOnSchemaChange = true
+#endif
+    
     migrator.registerMigration("v1") { db in
       // directories
       try db.create(table: "directories") { t in
@@ -28,7 +28,7 @@ final class AppDatabase: Sendable {
         t.column("lastIndexedAt", .datetime)
         t.column("bookmark", .blob)
       }
-
+      
       // files
       try db.create(table: "files") { t in
         t.autoIncrementedPrimaryKey("id")
@@ -45,14 +45,14 @@ final class AppDatabase: Sendable {
         t.column("indexedAt", .datetime).notNull()
         t.column("thumbnailPath", .text)
       }
-
+      
       // file_embeddings
       try db.create(table: "fileEmbeddings") { t in
         t.primaryKey("fileId", .integer)
           .references("files", onDelete: .cascade)
         t.column("embedding", .blob).notNull()
       }
-
+      
       // file_metadata
       try db.create(table: "fileMetadata") { t in
         t.autoIncrementedPrimaryKey("id")
@@ -63,7 +63,7 @@ final class AppDatabase: Sendable {
         t.column("createdAt", .datetime).notNull()
         t.uniqueKey(["fileId", "key", "source"])
       }
-
+      
       // index_jobs
       try db.create(table: "indexJobs") { t in
         t.autoIncrementedPrimaryKey("id")
@@ -75,17 +75,17 @@ final class AppDatabase: Sendable {
         t.column("completedAt", .datetime)
         t.column("error", .text)
       }
-
+      
       // Indexes
       try db.create(indexOn: "files", columns: ["directoryId"])
       try db.create(indexOn: "files", columns: ["contentHash"])
       try db.create(indexOn: "fileMetadata", columns: ["fileId"])
       try db.create(indexOn: "fileMetadata", columns: ["key"])
     }
-
+    
     return migrator
   }
-
+  
   /// The app's data directory in Application Support.
   nonisolated static let dataDirectoryURL: URL = {
     let appSupportURL = FileManager.default.urls(
@@ -97,9 +97,9 @@ final class AppDatabase: Sendable {
       isDirectory: true
     )
   }()
-
+  
   // MARK: - Shared Instance
-
+  
   static let shared: AppDatabase = {
     do {
       return try makeShared()
@@ -107,7 +107,7 @@ final class AppDatabase: Sendable {
       fatalError("Failed to initialize database: \(error)")
     }
   }()
-
+  
   private static func makeShared() throws -> AppDatabase {
     let fileManager = FileManager.default
     let appSupportURL = try fileManager.url(
@@ -125,31 +125,31 @@ final class AppDatabase: Sendable {
       withIntermediateDirectories: true
     )
     let dbURL = directoryURL.appendingPathComponent("sharkfin.db")
-
+    
     var config = Configuration()
     config.prepareDatabase { db in
       try db.execute(sql: "PRAGMA journal_mode=WAL")
       try db.execute(sql: "PRAGMA foreign_keys=ON")
     }
-
+    
     let dbQueue = try DatabaseQueue(path: dbURL.path, configuration: config)
     return try AppDatabase(dbQueue)
   }
-
+  
   // MARK: - Directory Operations
-
+  
   func addDirectory(_ directory: inout SharkfinDirectory) throws {
     try dbQueue.write { db in
       try directory.insert(db)
     }
   }
-
+  
   func deleteDirectory(id: Int64) throws {
     try dbQueue.write { db in
       _ = try SharkfinDirectory.deleteOne(db, id: id)
     }
   }
-
+  
   func updateDirectoryEnabled(id: Int64, enabled: Bool) throws {
     try dbQueue.write { db in
       if var directory = try SharkfinDirectory.fetchOne(db, id: id) {
@@ -162,9 +162,9 @@ final class AppDatabase: Sendable {
       object: nil
     )
   }
-
+  
   // MARK: - Stats
-
+  
   nonisolated struct Stats: Sendable, Equatable {
     var totalFiles: Int
     var totalEnabledFiles: Int
@@ -176,18 +176,18 @@ final class AppDatabase: Sendable {
     var databaseSizeBytes: Int64
     var thumbnailsSizeBytes: Int64
   }
-
+  
   func fetchStats() throws -> Stats {
     let fm = FileManager.default
     let dbURL = Self.dataDirectoryURL.appendingPathComponent("sharkfin.db")
     let dbSize =
-      (try? fm.attributesOfItem(atPath: dbURL.path)[.size] as? Int64) ?? 0
+    (try? fm.attributesOfItem(atPath: dbURL.path)[.size] as? Int64) ?? 0
     // WAL and SHM files also contribute to actual disk usage
     let walSize =
-      (try? fm.attributesOfItem(
-        atPath: dbURL.path + "-wal"
-      )[.size] as? Int64) ?? 0
-
+    (try? fm.attributesOfItem(
+      atPath: dbURL.path + "-wal"
+    )[.size] as? Int64) ?? 0
+    
     let thumbsDir = ThumbnailGenerator.thumbnailsDirectory
     var thumbnailsSize: Int64 = 0
     if let enumerator = fm.enumerator(
@@ -196,39 +196,39 @@ final class AppDatabase: Sendable {
     ) {
       for case let fileURL as URL in enumerator {
         let size =
-          (try? fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        (try? fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
         thumbnailsSize += Int64(size)
       }
     }
-
+    
     return try dbQueue.read { db in
       let totalFiles =
-        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM files") ?? 0
+      try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM files") ?? 0
       let totalEnabledFiles =
-        try Int.fetchOne(
-          db,
-          sql:
-            "SELECT COUNT(*) FROM files WHERE directoryId IN (SELECT id FROM directories WHERE enabled = 1)"
-        ) ?? 0
+      try Int.fetchOne(
+        db,
+        sql:
+          "SELECT COUNT(*) FROM files WHERE directoryId IN (SELECT id FROM directories WHERE enabled = 1)"
+      ) ?? 0
       let totalEmbeddings =
-        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM fileEmbeddings") ?? 0
+      try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM fileEmbeddings") ?? 0
       let totalDirectories =
-        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM directories") ?? 0
+      try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM directories") ?? 0
       let enabledDirectories =
-        try Int.fetchOne(
-          db,
-          sql: "SELECT COUNT(*) FROM directories WHERE enabled = 1"
-        ) ?? 0
+      try Int.fetchOne(
+        db,
+        sql: "SELECT COUNT(*) FROM directories WHERE enabled = 1"
+      ) ?? 0
       let totalSizeBytes =
-        try Int64.fetchOne(
-          db,
-          sql: "SELECT COALESCE(SUM(sizeBytes), 0) FROM files"
-        ) ?? 0
+      try Int64.fetchOne(
+        db,
+        sql: "SELECT COALESCE(SUM(sizeBytes), 0) FROM files"
+      ) ?? 0
       let lastIndexedAt = try Date.fetchOne(
         db,
         sql: "SELECT MAX(lastIndexedAt) FROM directories"
       )
-
+      
       return Stats(
         totalFiles: totalFiles,
         totalEnabledFiles: totalEnabledFiles,
@@ -242,7 +242,7 @@ final class AppDatabase: Sendable {
       )
     }
   }
-
+  
   /// Lightweight query returning only the count of files in enabled directories,
   /// optionally scoped to a path prefix.
   func fetchEnabledFileCount(scopePath: String? = nil) async throws -> Int {
@@ -263,9 +263,9 @@ final class AppDatabase: Sendable {
       ) ?? 0
     }
   }
-
+  
   // MARK: - File Type Queries
-
+  
   /// Returns the distinct file extensions present in enabled directories, lowercased and sorted.
   func fetchAvailableFileTypes() async throws -> [String] {
     try await dbQueue.read { db in
@@ -280,7 +280,7 @@ final class AppDatabase: Sendable {
       )
     }
   }
-
+  
   /// Returns the security-scoped bookmark for the directory containing a file.
   func directoryBookmark(forFileId fileId: Int64) async throws -> Data? {
     try await dbQueue.read { db in
@@ -295,5 +295,5 @@ final class AppDatabase: Sendable {
       )
     }
   }
-
+  
 }

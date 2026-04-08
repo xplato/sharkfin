@@ -4,7 +4,7 @@ import SwiftUI
 struct AddDirectoryButton: View {
   @Environment(DirectoryStore.self) private var store
   @Environment(IndexingService.self) private var indexingService
-
+  
   var body: some View {
     Button {
       selectDirectory()
@@ -12,7 +12,7 @@ struct AddDirectoryButton: View {
       Label("Add Directory", systemImage: "plus")
     }
   }
-
+  
   private func selectDirectory() {
     let panel = NSOpenPanel()
     panel.canChooseDirectories = true
@@ -20,7 +20,7 @@ struct AddDirectoryButton: View {
     panel.allowsMultipleSelection = false
     panel.message = "Select a directory to index"
     panel.prompt = "Add"
-
+    
     // Accessory checkbox for immediate indexing
     let checkbox = NSButton(
       checkboxWithTitle: "Index immediately once added",
@@ -33,18 +33,18 @@ struct AddDirectoryButton: View {
     checkbox.sizeToFit()
     container.addSubview(checkbox)
     panel.accessoryView = container
-
+    
     guard panel.runModal() == .OK, let url = panel.url else { return }
-
+    
     let shouldIndex = checkbox.state == .on
-
+    
     do {
       let bookmarkData = try url.bookmarkData(
         options: [.withSecurityScope],
         includingResourceValuesForKeys: nil,
         relativeTo: nil
       )
-
+      
       var directory = SharkfinDirectory(
         path: url.path(percentEncoded: false),
         label: url.lastPathComponent,
@@ -52,9 +52,9 @@ struct AddDirectoryButton: View {
         addedAt: Date(),
         bookmark: bookmarkData
       )
-
+      
       try store.database.addDirectory(&directory)
-
+      
       if shouldIndex, indexingService.modelsReady {
         indexingService.indexDirectory(directory)
       }

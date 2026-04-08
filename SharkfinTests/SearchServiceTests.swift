@@ -7,14 +7,14 @@ import Testing
 /// A fake text encoder that returns a predetermined embedding vector.
 nonisolated struct FakeTextEncoder: TextEncoding {
   let embedding: [Float]
-
+  
   func encode(text: String) throws -> [Float] {
     embedding
   }
 }
 
 struct SearchServiceTests {
-
+  
   /// Creates an in-memory database with foreign keys enabled.
   private func makeDatabase() throws -> AppDatabase {
     var config = Configuration()
@@ -23,7 +23,7 @@ struct SearchServiceTests {
     }
     return try AppDatabase(DatabaseQueue(configuration: config))
   }
-
+  
   /// Seeds a database with a directory, files, and their embeddings.
   private func seedDatabase(
     files: [(name: String, ext: String, embedding: [Float])],
@@ -40,7 +40,7 @@ struct SearchServiceTests {
     )
     try db.addDirectory(&dir)
     let dirId = dir.id!
-
+    
     for (i, file) in files.enumerated() {
       try db.dbQueue.write { dbConn in
         var f = IndexedFile(
@@ -58,64 +58,64 @@ struct SearchServiceTests {
           thumbnailPath: "/thumbs/hash\(i).jpg"
         )
         try f.insert(dbConn)
-
+        
         let normalized = CLIPImageEncoder.l2Normalize(file.embedding)
         let data = normalized.withUnsafeBufferPointer { Data(buffer: $0) }
         try FileEmbedding(fileId: f.id!, embedding: data).insert(dbConn)
       }
     }
-
+    
     return db
   }
-
+  
   // MARK: - Search ranking
-
+  
   @Test func searchReturnsResultsSortedByRelevance() async throws {
     let queryVec = CLIPImageEncoder.l2Normalize(
       [Float](repeating: 1.0, count: 512)
     )
-
+    
     // "close" is almost identical to the query
     var closeVec = [Float](repeating: 1.0, count: 512)
     closeVec[0] = 0.95
     // "far" points in a different direction
     var farVec = [Float](repeating: 0.3, count: 512)
     farVec[0] = -0.5
-
+    
     let db = try seedDatabase(files: [
       ("close.jpg", "jpg", closeVec),
       ("far.jpg", "jpg", farVec),
     ])
-
+    
     let encoder = FakeTextEncoder(embedding: queryVec)
     let service = SearchService(database: db, textEncoder: encoder)
     let results = try await service.search(query: "test")
-
+    
     if results.count >= 2 {
       #expect(results[0].filename == "close.jpg")
     }
   }
-
+  
   @Test func searchFiltersResultsByFileType() async throws {
     let vec = CLIPImageEncoder.l2Normalize(
       [Float](repeating: 1.0, count: 512)
     )
-
+    
     let db = try seedDatabase(files: [
       ("photo.jpg", "jpg", vec),
       ("image.png", "png", vec),
     ])
-
+    
     let encoder = FakeTextEncoder(embedding: vec)
     let service = SearchService(database: db, textEncoder: encoder)
     let results = try await service.search(
       query: "test",
       filters: SearchFilters(fileTypes: ["jpg"])
     )
-
+    
     #expect(results.allSatisfy { $0.filename.hasSuffix(".jpg") })
   }
-
+  
   @Test func searchReturnsMaxSixtyResults() async throws {
     let vec = CLIPImageEncoder.l2Normalize(
       [Float](repeating: 1.0, count: 512)
@@ -124,27 +124,27 @@ struct SearchServiceTests {
       (name: "file\(i).jpg", ext: "jpg", embedding: vec)
     }
     let db = try seedDatabase(files: files)
-
+    
     let encoder = FakeTextEncoder(embedding: vec)
     let service = SearchService(database: db, textEncoder: encoder)
     let results = try await service.search(query: "test")
-
+    
     #expect(results.count <= 60)
   }
-
+  
   @Test func searchReturnsEmptyForNoEmbeddings() async throws {
     let db = try makeDatabase()
     let vec = CLIPImageEncoder.l2Normalize(
       [Float](repeating: 1.0, count: 512)
     )
-
+    
     let encoder = FakeTextEncoder(embedding: vec)
     let service = SearchService(database: db, textEncoder: encoder)
     let results = try await service.search(query: "test")
-
+    
     #expect(results.isEmpty)
   }
-
+  
   @Test func searchRelevanceIsNormalizedZeroToOne() async throws {
     let vec = CLIPImageEncoder.l2Normalize(
       [Float](repeating: 1.0, count: 512)
@@ -152,17 +152,17 @@ struct SearchServiceTests {
     let db = try seedDatabase(files: [
       ("a.jpg", "jpg", vec)
     ])
-
+    
     let encoder = FakeTextEncoder(embedding: vec)
     let service = SearchService(database: db, textEncoder: encoder)
     let results = try await service.search(query: "test")
-
+    
     for result in results {
       #expect(result.relevance >= 0)
       #expect(result.relevance <= 1)
     }
   }
-
+  
   @Test func cacheInvalidationAllowsSubsequentSearches() async throws {
     let vec = CLIPImageEncoder.l2Normalize(
       [Float](repeating: 1.0, count: 512)
@@ -170,27 +170,27 @@ struct SearchServiceTests {
     let db = try seedDatabase(files: [
       ("a.jpg", "jpg", vec)
     ])
-
+    
     let encoder = FakeTextEncoder(embedding: vec)
     let service = SearchService(database: db, textEncoder: encoder)
-
+    
     // First search populates cache
     _ = try await service.search(query: "test")
-
+    
     // Invalidate cache
     service.invalidateCache()
-
+    
     // Search should still work after invalidation
     let results = try await service.search(query: "test")
     #expect(!results.isEmpty)
   }
-
+  
   @Test func searchExcludesDisabledDirectories() async throws {
     let db = try makeDatabase()
     let vec = CLIPImageEncoder.l2Normalize(
       [Float](repeating: 1.0, count: 512)
     )
-
+    
     var enabledDir = SharkfinDirectory(
       path: "/enabled",
       label: nil,
@@ -200,7 +200,7 @@ struct SearchServiceTests {
       bookmark: nil
     )
     try db.addDirectory(&enabledDir)
-
+    
     var disabledDir = SharkfinDirectory(
       path: "/disabled",
       label: nil,
@@ -210,10 +210,10 @@ struct SearchServiceTests {
       bookmark: nil
     )
     try db.addDirectory(&disabledDir)
-
+    
     let enabledDirId = enabledDir.id!
     let disabledDirId = disabledDir.id!
-
+    
     try await db.dbQueue.write { dbConn in
       var f1 = IndexedFile(
         path: "/enabled/a.jpg",
@@ -232,7 +232,7 @@ struct SearchServiceTests {
       try f1.insert(dbConn)
       let data = vec.withUnsafeBufferPointer { Data(buffer: $0) }
       try FileEmbedding(fileId: f1.id!, embedding: data).insert(dbConn)
-
+      
       var f2 = IndexedFile(
         path: "/disabled/b.jpg",
         directoryId: disabledDirId,
@@ -250,14 +250,14 @@ struct SearchServiceTests {
       try f2.insert(dbConn)
       try FileEmbedding(fileId: f2.id!, embedding: data).insert(dbConn)
     }
-
+    
     let encoder = FakeTextEncoder(embedding: vec)
     let service = SearchService(database: db, textEncoder: encoder)
     let results = try await service.search(query: "test")
-
+    
     #expect(results.allSatisfy { $0.filename != "hidden.jpg" })
   }
-
+  
   @Test func findSimilarExcludesSourceFile() async throws {
     let vec = CLIPImageEncoder.l2Normalize(
       [Float](repeating: 1.0, count: 512)
@@ -266,25 +266,25 @@ struct SearchServiceTests {
       ("source.jpg", "jpg", vec),
       ("similar.jpg", "jpg", vec),
     ])
-
+    
     let encoder = FakeTextEncoder(embedding: vec)
     let service = SearchService(database: db, textEncoder: encoder)
-
+    
     let sourceId = try await db.dbQueue.read { dbConn in
       try IndexedFile.filter(Column("filename") == "source.jpg")
         .fetchOne(dbConn)!.id!
     }
-
+    
     let results = try await service.findSimilar(toFileId: sourceId)
     #expect(results.allSatisfy { $0.id != sourceId })
   }
-
+  
   @Test func searchFiltersByDirectoryScope() async throws {
     let db = try makeDatabase()
     let vec = CLIPImageEncoder.l2Normalize(
       [Float](repeating: 1.0, count: 512)
     )
-
+    
     var dir = SharkfinDirectory(
       path: "/photos",
       label: nil,
@@ -295,7 +295,7 @@ struct SearchServiceTests {
     )
     try db.addDirectory(&dir)
     let dirId = dir.id!
-
+    
     try await db.dbQueue.write { dbConn in
       for (i, file) in [
         ("vacation/beach.jpg", "jpg"),
@@ -321,10 +321,10 @@ struct SearchServiceTests {
         try FileEmbedding(fileId: f.id!, embedding: data).insert(dbConn)
       }
     }
-
+    
     let encoder = FakeTextEncoder(embedding: vec)
     let service = SearchService(database: db, textEncoder: encoder)
-
+    
     // Scope to /photos/vacation — should only return vacation files
     let vacationResults = try await service.search(
       query: "test",
@@ -332,21 +332,21 @@ struct SearchServiceTests {
     )
     #expect(vacationResults.count == 2)
     #expect(vacationResults.allSatisfy { $0.path.contains("vacation") })
-
+    
     // Scope to /photos — should return all 3 files
     let allResults = try await service.search(
       query: "test",
       filters: SearchFilters(directoryScope: "/photos")
     )
     #expect(allResults.count == 3)
-
+    
     // Trailing slash (matches real directory storage format) — should also work
     let trailingSlashResults = try await service.search(
       query: "test",
       filters: SearchFilters(directoryScope: "/photos/")
     )
     #expect(trailingSlashResults.count == 3)
-
+    
     // Scope to unrelated directory — should return nothing
     let noResults = try await service.search(
       query: "test",

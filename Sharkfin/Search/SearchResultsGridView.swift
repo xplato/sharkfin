@@ -5,13 +5,13 @@ struct SearchResultsGridView: View {
   var hasMore: Bool = false
   var scrollToTopToken: String = ""
   var onShowMore: (() -> Void)?
-
+  
   @AppStorage(StorageKey.searchResultColumns) private var columnCount = 4
-
+  
   private var columns: [GridItem] {
     Array(repeating: GridItem(.flexible(), spacing: 12), count: columnCount)
   }
-
+  
   var body: some View {
     ScrollViewReader { proxy in
       ScrollView {
@@ -22,7 +22,7 @@ struct SearchResultsGridView: View {
         }
         .padding(12)
         .id("resultsTop")
-
+        
         if hasMore {
           Button {
             onShowMore?()

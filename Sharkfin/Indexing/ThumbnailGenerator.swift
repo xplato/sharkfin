@@ -6,23 +6,23 @@ nonisolated enum ThumbnailError: Error {
 }
 
 nonisolated enum ThumbnailGenerator {
-
+  
   static let thumbnailsDirectory: URL = {
     AppDatabase.dataDirectoryURL
       .appendingPathComponent("thumbnails", isDirectory: true)
   }()
-
+  
   /// Generate a 256×256 max thumbnail. Uses PNG for images with transparency, JPEG otherwise.
   /// Skips generation if a thumbnail for this content hash already exists.
   static func generateThumbnail(for imageURL: URL, contentHash: String) throws
-    -> String
+  -> String
   {
     let fm = FileManager.default
     try fm.createDirectory(
       at: thumbnailsDirectory,
       withIntermediateDirectories: true
     )
-
+    
     // Check if either format already exists (content-addressed)
     let jpgURL = thumbnailsDirectory.appendingPathComponent(
       "\(contentHash).jpg"
@@ -32,11 +32,11 @@ nonisolated enum ThumbnailGenerator {
     )
     if fm.fileExists(atPath: pngURL.path) { return pngURL.path }
     if fm.fileExists(atPath: jpgURL.path) { return jpgURL.path }
-
+    
     guard let image = NSImage(contentsOf: imageURL) else {
       throw ThumbnailError.cannotLoadImage
     }
-
+    
     let size = image.size
     let maxDim: CGFloat = 256
     let scale = min(maxDim / size.width, maxDim / size.height, 1.0)
@@ -44,7 +44,7 @@ nonisolated enum ThumbnailGenerator {
       width: (size.width * scale).rounded(),
       height: (size.height * scale).rounded()
     )
-
+    
     let thumbImage = NSImage(size: newSize)
     thumbImage.lockFocus()
     NSGraphicsContext.current?.imageInterpolation = .high
@@ -55,13 +55,13 @@ nonisolated enum ThumbnailGenerator {
       fraction: 1.0
     )
     thumbImage.unlockFocus()
-
+    
     guard let tiffData = thumbImage.tiffRepresentation,
-      let bitmap = NSBitmapImageRep(data: tiffData)
+          let bitmap = NSBitmapImageRep(data: tiffData)
     else {
       throw ThumbnailError.cannotEncode
     }
-
+    
     // Use PNG if the image has alpha, JPEG otherwise
     let hasAlpha = bitmap.hasAlpha
     if hasAlpha {

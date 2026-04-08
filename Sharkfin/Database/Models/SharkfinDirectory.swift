@@ -13,7 +13,7 @@ nonisolated struct SharkfinDirectory: Codable, Identifiable, Sendable, Equatable
 }
 
 nonisolated extension SharkfinDirectory: FetchableRecord,
-  MutablePersistableRecord
+                                         MutablePersistableRecord
 {
   static let databaseTableName = "directories"
   mutating func didInsert(_ inserted: InsertionSuccess) {

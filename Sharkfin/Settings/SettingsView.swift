@@ -3,12 +3,12 @@ import SwiftUI
 struct SettingsView: View {
   @AppStorage(StorageKey.hasSeenWelcome) private var hasSeenWelcome = false
   @State private var selection: Tab = .general
-
+  
   enum Tab: Hashable {
     case general
     case advanced
   }
-
+  
   var body: some View {
     if !hasSeenWelcome {
       WelcomeView {
@@ -29,7 +29,7 @@ struct SettingsView: View {
             Label("General", systemImage: "gearshape")
           }
           .tag(Tab.general)
-
+        
         AdvancedSettingsView()
           .tabItem {
             Label("Advanced", systemImage: "slider.horizontal.3")

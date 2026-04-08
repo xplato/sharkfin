@@ -19,17 +19,17 @@ struct CLIPModelSpec: Identifiable {
   let displayName: String
   let repoID: String
   let files: [ModelFile]
-
+  
   var totalSizeBytes: Int64 {
     files.reduce(0) { $0 + $1.sizeBytes }
   }
-
+  
   func downloadURL(for file: ModelFile) -> URL {
     URL(
       string: "https://huggingface.co/\(repoID)/resolve/main/\(file.filename)"
     )!
   }
-
+  
   struct ModelFile {
     let filename: String
     let sizeBytes: Int64
@@ -51,7 +51,7 @@ extension CLIPModelSpec {
       ModelFile(filename: "special_tokens_map.json", sizeBytes: 588),
     ]
   )
-
+  
   static let visionEncoder = CLIPModelSpec(
     id: "clip-vit-base-patch32-vision-onnx",
     displayName: "CLIP Vision Encoder",
@@ -62,7 +62,7 @@ extension CLIPModelSpec {
       ModelFile(filename: "preprocessor_config.json", sizeBytes: 780),
     ]
   )
-
+  
   static let all: [CLIPModelSpec] = [textEncoder, visionEncoder]
 }
 
@@ -72,17 +72,17 @@ extension CLIPModelSpec {
 @Observable
 final class CLIPModelManager {
   private(set) var modelStates: [String: ModelDownloadState] = [:]
-
+  
   private var activeDownloads: [String: FileDownloader] = [:]
   private let fileManager = FileManager.default
-
+  
   static let modelsDirectoryURL: URL = {
     AppDatabase.dataDirectoryURL.appendingPathComponent(
       "models",
       isDirectory: true
     )
   }()
-
+  
   init() {
     try? fileManager.createDirectory(
       at: Self.modelsDirectoryURL,
@@ -93,40 +93,40 @@ final class CLIPModelManager {
       modelStates[model.id] = checkDownloadStatus(for: model)
     }
   }
-
+  
   // MARK: - Public API
-
+  
   func download(_ model: CLIPModelSpec) {
     guard modelStates[model.id] != .downloading(progress: 0) else { return }
     modelStates[model.id] = .downloading(progress: 0)
-
+    
     let downloader = FileDownloader()
     activeDownloads[model.id] = downloader
-
+    
     Task {
       await performDownload(model, downloader: downloader)
     }
   }
-
+  
   func cancel(_ model: CLIPModelSpec) {
     activeDownloads[model.id]?.cancelAll()
     activeDownloads[model.id] = nil
     cleanupPartialDownload(model)
     modelStates[model.id] = .notDownloaded
   }
-
+  
   func delete(_ model: CLIPModelSpec) {
     let modelDir = Self.modelsDirectoryURL.appendingPathComponent(model.id)
     try? fileManager.removeItem(at: modelDir)
     modelStates[model.id] = .notDownloaded
   }
-
+  
   func retry(_ model: CLIPModelSpec) {
     download(model)
   }
-
+  
   // MARK: - Convenience Accessors
-
+  
   var textModelURL: URL? {
     guard modelStates[CLIPModelSpec.textEncoder.id] == .downloaded else {
       return nil
@@ -135,7 +135,7 @@ final class CLIPModelManager {
       .appendingPathComponent(CLIPModelSpec.textEncoder.id)
       .appendingPathComponent("model.onnx")
   }
-
+  
   var textTokenizerFolderURL: URL? {
     guard modelStates[CLIPModelSpec.textEncoder.id] == .downloaded else {
       return nil
@@ -143,7 +143,7 @@ final class CLIPModelManager {
     return Self.modelsDirectoryURL
       .appendingPathComponent(CLIPModelSpec.textEncoder.id)
   }
-
+  
   var visionModelURL: URL? {
     guard modelStates[CLIPModelSpec.visionEncoder.id] == .downloaded else {
       return nil
@@ -152,20 +152,20 @@ final class CLIPModelManager {
       .appendingPathComponent(CLIPModelSpec.visionEncoder.id)
       .appendingPathComponent("model.onnx")
   }
-
+  
   var isReady: Bool {
     modelStates[CLIPModelSpec.textEncoder.id] == .downloaded
-      && modelStates[CLIPModelSpec.visionEncoder.id] == .downloaded
+    && modelStates[CLIPModelSpec.visionEncoder.id] == .downloaded
   }
-
+  
   // MARK: - Download Logic
-
+  
   private func performDownload(
     _ model: CLIPModelSpec,
     downloader: FileDownloader
   ) async {
     let modelDir = Self.modelsDirectoryURL.appendingPathComponent(model.id)
-
+    
     do {
       try fileManager.createDirectory(
         at: modelDir,
@@ -177,13 +177,13 @@ final class CLIPModelManager {
       )
       return
     }
-
+    
     let totalBytes = model.totalSizeBytes
     var completedBytes: Int64 = 0
-
+    
     for file in model.files {
       let destinationURL = modelDir.appendingPathComponent(file.filename)
-
+      
       // Skip already-downloaded files (enables resume after partial failure)
       if fileManager.fileExists(atPath: destinationURL.path) {
         completedBytes += file.sizeBytes
@@ -192,7 +192,7 @@ final class CLIPModelManager {
         )
         continue
       }
-
+      
       let baseBytes = completedBytes
       let result = await downloader.download(
         from: model.downloadURL(for: file),
@@ -207,7 +207,7 @@ final class CLIPModelManager {
           )
         }
       }
-
+      
       switch result {
       case .success:
         completedBytes += file.sizeBytes
@@ -222,15 +222,15 @@ final class CLIPModelManager {
         return
       }
     }
-
+    
     modelStates[model.id] = .downloaded
     activeDownloads[model.id] = nil
   }
-
+  
   // MARK: - File Management
-
+  
   private func checkDownloadStatus(for model: CLIPModelSpec)
-    -> ModelDownloadState
+  -> ModelDownloadState
   {
     let modelDir = Self.modelsDirectoryURL.appendingPathComponent(model.id)
     let allExist = model.files.allSatisfy { file in
@@ -240,7 +240,7 @@ final class CLIPModelManager {
     }
     return allExist ? .downloaded : .notDownloaded
   }
-
+  
   private func cleanupTemporaryFiles() {
     guard
       let enumerator = fileManager.enumerator(
@@ -254,7 +254,7 @@ final class CLIPModelManager {
       }
     }
   }
-
+  
   private func cleanupPartialDownload(_ model: CLIPModelSpec) {
     let modelDir = Self.modelsDirectoryURL.appendingPathComponent(model.id)
     guard
@@ -284,7 +284,7 @@ enum DownloadResult {
 /// The HuggingFace Xet CDN tends to drop connections on large files, so we
 /// retry aggressively with resume data to incrementally complete the download.
 final class FileDownloader: NSObject, URLSessionDownloadDelegate,
-  @unchecked Sendable
+                            @unchecked Sendable
 {
   private var continuation: CheckedContinuation<DownloadResult, Never>?
   private var progressHandler: ((Double) -> Void)?
@@ -293,9 +293,9 @@ final class FileDownloader: NSObject, URLSessionDownloadDelegate,
   private var resumeData: Data?
   private var isCancelled = false
   private var consecutiveResumeFails = 0
-
+  
   private static let maxRetries = 15
-
+  
   /// Create a fresh ephemeral session for each download attempt to avoid
   /// stale HTTP/2 connection reuse that triggers -1005 on the CDN.
   private func makeSession() -> URLSession {
@@ -308,7 +308,7 @@ final class FileDownloader: NSObject, URLSessionDownloadDelegate,
     config.requestCachePolicy = .reloadIgnoringLocalCacheData
     return URLSession(configuration: config, delegate: self, delegateQueue: nil)
   }
-
+  
   func download(
     from url: URL,
     to destination: URL,
@@ -319,24 +319,24 @@ final class FileDownloader: NSObject, URLSessionDownloadDelegate,
     self.isCancelled = false
     self.resumeData = nil
     self.consecutiveResumeFails = 0
-
+    
     var lastResult: DownloadResult = .failure("Download did not start")
-
+    
     for attempt in 0..<Self.maxRetries {
       if isCancelled { return .cancelled }
-
+      
       if attempt > 0 {
         let delay = min(2 + attempt, 10)
         try? await Task.sleep(for: .seconds(delay))
         if isCancelled { return .cancelled }
       }
-
+      
       // Fresh session per attempt avoids stale connection issues
       let session = makeSession()
-
+      
       lastResult = await withCheckedContinuation { continuation in
         self.continuation = continuation
-
+        
         let task: URLSessionDownloadTask
         if let data = self.resumeData, self.consecutiveResumeFails < 2 {
           task = session.downloadTask(withResumeData: data)
@@ -350,9 +350,9 @@ final class FileDownloader: NSObject, URLSessionDownloadDelegate,
         self.activeTask = task
         task.resume()
       }
-
+      
       session.invalidateAndCancel()
-
+      
       switch lastResult {
       case .success, .cancelled:
         return lastResult
@@ -360,18 +360,18 @@ final class FileDownloader: NSObject, URLSessionDownloadDelegate,
         continue
       }
     }
-
+    
     return lastResult
   }
-
+  
   func cancelAll() {
     isCancelled = true
     activeTask?.cancel()
     activeTask = nil
   }
-
+  
   // MARK: - URLSessionDownloadDelegate
-
+  
   nonisolated func urlSession(
     _ session: URLSession,
     downloadTask: URLSessionDownloadTask,
@@ -382,7 +382,7 @@ final class FileDownloader: NSObject, URLSessionDownloadDelegate,
       continuation = nil
       return
     }
-
+    
     do {
       let fm = FileManager.default
       if fm.fileExists(atPath: destination.path) {
@@ -396,7 +396,7 @@ final class FileDownloader: NSObject, URLSessionDownloadDelegate,
       continuation = nil
     }
   }
-
+  
   nonisolated func urlSession(
     _ session: URLSession,
     downloadTask: URLSessionDownloadTask,
@@ -408,16 +408,16 @@ final class FileDownloader: NSObject, URLSessionDownloadDelegate,
     let fraction = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
     progressHandler?(fraction)
   }
-
+  
   nonisolated func urlSession(
     _ session: URLSession,
     task: URLSessionTask,
     didCompleteWithError error: (any Error)?
   ) {
     guard let error else { return }
-
+    
     let nsError = error as NSError
-
+    
     // Capture resume data for retry
     if let data = nsError.userInfo[NSURLSessionDownloadTaskResumeData] as? Data
     {
@@ -427,7 +427,7 @@ final class FileDownloader: NSObject, URLSessionDownloadDelegate,
       // Had resume data but this attempt didn't produce new data — likely expired
       self.consecutiveResumeFails += 1
     }
-
+    
     if nsError.code == NSURLErrorCancelled && isCancelled {
       continuation?.resume(returning: .cancelled)
     } else {

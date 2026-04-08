@@ -3,11 +3,11 @@ import SwiftUI
 struct SearchFilterButton: View {
   @Binding var selectedTypes: Set<String>
   let availableTypes: [String]
-
+  
   @Environment(\.colorScheme) private var colorScheme
-
+  
   private var isActive: Bool { !selectedTypes.isEmpty }
-
+  
   private var buttonLabel: String {
     guard !selectedTypes.isEmpty else { return "Type" }
     let sorted = selectedTypes.sorted()
@@ -16,7 +16,7 @@ struct SearchFilterButton: View {
     }
     return "\(sorted[0].uppercased()), +\(sorted.count - 1)"
   }
-
+  
   var body: some View {
     Menu {
       ForEach(availableTypes, id: \.self) { ext in
@@ -36,7 +36,7 @@ struct SearchFilterButton: View {
           }
         }
       }
-
+      
       if !selectedTypes.isEmpty {
         Divider()
         Button("Clear Filter") {
@@ -49,8 +49,8 @@ struct SearchFilterButton: View {
     }
     .background(
       isActive
-        ? AnyShapeStyle(Color.accentColor)
-        : AnyShapeStyle(.clear),
+      ? AnyShapeStyle(Color.accentColor)
+      : AnyShapeStyle(.clear),
       in: RoundedRectangle(cornerRadius: 6)
     )
     .fixedSize()
@@ -64,7 +64,7 @@ struct SearchFilterButton: View {
 struct FilterButtonLabel: View {
   let text: String
   let isActive: Bool
-
+  
   var body: some View {
     Text(text)
       .font(.subheadline.weight(.medium))

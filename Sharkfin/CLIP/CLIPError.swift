@@ -4,7 +4,7 @@ enum CLIPError: LocalizedError {
   case missingOutput(String)
   case invalidEmbedding
   case modelNotReady
-
+  
   var errorDescription: String? {
     switch self {
     case .missingOutput(let name):

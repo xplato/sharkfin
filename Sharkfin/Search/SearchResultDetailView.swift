@@ -12,12 +12,12 @@ struct SearchResultDetailView: View {
       ScrollView {
         detailToolbar
         
-        VStack(spacing: 24) {
-          imagePreview
-          metadataColumn
-        }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 16)
+        imagePreview
+        
+        metadataColumn
+          .padding(.horizontal, 24)
+          .padding(.top, 24)
+          .padding(.bottom, 16)
       }
     }
     .task {
@@ -63,7 +63,7 @@ struct SearchResultDetailView: View {
           Color.primary.opacity(0.06),
           in: RoundedRectangle(cornerRadius: 8)
         )
-        .frame(maxWidth: .infinity, maxHeight: 460)
+        .frame(maxWidth: .infinity, maxHeight: 600)
         .onTapGesture { revealInFinder() }
         .help("Click to reveal in Finder")
     } else {
@@ -85,6 +85,8 @@ struct SearchResultDetailView: View {
     VStack(alignment: .leading, spacing: 12) {
       Text(result.filename)
         .font(.title.weight(.semibold))
+        .frame(maxWidth: .infinity, alignment: .center)
+        .multilineTextAlignment(.center)
       
       if let info = fileInfo {
         metadataTable(info)

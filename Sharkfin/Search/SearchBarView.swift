@@ -79,7 +79,7 @@ struct SearchBarView: View {
           .transition(.identity)
       }
 
-      HStack(spacing: 4) {
+      HStack(spacing: 6) {
         if !directoryStore.directories.isEmpty {
           DirectoryScopeButton(scope: $viewModel.filters.directoryScope)
         }

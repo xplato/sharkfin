@@ -9,19 +9,27 @@ import Foundation
 /// - All other paths under `/Users/<user>/` have that prefix stripped.
 /// - Paths that don't match either pattern are returned unchanged.
 func formatDisplayPath(_ path: String) -> String {
-    let home = FileManager.default.homeDirectoryForCurrentUser.path
-
-    let iCloudSuffix = "/Library/Mobile Documents/com~apple~CloudDocs/"
-    let iCloudPrefix = home + iCloudSuffix
-
-    if path.hasPrefix(iCloudPrefix) {
-        return "iCloud Drive/" + String(path.dropFirst(iCloudPrefix.count))
-    }
-
-    let homeSlash = home.hasSuffix("/") ? home : home + "/"
-    if path.hasPrefix(homeSlash) {
-        return String(path.dropFirst(homeSlash.count))
-    }
-
-    return path
+  // Use getpwuid to get the real home directory, since
+  // FileManager.homeDirectoryForCurrentUser returns the sandbox
+  // container path in sandboxed apps.
+  let home: String
+  if let pw = getpwuid(getuid()), let dir = pw.pointee.pw_dir {
+    home = String(cString: dir)
+  } else {
+    home = FileManager.default.homeDirectoryForCurrentUser.path
+  }
+  
+  let iCloudSuffix = "/Library/Mobile Documents/com~apple~CloudDocs/"
+  let iCloudPrefix = home + iCloudSuffix
+  
+  if path.hasPrefix(iCloudPrefix) {
+    return "iCloud Drive/" + String(path.dropFirst(iCloudPrefix.count))
+  }
+  
+  let homeSlash = home.hasSuffix("/") ? home : home + "/"
+  if path.hasPrefix(homeSlash) {
+    return String(path.dropFirst(homeSlash.count))
+  }
+  
+  return path
 }

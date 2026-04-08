@@ -1,5 +1,4 @@
 import KeyboardShortcuts
-import Quartz
 import SwiftUI
 
 @main
@@ -98,14 +97,7 @@ final class AppState {
       queue: .main
     ) { [weak self] _ in
       guard let self else { return }
-      // Check on next run loop tick so the new key window is settled
       DispatchQueue.main.async {
-        // Don't hide if Quick Look panel took focus
-        if QLPreviewPanel.sharedPreviewPanelExists(),
-          QLPreviewPanel.shared().isVisible
-        {
-          return
-        }
         self.hideSearch()
       }
     }

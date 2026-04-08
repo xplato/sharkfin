@@ -1,4 +1,3 @@
-import Quartz
 import SwiftUI
 
 struct SearchResultDetailView: View {
@@ -7,17 +6,16 @@ struct SearchResultDetailView: View {
   @State private var fileInfo: FileMetadataInfo?
   @State private var previewImage: NSImage?
   @State private var securityScopedURL: URL?
-
+  
   var body: some View {
     VStack(spacing: 0) {
       ScrollView {
-        detailToolbar
-
-        HStack(alignment: .top, spacing: 16) {
-          imagePreview
-          metadataColumn
-        }
-        .padding(16)
+        imagePreview.padding(.top, 24).padding(.horizontal, 24)
+        
+        metadataColumn
+          .padding(.horizontal, 24)
+          .padding(.top, 12)
+          .padding(.bottom, 16)
       }
     }
     .task {
@@ -31,60 +29,26 @@ struct SearchResultDetailView: View {
     .onDisappear {
       securityScopedURL?.stopAccessingSecurityScopedResource()
     }
-    .onKeyPress(.space) {
-      quickLook()
-      return .handled
-    }
+    
   }
-
-  // MARK: - Toolbar
-
-  private var detailToolbar: some View {
-    HStack(spacing: 4) {
-      ToolbarIconButton(
-        icon: "chevron.left",
-        font: .body.weight(.medium),
-        action: { searchController.clearSelection() }
-      )
-
-      Spacer()
-
-      ToolbarIconButton(
-        icon: "arrow.up.left.and.arrow.down.right",
-        action: { quickLook() }
-      )
-      .help("Quick Look")
-
-      ToolbarIconButton(
-        icon: "folder",
-        action: { revealInFinder() }
-      )
-      .help("Reveal in Finder")
-    }
-    .padding(.horizontal, 16)
-    .padding(.top, 10)
-  }
-
+  
+  
   // MARK: - Image Preview
-
+  
   @ViewBuilder
   private var imagePreview: some View {
     if let image = previewImage {
       Image(nsImage: image)
         .resizable()
         .aspectRatio(contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .background(
-          Color.primary.opacity(0.06),
-          in: RoundedRectangle(cornerRadius: 8)
-        )
-        .frame(maxWidth: 260, maxHeight: 360)
+        .frame(maxWidth: .infinity, maxHeight: 575)
         .onTapGesture { revealInFinder() }
         .help("Click to reveal in Finder")
     } else {
       RoundedRectangle(cornerRadius: 8)
         .fill(.quaternary)
-        .frame(width: 260, height: 200)
+        .frame(maxWidth: .infinity)
+        .frame(height: 200)
         .overlay {
           Image(systemName: "photo")
             .font(.largeTitle)
@@ -92,21 +56,23 @@ struct SearchResultDetailView: View {
         }
     }
   }
-
+  
   // MARK: - Metadata Column
-
+  
   private var metadataColumn: some View {
     VStack(alignment: .leading, spacing: 12) {
       Text(result.filename)
-        .font(.title2.weight(.medium))
-
+        .font(.title.weight(.semibold))
+        .frame(maxWidth: .infinity, alignment: .center)
+        .multilineTextAlignment(.center)
+      
       if let info = fileInfo {
         metadataTable(info)
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
   }
-
+  
   private func metadataTable(_ info: FileMetadataInfo) -> some View {
     VStack(spacing: 0) {
       if let type = info.fileType {
@@ -127,7 +93,7 @@ struct SearchResultDetailView: View {
         Text("Path")
           .foregroundStyle(.secondary)
         Spacer()
-        Text(result.path)
+        Text(formatDisplayPath(result.path))
           .foregroundStyle(.primary)
           .lineLimit(2)
           .truncationMode(.middle)
@@ -138,7 +104,7 @@ struct SearchResultDetailView: View {
       .padding(.vertical, 6)
     }
   }
-
+  
   private func metadataRow(_ label: String, value: String) -> some View {
     HStack {
       Text(label)
@@ -150,9 +116,9 @@ struct SearchResultDetailView: View {
     .font(.callout)
     .padding(.vertical, 6)
   }
-
+  
   // MARK: - Security Scope
-
+  
   private func resolveSecurityScope() async {
     guard
       let bookmark = try? await AppDatabase.shared
@@ -171,24 +137,19 @@ struct SearchResultDetailView: View {
       securityScopedURL = url
     }
   }
-
+  
   // MARK: - Actions
-
+  
   private func revealInFinder() {
     NSWorkspace.shared.selectFile(
       result.path,
       inFileViewerRootedAtPath: ""
     )
   }
-
-  private func quickLook() {
-    QuickLookHelper.shared.preview(
-      url: URL(fileURLWithPath: result.path)
-    )
-  }
-
+  
+  
   // MARK: - Image Loading
-
+  
   private static func loadImage(
     at path: String,
     fallbackThumbnail: String?
@@ -208,48 +169,48 @@ private struct FileMetadataInfo {
   let resolution: String?
   let modified: String
   let created: String
-
+  
   static func load(from path: String) -> FileMetadataInfo? {
     let fm = FileManager.default
     guard let attrs = try? fm.attributesOfItem(atPath: path) else {
       return nil
     }
-
+    
     let url = URL(fileURLWithPath: path)
-
+    
     let ext = url.pathExtension
     let fileType = ext.isEmpty ? nil : ext.uppercased()
-
+    
     let bytes = (attrs[.size] as? Int64) ?? 0
     let fileSize = ByteCountFormatter.string(
       fromByteCount: bytes,
       countStyle: .file
     )
-
+    
     var resolution: String? = nil
     if let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-      let props = CGImageSourceCopyPropertiesAtIndex(
+       let props = CGImageSourceCopyPropertiesAtIndex(
         source,
         0,
         nil
-      ) as? [String: Any],
-      let w = props[kCGImagePropertyPixelWidth as String] as? Int,
-      let h = props[kCGImagePropertyPixelHeight as String] as? Int
+       ) as? [String: Any],
+       let w = props[kCGImagePropertyPixelWidth as String] as? Int,
+       let h = props[kCGImagePropertyPixelHeight as String] as? Int
     {
       resolution = "\(w) × \(h)"
     }
-
+    
     let formatter = DateFormatter()
     formatter.dateStyle = .medium
     formatter.timeStyle = .short
-
+    
     let modified =
-      (attrs[.modificationDate] as? Date)
+    (attrs[.modificationDate] as? Date)
       .map { formatter.string(from: $0) } ?? "—"
     let created =
-      (attrs[.creationDate] as? Date)
+    (attrs[.creationDate] as? Date)
       .map { formatter.string(from: $0) } ?? "—"
-
+    
     return FileMetadataInfo(
       fileType: fileType,
       fileSize: fileSize,
@@ -260,60 +221,6 @@ private struct FileMetadataInfo {
   }
 }
 
-// MARK: - Toolbar Icon Button
 
-private struct ToolbarIconButton: View {
-  let icon: String
-  var font: Font = .body
-  let action: () -> Void
-  @State private var isHovered = false
 
-  var body: some View {
-    Button(action: action) {
-      Image(systemName: icon)
-        .font(font)
-        .frame(width: 30, height: 30)
-        .contentShape(Rectangle())
-    }
-    .buttonStyle(.plain)
-    .foregroundStyle(isHovered ? .primary : .secondary)
-    .background(
-      RoundedRectangle(cornerRadius: 6)
-        .fill(isHovered ? Color.primary.opacity(0.08) : .clear)
-    )
-    .onHover { isHovered = $0 }
-  }
-}
 
-// MARK: - Quick Look Helper
-
-final class QuickLookHelper: NSObject, QLPreviewPanelDataSource,
-  @unchecked Sendable
-{
-  @MainActor static let shared = QuickLookHelper()
-
-  nonisolated(unsafe) private var previewURL: NSURL?
-
-  @MainActor
-  func preview(url: URL) {
-    previewURL = url as NSURL
-    guard let panel = QLPreviewPanel.shared() else { return }
-    panel.dataSource = self
-    if panel.isVisible {
-      panel.reloadData()
-    } else {
-      panel.makeKeyAndOrderFront(nil)
-    }
-  }
-
-  func numberOfPreviewItems(in panel: QLPreviewPanel!) -> Int {
-    previewURL != nil ? 1 : 0
-  }
-
-  func previewPanel(
-    _ panel: QLPreviewPanel!,
-    previewItemAt index: Int
-  ) -> (any QLPreviewItem)! {
-    previewURL
-  }
-}

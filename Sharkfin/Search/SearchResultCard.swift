@@ -4,11 +4,11 @@ struct SearchResultCard: View {
   let result: SearchResult
   @Environment(SearchController.self) private var searchController
   @State private var isHovering = false
-
+  
   var body: some View {
     Group {
       if let thumbPath = result.thumbnailPath,
-        let nsImage = NSImage(contentsOfFile: thumbPath)
+         let nsImage = NSImage(contentsOfFile: thumbPath)
       {
         Color.clear
           .aspectRatio(1, contentMode: .fit)
@@ -44,6 +44,6 @@ struct SearchResultCard: View {
     .onTapGesture {
       searchController.selectResult(result)
     }
-    .help(result.path)
+    .help(formatDisplayPath(result.path))
   }
 }

@@ -2,7 +2,7 @@ import SwiftUI
 
 private struct SpinnerView: View {
   @State private var rotation = 0.0
-
+  
   var body: some View {
     Circle()
       .trim(from: 0, to: 0.7)
@@ -32,22 +32,22 @@ struct SearchBarView: View {
   @Bindable var viewModel: SearchViewModel
   var onSubmit: () -> Void
   var onDismiss: () -> Void
-
+  
   @Environment(DirectoryStore.self) private var directoryStore
   @State private var enabledFileCount: Int = 0
-
+  
   private var allDirectoriesDisabled: Bool {
     !directoryStore.directories.isEmpty
-      && !directoryStore.directories.contains(where: \.enabled)
+    && !directoryStore.directories.contains(where: \.enabled)
   }
-
+  
   var body: some View {
     HStack(spacing: 12) {
       if allDirectoriesDisabled {
         SettingsLink {
           Image(systemName: "exclamationmark.triangle.fill")
             .foregroundStyle(.yellow)
-            .font(.title2)
+            .font(.system(size: 18))
         }
         .buttonStyle(.plain)
         .simultaneousGesture(
@@ -60,30 +60,30 @@ struct SearchBarView: View {
       } else {
         Image(systemName: "magnifyingglass")
           .foregroundStyle(.secondary)
-          .font(.title2)
+          .font(.system(size: 18))
       }
-
+      
       TextField(
         allDirectoriesDisabled
-          ? "All directories disabled"
-          : "Search \(enabledFileCount) files...",
+        ? "All directories disabled"
+        : "Search \(enabledFileCount) files...",
         text: $viewModel.query
       )
       .textFieldStyle(.plain)
-      .font(.title3)
+      .font(.system(size: 18))
       .onSubmit { onSubmit() }
       .disabled(allDirectoriesDisabled)
-
+      
       if viewModel.state == .searching {
         SpinnerView()
           .transition(.identity)
       }
-
+      
       HStack(spacing: 6) {
         if !directoryStore.directories.isEmpty {
           DirectoryScopeButton(scope: $viewModel.filters.directoryScope)
         }
-
+        
         if !viewModel.availableFileTypes.isEmpty {
           SearchFilterButton(
             selectedTypes: $viewModel.filters.fileTypes,
@@ -93,7 +93,7 @@ struct SearchBarView: View {
       }
     }
     .padding(.horizontal, 16)
-    .padding(.vertical, 12)
+    .padding(.vertical, 14)
     .task {
       updateFileCount()
       viewModel.loadAvailableFileTypes()
@@ -109,11 +109,11 @@ struct SearchBarView: View {
       viewModel.filtersChanged()
     }
   }
-
+  
   private func updateFileCount() {
     enabledFileCount =
-      (try? AppDatabase.shared.fetchEnabledFileCount(
-        scopePath: viewModel.filters.directoryScope
-      )) ?? 0
+    (try? AppDatabase.shared.fetchEnabledFileCount(
+      scopePath: viewModel.filters.directoryScope
+    )) ?? 0
   }
 }

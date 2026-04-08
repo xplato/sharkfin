@@ -32,6 +32,7 @@ struct SearchBarView: View {
   @Bindable var viewModel: SearchViewModel
   var onSubmit: () -> Void
   var onDismiss: () -> Void
+  var isSearchFieldFocused: FocusState<Bool>.Binding
   
   @Environment(DirectoryStore.self) private var directoryStore
   @Environment(SearchController.self) private var searchController
@@ -47,6 +48,7 @@ struct SearchBarView: View {
       if searchController.selectedResult != nil {
         Button {
           searchController.clearSelection()
+          isSearchFieldFocused.wrappedValue = true
         } label: {
           Image(systemName: "chevron.left")
             .foregroundStyle(.secondary)
@@ -84,6 +86,7 @@ struct SearchBarView: View {
         : "Search \(enabledFileCount) files...",
         text: $viewModel.query
       )
+      .focused(isSearchFieldFocused)
       .textFieldStyle(.plain)
       .font(.system(size: 18))
       .onSubmit { onSubmit() }
@@ -130,7 +133,7 @@ struct SearchBarView: View {
   private func updateFileCount() async {
     let scope = viewModel.filters.directoryScope
     enabledFileCount =
-      (try? await AppDatabase.shared.fetchEnabledFileCount(scopePath: scope))
-      ?? 0
+    (try? await AppDatabase.shared.fetchEnabledFileCount(scopePath: scope))
+    ?? 0
   }
 }

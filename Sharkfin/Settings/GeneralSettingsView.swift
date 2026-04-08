@@ -5,8 +5,6 @@ import SwiftUI
 struct GeneralSettingsView: View {
   @Environment(DirectoryStore.self) private var directoryStore
   @State private var startAtLogin = SMAppService.mainApp.status == .enabled
-  @AppStorage(StorageKey.preserveSearchFilter) private
-    var preserveSearchFilter = false
   @AppStorage(StorageKey.searchResultColumns) private var searchResultColumns =
     4
 
@@ -30,15 +28,6 @@ struct GeneralSettingsView: View {
       }
 
       Section("Search") {
-        Toggle(isOn: $preserveSearchFilter) {
-          Text("Preserve search filters")
-          Text(
-            preserveSearchFilter
-              ? "Search filters will not be cleared automatically."
-              : "Search filters will be cleared 15 seconds after closing the searchbar."
-          )
-        }
-
         Picker("Result columns", selection: $searchResultColumns) {
           Text("3").tag(3)
           Text("4").tag(4)

@@ -52,7 +52,7 @@ final class SearchViewModel {
   private let modelManager: CLIPModelManager
   private var searchService: SearchService?
   private var searchTask: Task<Void, Never>?
-  private var filterClearTask: Task<Void, Never>?
+
 
   init(database: AppDatabase, modelManager: CLIPModelManager) {
     self.database = database
@@ -106,23 +106,6 @@ final class SearchViewModel {
     results = []
     displayLimit = Self.pageSize()
     state = .idle
-  }
-
-  /// Schedules a delayed filter clear (used when the search bar is dismissed with preserve OFF).
-  func scheduleFilterClear(delay: Duration = .seconds(15)) {
-    filterClearTask?.cancel()
-    guard !filters.isEmpty else { return }
-    filterClearTask = Task {
-      try? await Task.sleep(for: delay)
-      guard !Task.isCancelled else { return }
-      filters = SearchFilters()
-    }
-  }
-
-  /// Cancels any pending delayed filter clear (called when the search bar reappears).
-  func cancelFilterClear() {
-    filterClearTask?.cancel()
-    filterClearTask = nil
   }
 
   // MARK: - Private

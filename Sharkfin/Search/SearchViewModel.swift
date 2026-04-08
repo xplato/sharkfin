@@ -53,7 +53,6 @@ final class SearchViewModel {
   private var searchService: SearchService?
   private var searchTask: Task<Void, Never>?
 
-
   init(database: AppDatabase, modelManager: CLIPModelManager) {
     self.database = database
     self.modelManager = modelManager

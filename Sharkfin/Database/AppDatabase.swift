@@ -243,10 +243,20 @@ final class AppDatabase: Sendable {
     }
   }
 
-  /// Lightweight query returning only the count of files in enabled directories.
-  func fetchEnabledFileCount() throws -> Int {
+  /// Lightweight query returning only the count of files in enabled directories,
+  /// optionally scoped to a path prefix.
+  func fetchEnabledFileCount(scopePath: String? = nil) throws -> Int {
     try dbQueue.read { db in
-      try Int.fetchOne(
+      if let scopePath {
+        let prefix = scopePath.hasSuffix("/") ? scopePath : scopePath + "/"
+        return try Int.fetchOne(
+          db,
+          sql:
+            "SELECT COUNT(*) FROM files WHERE directoryId IN (SELECT id FROM directories WHERE enabled = 1) AND path LIKE ?",
+          arguments: [prefix + "%"]
+        ) ?? 0
+      }
+      return try Int.fetchOne(
         db,
         sql:
           "SELECT COUNT(*) FROM files WHERE directoryId IN (SELECT id FROM directories WHERE enabled = 1)"

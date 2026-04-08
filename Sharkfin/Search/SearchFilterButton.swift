@@ -4,6 +4,8 @@ struct SearchFilterButton: View {
   @Binding var selectedTypes: Set<String>
   let availableTypes: [String]
 
+  @Environment(\.colorScheme) private var colorScheme
+
   private var isActive: Bool { !selectedTypes.isEmpty }
 
   private var buttonLabel: String {
@@ -42,12 +44,8 @@ struct SearchFilterButton: View {
         }
       }
     } label: {
-      Text(buttonLabel)
-        .font(.subheadline.weight(.medium))
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .foregroundStyle(isActive ? .white : .secondary)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+      FilterButtonLabel(text: buttonLabel, isActive: isActive)
+        .environment(\.colorScheme, isActive ? .dark : colorScheme)
     }
     .background(
       isActive
@@ -57,5 +55,22 @@ struct SearchFilterButton: View {
     )
     .fixedSize()
     .menuIndicator(.hidden)
+  }
+}
+
+/// Shared label used by both filter buttons. The text color is controlled
+/// through the environment color scheme set by the parent, while the
+/// background is applied to the Menu itself (outside the label).
+struct FilterButtonLabel: View {
+  let text: String
+  let isActive: Bool
+
+  var body: some View {
+    Text(text)
+      .font(.subheadline.weight(.medium))
+      .foregroundStyle(isActive ? .primary : .secondary)
+      .padding(.horizontal, 10)
+      .padding(.vertical, 5)
+      .contentShape(RoundedRectangle(cornerRadius: 6))
   }
 }

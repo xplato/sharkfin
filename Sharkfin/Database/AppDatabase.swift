@@ -245,8 +245,8 @@ final class AppDatabase: Sendable {
 
   /// Lightweight query returning only the count of files in enabled directories,
   /// optionally scoped to a path prefix.
-  func fetchEnabledFileCount(scopePath: String? = nil) throws -> Int {
-    try dbQueue.read { db in
+  func fetchEnabledFileCount(scopePath: String? = nil) async throws -> Int {
+    try await dbQueue.read { db in
       if let scopePath {
         let prefix = scopePath.hasSuffix("/") ? scopePath : scopePath + "/"
         return try Int.fetchOne(
@@ -267,8 +267,8 @@ final class AppDatabase: Sendable {
   // MARK: - File Type Queries
 
   /// Returns the distinct file extensions present in enabled directories, lowercased and sorted.
-  func fetchAvailableFileTypes() throws -> [String] {
-    try dbQueue.read { db in
+  func fetchAvailableFileTypes() async throws -> [String] {
+    try await dbQueue.read { db in
       try String.fetchAll(
         db,
         sql: """

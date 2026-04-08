@@ -1,3 +1,4 @@
+import Foundation
 import GRDB
 import Observation
 
@@ -21,7 +22,7 @@ final class DirectoryStore {
     }
     cancellable = observation.start(
       in: database.dbQueue,
-      scheduling: .immediate
+      scheduling: .async(onQueue: .main)
     ) { error in
       LoggingService.shared.info(
         "Observation error: \(error)",

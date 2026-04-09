@@ -37,6 +37,8 @@ struct SharkfinApp: App {
     appDelegate.directoryWatcher = watcher
     appDelegate.directoryStore = store
     appDelegate.indexingService = indexing
+    appDelegate.appState = appState
+    appDelegate.modelManager = manager
   }
   
   var body: some Scene {
@@ -60,6 +62,7 @@ struct SharkfinApp: App {
         .environment(modelManager)
         .environment(indexingService)
         .environment(directoryWatcher)
+        .environment(appState)
     }
   }
 }
@@ -243,6 +246,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   var directoryWatcher: DirectoryWatcherService?
   var directoryStore: DirectoryStore?
   var indexingService: IndexingService?
+  var appState: AppState?
+  var modelManager: CLIPModelManager?
   
   func applicationDidFinishLaunching(_ notification: Notification) {
     LoggingService.shared.info("App launched", category: "App")
@@ -266,21 +271,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       return
     }
     
-    let welcomeView = WelcomeView { [weak self] in
+    let welcomeView = WelcomeView(onComplete: { [weak self] in
       UserDefaults.standard.set(true, forKey: StorageKey.hasSeenWelcome)
       // Defer window teardown so the button action finishes
       // before the hosting view hierarchy is destroyed.
       DispatchQueue.main.async {
         self?.welcomeWindow?.close()
         self?.welcomeWindow = nil
-        // Open settings after dismissing the welcome window
-        self?.settingsOpener?()
-        NSApp.activate(ignoringOtherApps: true)
       }
-    }
+    })
+      .environment(modelManager!)
+      .environment(directoryStore!)
+      .environment(indexingService!)
+      .environment(appState!)
     
     let window = NSWindow(
-      contentRect: NSRect(x: 0, y: 0, width: 440, height: 520),
+      contentRect: NSRect(x: 0, y: 0, width: 480, height: 560),
       styleMask: [.titled, .closable],
       backing: .buffered,
       defer: false

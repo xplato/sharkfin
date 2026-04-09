@@ -11,14 +11,14 @@ struct SettingsView: View {
   
   var body: some View {
     if !hasSeenWelcome {
-      WelcomeView {
+      WelcomeView(onComplete: {
         hasSeenWelcome = true
-      }
+      })
       .frame(
-        minWidth: 400,
+        minWidth: 480,
         idealWidth: 500,
         maxWidth: 600,
-        minHeight: 500,
+        minHeight: 560,
         idealHeight: 600,
         maxHeight: 900
       )

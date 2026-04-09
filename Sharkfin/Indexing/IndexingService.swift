@@ -283,10 +283,12 @@ final class IndexingService {
         processed: processed
       )
     )
-    await NotificationCenter.default.post(
-      name: .searchCacheDidInvalidate,
-      object: nil
-    )
+    await MainActor.run {
+      NotificationCenter.default.post(
+        name: .searchCacheDidInvalidate,
+        object: nil
+      )
+    }
   }
   
   // MARK: - Single File Processing

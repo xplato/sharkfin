@@ -30,8 +30,9 @@ final class DirectoryStore {
         category: "DirectoryStore"
       )
     } onChange: { [weak self] directories in
-      MainActor.assumeIsolated {
-        self?.directories = directories
+      guard let self else { return }
+      Task { @MainActor in
+        self.directories = directories
       }
     }
   }

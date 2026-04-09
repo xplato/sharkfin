@@ -35,6 +35,7 @@ struct ModelRowView: View {
       statusContent
     }
     .padding(.vertical, 6)
+    .padding(.horizontal, 6)
   }
   
   private var iconName: String {

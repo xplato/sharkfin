@@ -2,6 +2,7 @@ import Foundation
 import GRDB
 import Observation
 
+@MainActor
 @Observable
 final class DirectoryStore {
   private(set) var directories: [SharkfinDirectory] = []

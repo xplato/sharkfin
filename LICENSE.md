@@ -1,3 +1,5 @@
+Copyright (c) 2026 Tristan Brewster
+
 Mozilla Public License Version 2.0
 ==================================
 

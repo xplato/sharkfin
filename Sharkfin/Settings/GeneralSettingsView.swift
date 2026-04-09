@@ -65,5 +65,12 @@ struct GeneralSettingsView: View {
       }
     }
     .formStyle(.grouped)
+    .onAppear {
+      // Prevent the keyboard shortcut recorder from receiving
+      // focus when the settings window first opens.
+      DispatchQueue.main.async {
+        NSApp.keyWindow?.makeFirstResponder(nil)
+      }
+    }
   }
 }

@@ -1,8 +1,20 @@
 import SwiftUI
 
+extension Notification.Name {
+  static let viewStateDidReset = Notification.Name("viewStateDidReset")
+}
+
 struct SettingsView: View {
-  @AppStorage(StorageKey.hasSeenWelcome) private var hasSeenWelcome = false
+  // Local state decoupled from @AppStorage so the CompleteStep's
+  // direct UserDefaults write doesn't immediately switch to tabs.
+  @State private var showOnboarding: Bool
   @State private var selection: Tab = .general
+  
+  init() {
+    _showOnboarding = State(
+      initialValue: !UserDefaults.standard.bool(forKey: StorageKey.hasSeenWelcome)
+    )
+  }
   
   enum Tab: Hashable {
     case general
@@ -10,9 +22,9 @@ struct SettingsView: View {
   }
   
   var body: some View {
-    if !hasSeenWelcome {
+    if showOnboarding {
       WelcomeView(onComplete: {
-        hasSeenWelcome = true
+        showOnboarding = false
       })
       .frame(
         minWidth: 480,
@@ -44,6 +56,9 @@ struct SettingsView: View {
         idealHeight: 600,
         maxHeight: 900
       )
+      .onReceive(NotificationCenter.default.publisher(for: .viewStateDidReset)) { _ in
+        showOnboarding = true
+      }
     }
   }
 }

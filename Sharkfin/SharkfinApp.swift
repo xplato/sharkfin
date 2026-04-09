@@ -126,6 +126,12 @@ final class AppState {
   }
   
   private func showSearch() {
+    // Hide any settings or welcome windows so the search panel is unobstructed.
+    for window in NSApplication.shared.windows
+    where !(window is SearchPanel) && window.isVisible && window.level == .normal {
+      window.orderOut(nil)
+    }
+    
     let panel = getOrCreatePanel()
     
     // Only set the default position on first show; subsequent shows

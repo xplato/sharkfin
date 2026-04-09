@@ -1,3 +1,4 @@
+import KeyboardShortcuts
 import SwiftUI
 
 // MARK: - Onboarding Step
@@ -55,14 +56,7 @@ struct WelcomeView: View {
           )
         case .complete:
           CompleteStep(
-            onOpenSearch: {
-              onComplete()
-              // Defer search activation so the window teardown finishes first
-              DispatchQueue.main.async {
-                appState.activateSearch()
-              }
-            },
-            onGoToSettings: {
+            onComplete: {
               onComplete()
             }
           )
@@ -644,8 +638,7 @@ private struct OnboardingDirectoryRow: View {
 // MARK: - Complete Step
 
 private struct CompleteStep: View {
-  var onOpenSearch: () -> Void
-  var onGoToSettings: () -> Void
+  var onComplete: () -> Void
   
   var body: some View {
     VStack(spacing: 0) {
@@ -663,32 +656,46 @@ private struct CompleteStep: View {
       
       Spacer().frame(height: 8)
       
-      Text(
-        "Sharkfin is ready to go. Use the global shortcut\nor click below to start searching."
-      )
-      .font(.body)
-      .foregroundStyle(.secondary)
-      .multilineTextAlignment(.center)
+      Text("Customize the shortcut below, or use it to start searching.")
+        .font(.body)
+        .foregroundStyle(.secondary)
+        .multilineTextAlignment(.center)
+      
+      Spacer().frame(height: 32)
+      
+      VStack(spacing: 8) {
+        Text("Search Shortcut")
+          .font(.callout)
+          .fontWeight(.medium)
+        
+        KeyboardShortcuts.Recorder(for: .activateSearch)
+      }
       
       Spacer()
       
       VStack(spacing: 12) {
-        Button("Open Search") {
-          onOpenSearch()
+        Button("Complete") {
+          onComplete()
         }
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
         
         Button("Go to Settings") {
-          onGoToSettings()
+          onComplete()
         }
         .buttonStyle(.plain)
-        .font(.callout)
+        .font(.caption)
         .foregroundStyle(.secondary)
       }
       
       Spacer().frame(height: 28)
     }
     .padding(.horizontal, 40)
+    .onAppear {
+      // Enable the keyboard shortcut to open search from this step
+      // by marking onboarding as seen. The view remains visible until
+      // the user navigates away or presses the shortcut.
+      UserDefaults.standard.set(true, forKey: StorageKey.hasSeenWelcome)
+    }
   }
 }

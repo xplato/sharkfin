@@ -250,6 +250,10 @@ struct AdvancedSettingsView: View {
               UserDefaults.standard.removeObject(
                 forKey: StorageKey.hasSeenWelcome
               )
+              NotificationCenter.default.post(
+                name: .viewStateDidReset,
+                object: nil
+              )
             }
             Button("Cancel", role: .cancel) {}
           } message: {

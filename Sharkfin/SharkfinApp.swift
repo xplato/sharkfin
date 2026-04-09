@@ -217,6 +217,7 @@ final class AppState {
       )
       .environment(searchController)
       .environment(directoryStore)
+      .environment(modelManager)
     )
     
     panel.contentView = hostingView
@@ -277,13 +278,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       return
     }
     
-    let welcomeView = WelcomeView(onComplete: { [weak self] in
+    let welcomeView = WelcomeView(onComplete: { [weak self] skipped in
       UserDefaults.standard.set(true, forKey: StorageKey.hasSeenWelcome)
       // Defer window teardown so the button action finishes
       // before the hosting view hierarchy is destroyed.
       DispatchQueue.main.async {
         self?.welcomeWindow?.close()
         self?.welcomeWindow = nil
+        if skipped {
+          self?.appState?.openSettings()
+        }
       }
     })
       .environment(modelManager!)

@@ -37,7 +37,7 @@ struct ModelsStep: View {
       
       Spacer().frame(height: 6)
       
-      Text("These models power semantic search. Both are required for full functionality.")
+      Text("These models power semantic search. This is the only step that requires internet—after download, Sharkfin runs entirely offline.")
         .font(.callout)
         .foregroundStyle(.secondary)
         .multilineTextAlignment(.center)

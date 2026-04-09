@@ -2,7 +2,7 @@ import KeyboardShortcuts
 import SwiftUI
 
 struct WelcomeView: View {
-  var onComplete: () -> Void
+  var onComplete: (_ skipped: Bool) -> Void
   
   @Environment(CLIPModelManager.self) private var modelManager
   @Environment(DirectoryStore.self) private var directoryStore
@@ -46,7 +46,7 @@ struct WelcomeView: View {
         case .complete:
           CompleteStep(
             onComplete: {
-              onComplete()
+              onComplete(false)
             }
           )
         }
@@ -64,7 +64,7 @@ struct WelcomeView: View {
       isPresented: $showSkipConfirmation
     ) {
       Button("Skip", role: .destructive) {
-        onComplete()
+        onComplete(true)
       }
       Button("Cancel", role: .cancel) {}
     } message: {

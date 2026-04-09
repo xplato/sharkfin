@@ -23,9 +23,16 @@ struct SettingsView: View {
   
   var body: some View {
     if showOnboarding {
-      WelcomeView(onComplete: {
+      WelcomeView(onComplete: { _ in
         showOnboarding = false
       })
+      .onAppear {
+        // If onboarding was already completed (e.g. skipped from the
+        // standalone welcome window), go straight to the settings tabs.
+        if UserDefaults.standard.bool(forKey: StorageKey.hasSeenWelcome) {
+          showOnboarding = false
+        }
+      }
       .frame(
         minWidth: 480,
         idealWidth: 500,

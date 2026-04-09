@@ -33,7 +33,7 @@ struct DirectoriesStep: View {
       
       Spacer().frame(height: 6)
       
-      Text("Choose folders to index. Their contents will be searchable once indexed.")
+      Text("Choose folders to scan and make searchable. Everything stays on your Mac.")
         .font(.callout)
         .foregroundStyle(.secondary)
         .multilineTextAlignment(.center)
@@ -42,9 +42,6 @@ struct DirectoriesStep: View {
       Spacer().frame(height: 24)
       
       VStack(spacing: 12) {
-        AddDirectoryButton()
-          .buttonStyle(.bordered)
-        
         if directoryStore.directories.isEmpty {
           VStack(spacing: 8) {
             Image(systemName: "folder.badge.questionmark")
@@ -70,6 +67,9 @@ struct DirectoriesStep: View {
           }
           .frame(maxHeight: 180)
         }
+        
+        AddDirectoryButton()
+          .buttonStyle(.bordered)
       }
       .padding(.horizontal, 30)
       

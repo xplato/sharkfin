@@ -35,12 +35,31 @@ struct SearchBarView: View {
   var isSearchFieldFocused: FocusState<Bool>.Binding
   
   @Environment(DirectoryStore.self) private var directoryStore
+  @Environment(CLIPModelManager.self) private var modelManager
   @Environment(SearchController.self) private var searchController
   @State private var enabledFileCount: Int = 0
+  
+  private var needsSetup: Bool {
+    !modelManager.isReady || directoryStore.directories.isEmpty
+  }
   
   private var allDirectoriesDisabled: Bool {
     !directoryStore.directories.isEmpty
     && !directoryStore.directories.contains(where: \.enabled)
+  }
+  
+  private var isDisabled: Bool {
+    needsSetup || allDirectoriesDisabled
+  }
+  
+  private var placeholderText: String {
+    if needsSetup {
+      return "Setup required"
+    } else if allDirectoriesDisabled {
+      return "All directories disabled"
+    } else {
+      return "Search \(enabledFileCount) files..."
+    }
   }
   
   var body: some View {
@@ -58,7 +77,7 @@ struct SearchBarView: View {
         }
         .buttonStyle(.plain)
         .help("Back to results")
-      } else if allDirectoriesDisabled {
+      } else if isDisabled {
         SettingsLink {
           Image(systemName: "exclamationmark.triangle.fill")
             .foregroundStyle(.yellow)
@@ -72,7 +91,7 @@ struct SearchBarView: View {
             NSApplication.shared.activate(ignoringOtherApps: true)
           }
         )
-        .help("All directories are disabled. Click to open settings.")
+        .help(needsSetup ? "Setup required. Click to open settings." : "All directories are disabled. Click to open settings.")
       } else {
         Image(systemName: "magnifyingglass")
           .foregroundStyle(.secondary)
@@ -81,16 +100,14 @@ struct SearchBarView: View {
       }
       
       TextField(
-        allDirectoriesDisabled
-        ? "All directories disabled"
-        : "Search \(enabledFileCount) files...",
+        placeholderText,
         text: $viewModel.query
       )
       .focused(isSearchFieldFocused)
       .textFieldStyle(.plain)
       .font(.system(size: 18))
       .onSubmit { onSubmit() }
-      .disabled(allDirectoriesDisabled)
+      .disabled(isDisabled)
       
       if viewModel.state == .searching {
         SpinnerView()
@@ -98,7 +115,7 @@ struct SearchBarView: View {
       }
       
       HStack(spacing: 6) {
-        if allDirectoriesDisabled {
+        if isDisabled {
           SettingsLink {
             FilterButtonLabel(text: "Open Settings", isActive: false)
           }

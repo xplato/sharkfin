@@ -110,6 +110,8 @@ struct DirectoriesStep: View {
         .buttonStyle(.plain)
         .font(.caption)
         .foregroundStyle(.secondary)
+        .opacity(hasDirectories ? 0 : 1)
+        .disabled(hasDirectories)
       }
       
       Spacer().frame(height: 28)

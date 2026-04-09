@@ -37,20 +37,11 @@ struct CompleteStep: View {
       
       Spacer()
       
-      VStack(spacing: 12) {
-        Button("Complete") {
-          onComplete()
-        }
-        .buttonStyle(.borderedProminent)
-        .controlSize(.large)
-        
-        Button("Go to Settings") {
-          onComplete()
-        }
-        .buttonStyle(.plain)
-        .font(.caption)
-        .foregroundStyle(.secondary)
+      Button("Complete") {
+        onComplete()
       }
+      .buttonStyle(.borderedProminent)
+      .controlSize(.large)
       
       Spacer().frame(height: 28)
     }

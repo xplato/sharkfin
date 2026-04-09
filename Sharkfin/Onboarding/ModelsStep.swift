@@ -96,6 +96,8 @@ struct ModelsStep: View {
         .buttonStyle(.plain)
         .font(.caption)
         .foregroundStyle(.secondary)
+        .opacity(allDownloaded ? 0 : 1)
+        .disabled(allDownloaded)
       }
       
       Spacer().frame(height: 28)

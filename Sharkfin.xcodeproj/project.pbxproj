@@ -12,7 +12,6 @@
 		6A17AD4C2F82FA69002F4666 /* onnxruntime in Frameworks */ = {isa = PBXBuildFile; productRef = 6A17AD4B2F82FA69002F4666 /* onnxruntime */; };
 		6A17AD532F82FE81002F4666 /* Transformers in Frameworks */ = {isa = PBXBuildFile; productRef = 6A17AD522F82FE81002F4666 /* Transformers */; };
 		6A4E0D942F847C2B00456F8A /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = 6A4E0D932F847C2B00456F8A /* GRDB */; };
-		6A5B2EAA2F8854C500D5F681 /* LICENSE.md in Sources */ = {isa = PBXBuildFile; fileRef = 6A5B2EA92F8854C300D5F681 /* LICENSE.md */; };
 		6A7C10C42F835C8000F58732 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 6A7C10C32F835C8000F58732 /* README.md */; };
 		6A7C10C82F83655000F58732 /* Sharkfin.icon in Resources */ = {isa = PBXBuildFile; fileRef = 6A7C10C72F83655000F58732 /* Sharkfin.icon */; };
 /* End PBXBuildFile section */
@@ -30,7 +29,6 @@
 /* Begin PBXFileReference section */
 		6A17ACA42F82C78E002F4666 /* Sharkfin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Sharkfin.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6A4E0D7D2F847B6F00456F8A /* SharkfinTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SharkfinTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		6A5B2EA92F8854C300D5F681 /* LICENSE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LICENSE.md; sourceTree = "<group>"; };
 		6A7C10C32F835C8000F58732 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		6A7C10C72F83655000F58732 /* Sharkfin.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = Sharkfin.icon; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -87,7 +85,6 @@
 		6A17AC9B2F82C78E002F4666 = {
 			isa = PBXGroup;
 			children = (
-				6A5B2EA92F8854C300D5F681 /* LICENSE.md */,
 				6A17ACA62F82C78E002F4666 /* Sharkfin */,
 				6A4E0D7E2F847B6F00456F8A /* SharkfinTests */,
 				6A17ACA52F82C78E002F4666 /* Products */,
@@ -235,7 +232,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				6A5B2EAA2F8854C500D5F681 /* LICENSE.md in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

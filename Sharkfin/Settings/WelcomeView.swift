@@ -21,12 +21,13 @@ struct WelcomeView: View {
   
   @State private var currentStep: OnboardingStep = .welcome
   @State private var showSkipConfirmation = false
+  @State private var navigatingForward = true
   
   var body: some View {
     VStack(spacing: 0) {
       if currentStep != .welcome {
         StepIndicator(currentStep: currentStep) { step in
-          currentStep = step
+          navigateTo(step)
         }
         .padding(.top, 24)
         .padding(.bottom, 8)
@@ -36,21 +37,21 @@ struct WelcomeView: View {
         switch currentStep {
         case .welcome:
           WelcomeStep(
-            onGetStarted: { advanceTo(.models) },
+            onGetStarted: { navigateTo(.models) },
             onSkip: { showSkipConfirmation = true }
           )
         case .models:
           ModelsStep(
             modelManager: modelManager,
-            onContinue: { advanceTo(.directories) },
-            onSkip: { advanceTo(.directories) }
+            onContinue: { navigateTo(.directories) },
+            onSkip: { navigateTo(.directories) }
           )
         case .directories:
           DirectoriesStep(
             directoryStore: directoryStore,
             indexingService: indexingService,
-            onContinue: { advanceTo(.complete) },
-            onSkip: { advanceTo(.complete) }
+            onContinue: { navigateTo(.complete) },
+            onSkip: { navigateTo(.complete) }
           )
         case .complete:
           CompleteStep(
@@ -67,10 +68,14 @@ struct WelcomeView: View {
           )
         }
       }
-      .transition(.push(from: .trailing))
+      .id(currentStep)
+      .transition(.asymmetric(
+        insertion: .move(edge: navigatingForward ? .trailing : .leading),
+        removal: .move(edge: navigatingForward ? .leading : .trailing)
+      ))
     }
     .frame(width: 480, height: 560)
-    .animation(.easeInOut(duration: 0.3), value: currentStep)
+    .clipped()
     .alert(
       "Skip Setup?",
       isPresented: $showSkipConfirmation
@@ -84,8 +89,11 @@ struct WelcomeView: View {
     }
   }
   
-  private func advanceTo(_ step: OnboardingStep) {
-    currentStep = step
+  private func navigateTo(_ step: OnboardingStep) {
+    navigatingForward = step.rawValue > currentStep.rawValue
+    withAnimation(.easeInOut(duration: 0.3)) {
+      currentStep = step
+    }
   }
 }
 
@@ -485,6 +493,9 @@ private struct DirectoriesStep: View {
       Spacer().frame(height: 24)
       
       VStack(spacing: 12) {
+        AddDirectoryButton()
+          .buttonStyle(.bordered)
+        
         if directoryStore.directories.isEmpty {
           VStack(spacing: 8) {
             Image(systemName: "folder.badge.questionmark")
@@ -502,6 +513,7 @@ private struct DirectoriesStep: View {
               ForEach(directoryStore.directories) { directory in
                 OnboardingDirectoryRow(
                   directory: directory,
+                  directoryStore: directoryStore,
                   indexingService: indexingService
                 )
               }
@@ -509,9 +521,6 @@ private struct DirectoriesStep: View {
           }
           .frame(maxHeight: 180)
         }
-        
-        AddDirectoryButton()
-          .buttonStyle(.bordered)
       }
       .padding(.horizontal, 30)
       
@@ -543,6 +552,7 @@ private struct DirectoriesStep: View {
 
 private struct OnboardingDirectoryRow: View {
   let directory: SharkfinDirectory
+  let directoryStore: DirectoryStore
   let indexingService: IndexingService
   
   private var progress: IndexingProgress? {
@@ -573,6 +583,17 @@ private struct OnboardingDirectoryRow: View {
       if let progress {
         statusView(for: progress)
       }
+      
+      Button {
+        if let id = directory.id {
+          try? directoryStore.database.deleteDirectory(id: id)
+        }
+      } label: {
+        Image(systemName: "xmark")
+          .font(.caption2)
+          .foregroundStyle(.secondary)
+      }
+      .buttonStyle(.plain)
     }
     .padding(.vertical, 8)
     .padding(.horizontal, 14)

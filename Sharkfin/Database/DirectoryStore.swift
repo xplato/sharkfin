@@ -30,7 +30,9 @@ final class DirectoryStore {
         category: "DirectoryStore"
       )
     } onChange: { [weak self] directories in
-      self?.directories = directories
+      MainActor.assumeIsolated {
+        self?.directories = directories
+      }
     }
   }
 }

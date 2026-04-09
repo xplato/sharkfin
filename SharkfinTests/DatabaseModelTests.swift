@@ -252,7 +252,7 @@ struct DatabaseModelTests {
   
   // MARK: - AppDatabase queries
   
-  @Test func fetchAvailableFileTypesOnlyFromEnabledDirectories() throws {
+  @Test func fetchAvailableFileTypesOnlyFromEnabledDirectories() async throws {
     let db = try makeDatabase()
     
     var enabledDir = SharkfinDirectory(
@@ -275,10 +275,13 @@ struct DatabaseModelTests {
     )
     try db.addDirectory(&disabledDir)
     
-    try db.dbQueue.write { dbConn in
+    let enabledDirId = enabledDir.id!
+    let disabledDirId = disabledDir.id!
+    
+    try await db.dbQueue.write { dbConn in
       var f1 = IndexedFile(
         path: "/enabled/a.jpg",
-        directoryId: enabledDir.id!,
+        directoryId: enabledDirId,
         filename: "a.jpg",
         fileExtension: "jpg",
         sizeBytes: 100,
@@ -294,7 +297,7 @@ struct DatabaseModelTests {
       
       var f2 = IndexedFile(
         path: "/disabled/b.png",
-        directoryId: disabledDir.id!,
+        directoryId: disabledDirId,
         filename: "b.png",
         fileExtension: "png",
         sizeBytes: 100,
@@ -309,7 +312,7 @@ struct DatabaseModelTests {
       try f2.insert(dbConn)
     }
     
-    let types = try db.fetchAvailableFileTypes()
+    let types = try await db.fetchAvailableFileTypes()
     #expect(types.contains("jpg"))
     #expect(!types.contains("png"))
   }

@@ -23,6 +23,19 @@ struct DirectoriesStep: View {
     }
   }
   
+  private var allFinished: Bool {
+    hasDirectories && directoryStore.directories.allSatisfy { directory in
+      guard let id = directory.id else { return false }
+      guard let progress = indexingService.progressByDirectory[id] else { return false }
+      switch progress.phase {
+      case .complete, .upToDate:
+        return true
+      default:
+        return false
+      }
+    }
+  }
+  
   var body: some View {
     VStack(spacing: 0) {
       Spacer().frame(height: 16)
@@ -76,12 +89,20 @@ struct DirectoriesStep: View {
       Spacer()
       
       VStack(spacing: 12) {
+        if isIndexing && !allFinished {
+          Text("Indexing will continue in the background. You can start searching immediately.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 20)
+        }
+        
         Button("Continue") {
           onContinue()
         }
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
-        .disabled(!hasDirectories || isIndexing)
+        .disabled(!hasDirectories)
         
         Button("Skip this step") {
           onSkip()

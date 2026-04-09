@@ -549,6 +549,8 @@ private struct OnboardingDirectoryRow: View {
   let directoryStore: DirectoryStore
   let indexingService: IndexingService
   
+  @State private var showRemoveConfirmation = false
+  
   private var progress: IndexingProgress? {
     guard let id = directory.id else { return nil }
     return indexingService.progressByDirectory[id]
@@ -579,15 +581,26 @@ private struct OnboardingDirectoryRow: View {
       }
       
       Button {
-        if let id = directory.id {
-          try? directoryStore.database.deleteDirectory(id: id)
-        }
+        showRemoveConfirmation = true
       } label: {
         Image(systemName: "xmark")
           .font(.caption2)
           .foregroundStyle(.secondary)
       }
       .buttonStyle(.plain)
+      .confirmationDialog(
+        "Remove \"\(directory.label ?? directory.path)\"?",
+        isPresented: $showRemoveConfirmation,
+        titleVisibility: .visible
+      ) {
+        Button("Remove", role: .destructive) {
+          if let id = directory.id {
+            try? directoryStore.database.deleteDirectory(id: id)
+          }
+        }
+      } message: {
+        Text("This directory will no longer be indexed. You can re-add it later.")
+      }
     }
     .padding(.vertical, 8)
     .padding(.horizontal, 14)

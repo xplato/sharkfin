@@ -54,7 +54,7 @@ https://github.com/user-attachments/assets/b502dd63-7f29-4257-bbe7-11e8697a72c6
 
 Sharkfin is currently in pre-release (beta) testing. With that said, the current build is *safe to use* for personal use, just keep in mind that you may encounter bugs. If so, please [open an issue](https://github.com/xplato/Sharkfin/issues).
 
-View the [Sharkfin 1.0 (pre-release)](https://github.com/xplato/Sharkfin/releases/tag/v1.0_pre-release) to download the installable DMG.
+View the [Sharkfin 1.0.0 (2) (pre-release)](https://github.com/xplato/Sharkfin/releases/tag/v1.0.0-2_pre-release) to download the installable DMG.
 
 ## Usage
 

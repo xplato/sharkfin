@@ -24,7 +24,6 @@ final class SearchViewModel {
   private(set) var state: SearchState = .idle
   private(set) var results: [SearchResult] = []
   private(set) var availableFileTypes: [String] = []
-  private(set) var enabledFileCount: Int = 0
   
   private var displayLimit: Int = SearchViewModel.pageSize()
   
@@ -57,19 +56,6 @@ final class SearchViewModel {
   init(database: AppDatabase, modelManager: CLIPModelManager) {
     self.database = database
     self.modelManager = modelManager
-  }
-  
-  /// Pre-loads file count and available file types so the search bar
-  /// can display them immediately without a layout shift.
-  func prefetch() async {
-    await updateFileCount()
-    await loadAvailableFileTypes()
-  }
-  
-  func updateFileCount() async {
-    let scope = filters.directoryScope
-    enabledFileCount =
-    (try? await database.fetchEnabledFileCount(scopePath: scope)) ?? 0
   }
   
   func loadAvailableFileTypes() async {

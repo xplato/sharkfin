@@ -96,10 +96,6 @@ final class AppState {
     self.modelManager = modelManager
     self.directoryStore = directoryStore
     
-    // Pre-load file count and available types so the search bar
-    // can display them immediately without a layout shift.
-    Task { await searchViewModel.prefetch() }
-    
     KeyboardShortcuts.onKeyDown(for: .activateSearch) { [self] in
       activateSearch()
     }

@@ -132,6 +132,9 @@ final class AppState {
       window.orderOut(nil)
     }
     
+    // Revert to menu-bar-only mode since we just hid all standard windows.
+    NSApp.setActivationPolicy(.accessory)
+    
     let panel = getOrCreatePanel()
     
     // Only set the default position on first show; subsequent shows
@@ -175,6 +178,7 @@ final class AppState {
   
   func openSettings() {
     hideSearch()
+    NSApp.setActivationPolicy(.regular)
     NSApplication.shared.activate(ignoringOtherApps: true)
     if let settingsOpener {
       settingsOpener()
@@ -186,7 +190,7 @@ final class AppState {
     // so the window is resolved.
     DispatchQueue.main.async {
       for window in NSApplication.shared.windows
-      where !(window is SearchPanel) && window.isVisible {
+      where !(window is SearchPanel) && window.isVisible && window.canBecomeKey {
         window.makeKeyAndOrderFront(nil)
         break
       }
@@ -249,6 +253,8 @@ final class AppState {
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
   private var welcomeWindow: NSWindow?
+  private var windowCloseObserver: Any?
+  private var windowBecameKeyObserver: Any?
   var settingsOpener: (() -> Void)?
   var directoryWatcher: DirectoryWatcherService?
   var directoryStore: DirectoryStore?
@@ -271,6 +277,32 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       ?? true
       if indexOnLaunch, indexing.modelsReady {
         indexing.indexAllEnabled(from: store)
+      }
+    }
+    
+    // Show the dock icon whenever a titled window becomes key (catches
+    // system-initiated settings opening via Cmd-, as well as our own paths).
+    windowBecameKeyObserver = NotificationCenter.default.addObserver(
+      forName: NSWindow.didBecomeKeyNotification,
+      object: nil,
+      queue: .main
+    ) { [weak self] notification in
+      guard let window = notification.object as? NSWindow,
+            !(window is SearchPanel),
+            window.styleMask.contains(.titled) else { return }
+      DispatchQueue.main.async {
+        self?.updateActivationPolicy()
+      }
+    }
+    
+    // Revert dock icon when no standard windows remain after a close.
+    windowCloseObserver = NotificationCenter.default.addObserver(
+      forName: NSWindow.willCloseNotification,
+      object: nil,
+      queue: .main
+    ) { [weak self] _ in
+      DispatchQueue.main.async {
+        self?.updateActivationPolicy()
       }
     }
     
@@ -306,9 +338,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     window.title = "Welcome to Sharkfin"
     window.center()
     window.makeKeyAndOrderFront(nil)
+    NSApp.setActivationPolicy(.regular)
     NSApp.activate(ignoringOtherApps: true)
     
     self.welcomeWindow = window
+  }
+  
+  /// Shows the dock icon when titled windows are visible, hides it otherwise.
+  func updateActivationPolicy() {
+    let hasVisibleStandardWindow = NSApplication.shared.windows.contains { window in
+      window.isVisible
+      && window.styleMask.contains(.titled)
+      && !(window is SearchPanel)
+    }
+    
+    let desired: NSApplication.ActivationPolicy = hasVisibleStandardWindow ? .regular : .accessory
+    if NSApp.activationPolicy() != desired {
+      NSApp.setActivationPolicy(desired)
+      if desired == .regular {
+        NSApp.activate(ignoringOtherApps: true)
+      }
+    }
   }
 }
 
@@ -333,6 +383,7 @@ struct MenuBarContent: View {
     Divider()
     
     Button("About Sharkfin") {
+      NSApp.setActivationPolicy(.regular)
       openWindow(id: "about")
       NSApp.activate(ignoringOtherApps: true)
     }

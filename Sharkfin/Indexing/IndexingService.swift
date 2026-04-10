@@ -197,10 +197,20 @@ final class IndexingService {
       }
     }
     
+    // Fetch the set of enabled directory IDs so we only reassign files from
+    // directories that have been removed or disabled (not from active peers).
+    let enabledDirIds: Set<Int64> = try await database.dbQueue.read { db in
+      let ids = try Int64.fetchAll(
+        db,
+        sql: "SELECT id FROM directories WHERE enabled = 1"
+      )
+      return Set(ids)
+    }
+    
     // Categorize scanned files into three tiers:
     // 1. New or modified → full processing pipeline
-    // 2. Unchanged but owned by another directory → cheap reassignment
-    // 3. Unchanged and already owned by this directory → skip
+    // 2. Unchanged but owned by a removed/disabled directory → cheap reassignment
+    // 3. Unchanged and already owned by this or another active directory → skip
     var filesToProcess: [QuickScannedFile] = []
     var pathsToReassign: [String] = []
     
@@ -213,11 +223,13 @@ final class IndexingService {
       // round-tripped date loses sub-millisecond information. Use a small
       // tolerance to avoid false positives from that truncation.
       let isModified = file.modifiedAt.timeIntervalSince(existingDate) > 1.0
-      let ownedByOther = existingOwners[file.url.path] != dirId
+      let currentOwner = existingOwners[file.url.path]
+      let ownedByOther = currentOwner != dirId
       
       if isModified {
         filesToProcess.append(file)
-      } else if ownedByOther {
+      } else if ownedByOther, let owner = currentOwner, !enabledDirIds.contains(owner) {
+        // Only reassign if the current owner is no longer active
         pathsToReassign.append(file.url.path)
       }
     }

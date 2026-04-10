@@ -44,7 +44,7 @@ struct SearchPanelView: View {
       .clipShape(RoundedRectangle(cornerRadius: SearchPanel.cornerRadius))
       .overlay {
         RoundedRectangle(cornerRadius: SearchPanel.cornerRadius)
-          .strokeBorder(.white.opacity(0.2), lineWidth: 0.5)
+          .strokeBorder(.white.opacity(0.1), lineWidth: 0.5)
       }
       .animation(.easeInOut(duration: 0.2), value: viewModel.state)
       .animation(

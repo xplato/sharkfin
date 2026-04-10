@@ -162,25 +162,30 @@ final class IndexingService {
     
     try Task.checkCancellation()
     
-    // Phase 2: Diff against existing indexed files
-    let existingFiles: [String: Date] = try await database.dbQueue.read { db in
+    // Phase 2: Diff against all existing indexed files (across directories)
+    // so we can detect overlapping files owned by a different directory.
+    let (existingDates, existingOwners) = try await database.dbQueue.read { db -> ([String: Date], [String: Int64]) in
       let rows = try Row.fetchAll(
         db,
-        sql: "SELECT path, modifiedAt FROM files WHERE directoryId = ?",
-        arguments: [dirId]
+        sql: "SELECT path, modifiedAt, directoryId FROM files"
       )
-      var dict: [String: Date] = [:]
+      var dates: [String: Date] = [:]
+      var owners: [String: Int64] = [:]
       for row in rows {
-        if let path: String = row["path"], let date: Date = row["modifiedAt"] {
-          dict[path] = date
+        if let path: String = row["path"],
+           let date: Date = row["modifiedAt"],
+           let ownerId: Int64 = row["directoryId"] {
+          dates[path] = date
+          owners[path] = ownerId
         }
       }
-      return dict
+      return (dates, owners)
     }
     
-    // Clean up records for files that no longer exist on disk
+    // Clean up records for files owned by this directory that no longer exist on disk
     let scannedPaths = Set(allFiles.map(\.url.path))
-    let deletedPaths = Set(existingFiles.keys).subtracting(scannedPaths)
+    let ownedPaths = Set(existingOwners.filter { $0.value == dirId }.keys)
+    let deletedPaths = ownedPaths.subtracting(scannedPaths)
     if !deletedPaths.isEmpty {
       try await database.dbQueue.write { db in
         for path in deletedPaths {
@@ -192,13 +197,46 @@ final class IndexingService {
       }
     }
     
-    // Filter to only new or modified files.
-    // The database stores dates as text with millisecond precision, so the
-    // round-tripped date loses sub-millisecond information. Use a small
-    // tolerance to avoid false positives from that truncation.
-    let filesToProcess = allFiles.filter { file in
-      guard let existingDate = existingFiles[file.url.path] else { return true }
-      return file.modifiedAt.timeIntervalSince(existingDate) > 1.0
+    // Categorize scanned files into three tiers:
+    // 1. New or modified → full processing pipeline
+    // 2. Unchanged but owned by another directory → cheap reassignment
+    // 3. Unchanged and already owned by this directory → skip
+    var filesToProcess: [QuickScannedFile] = []
+    var pathsToReassign: [String] = []
+    
+    for file in allFiles {
+      guard let existingDate = existingDates[file.url.path] else {
+        filesToProcess.append(file)
+        continue
+      }
+      // The database stores dates as text with millisecond precision, so the
+      // round-tripped date loses sub-millisecond information. Use a small
+      // tolerance to avoid false positives from that truncation.
+      let isModified = file.modifiedAt.timeIntervalSince(existingDate) > 1.0
+      let ownedByOther = existingOwners[file.url.path] != dirId
+      
+      if isModified {
+        filesToProcess.append(file)
+      } else if ownedByOther {
+        pathsToReassign.append(file.url.path)
+      }
+    }
+    
+    // Reassign unchanged files that were previously owned by another directory
+    let reassignPaths = pathsToReassign
+    if !reassignPaths.isEmpty {
+      LoggingService.shared.info(
+        "Reassigning \(reassignPaths.count) file(s) from other directories to directory \(dirId)",
+        category: "Indexing"
+      )
+      try await database.dbQueue.write { db in
+        for path in reassignPaths {
+          try db.execute(
+            sql: "UPDATE files SET directoryId = ? WHERE path = ?",
+            arguments: [dirId, path]
+          )
+        }
+      }
     }
     
     if filesToProcess.isEmpty {
@@ -305,8 +343,8 @@ final class IndexingService {
       guard let image = NSImage(contentsOf: file.url) else {
         try database.dbQueue.write { db in
           try db.execute(
-            sql: "DELETE FROM files WHERE path = ? AND directoryId = ?",
-            arguments: [file.url.path, directoryId]
+            sql: "DELETE FROM files WHERE path = ?",
+            arguments: [file.url.path]
           )
           var indexedFile = IndexedFile(
             path: file.url.path,
@@ -365,8 +403,8 @@ final class IndexingService {
       try database.dbQueue.write { db in
         // Remove existing record if re-indexing a modified file
         try db.execute(
-          sql: "DELETE FROM files WHERE path = ? AND directoryId = ?",
-          arguments: [file.url.path, directoryId]
+          sql: "DELETE FROM files WHERE path = ?",
+          arguments: [file.url.path]
         )
         
         var indexedFile = IndexedFile(

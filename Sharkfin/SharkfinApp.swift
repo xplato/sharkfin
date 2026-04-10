@@ -179,18 +179,17 @@ final class AppState {
   func openSettings() {
     hideSearch()
     NSApp.setActivationPolicy(.regular)
-    NSApplication.shared.activate(ignoringOtherApps: true)
     if let settingsOpener {
       settingsOpener()
     } else {
       NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
     }
-    // When the settings window is already open, the opener alone won't
-    // bring it to the front. Explicitly make it key on the next tick
-    // so the window is resolved.
+    // Activate the app and bring the settings window to front after SwiftUI
+    // has had time to create/show it on the next run-loop cycle.
     DispatchQueue.main.async {
+      NSApplication.shared.activate(ignoringOtherApps: true)
       for window in NSApplication.shared.windows
-      where !(window is SearchPanel) && window.isVisible && window.canBecomeKey {
+      where !(window is SearchPanel) && window.canBecomeKey {
         window.makeKeyAndOrderFront(nil)
         break
       }

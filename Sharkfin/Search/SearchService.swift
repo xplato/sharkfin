@@ -24,7 +24,8 @@ final class SearchService: @unchecked Sendable {
   
   // MARK: - Embedding cache
   
-  private let cache = OSAllocatedUnfairLock<EmbeddingCache?>(initialState: nil)
+  private let cacheTask = OSAllocatedUnfairLock<Task<EmbeddingCache, any Error>?>(initialState: nil)
+  private let debounceTask = OSAllocatedUnfairLock<Task<Void, Never>?>(initialState: nil)
   private var notificationObserver: (any NSObjectProtocol)?
   
   init(database: AppDatabase, textEncoder: any TextEncoding) {
@@ -36,7 +37,7 @@ final class SearchService: @unchecked Sendable {
       object: nil,
       queue: nil
     ) { [weak self] _ in
-      self?.invalidateCache()
+      self?.scheduleInvalidation()
     }
   }
   
@@ -47,8 +48,21 @@ final class SearchService: @unchecked Sendable {
   }
   
   nonisolated func invalidateCache() {
-    cache.withLock { $0 = nil }
+    cacheTask.withLock { $0 = nil }
     LoggingService.shared.info("Cache invalidated", category: "Search")
+  }
+  
+  /// Debounce invalidation so rapid-fire notifications (e.g. multiple directories
+  /// finishing indexing) coalesce into a single cache reload.
+  private nonisolated func scheduleInvalidation() {
+    debounceTask.withLock { existing in
+      existing?.cancel()
+      existing = Task { [weak self] in
+        try? await Task.sleep(for: .milliseconds(500))
+        guard !Task.isCancelled else { return }
+        self?.invalidateCache()
+      }
+    }
   }
   
   nonisolated func search(
@@ -210,84 +224,105 @@ final class SearchService: @unchecked Sendable {
   // MARK: - Cache management
   
   private nonisolated func getCache() async throws -> EmbeddingCache {
-    if let existing = cache.withLock({ $0 }) {
-      return existing
+    let task = cacheTask.withLock { (task: inout Task<EmbeddingCache, any Error>?) -> Task<EmbeddingCache, any Error> in
+      if let task { return task }
+      let newTask = Task { try await loadCache() }
+      task = newTask
+      return newTask
     }
-    
-    let loaded = try await loadCache()
-    cache.withLock { $0 = loaded }
-    return loaded
+    return try await task.value
   }
   
   private nonisolated func loadCache() async throws -> EmbeddingCache {
-    let rows: [EmbeddingRow] = try await database.dbQueue.read { db in
-      try EmbeddingRow.fetchAll(
+    let sql = """
+      SELECT e.fileId, e.embedding, f.filename, f.path, f.thumbnailPath,
+             LOWER(f.fileExtension) AS fileExtension
+      FROM fileEmbeddings e
+      JOIN files f ON f.id = e.fileId
+      JOIN directories d ON d.id = f.directoryId
+      WHERE d.enabled = 1
+      """
+    
+    return try await database.dbQueue.read { db in
+      let count = try Int.fetchOne(
         db,
         sql: """
-          SELECT e.fileId, e.embedding, f.filename, f.path, f.thumbnailPath,
-                 LOWER(f.fileExtension) AS fileExtension
+          SELECT COUNT(*)
           FROM fileEmbeddings e
           JOIN files f ON f.id = e.fileId
           JOIN directories d ON d.id = f.directoryId
           WHERE d.enabled = 1
           """
-      )
-    }
-    
-    guard let firstRow = rows.first else {
-      return EmbeddingCache(
-        embeddings: [],
-        fileIds: [],
-        filenames: [],
-        paths: [],
-        thumbnailPaths: [],
-        fileExtensions: [],
-        count: 0,
-        dims: 0
-      )
-    }
-    
-    let dims = firstRow.embedding.count / MemoryLayout<Float>.size
-    var embeddings = [Float]()
-    embeddings.reserveCapacity(rows.count * dims)
-    var fileIds = [Int64]()
-    fileIds.reserveCapacity(rows.count)
-    var filenames = [String]()
-    filenames.reserveCapacity(rows.count)
-    var paths = [String]()
-    paths.reserveCapacity(rows.count)
-    var thumbnailPaths = [String?]()
-    thumbnailPaths.reserveCapacity(rows.count)
-    var fileExtensions = [String]()
-    fileExtensions.reserveCapacity(rows.count)
-    
-    for row in rows {
-      let floats: [Float] = row.embedding.withUnsafeBytes { buffer in
-        Array(buffer.bindMemory(to: Float.self))
+      ) ?? 0
+      
+      let cursor = try EmbeddingRow.fetchCursor(db, sql: sql)
+      
+      guard let firstRow = try cursor.next() else {
+        return EmbeddingCache(
+          embeddings: [],
+          fileIds: [],
+          filenames: [],
+          paths: [],
+          thumbnailPaths: [],
+          fileExtensions: [],
+          count: 0,
+          dims: 0
+        )
       }
-      guard floats.count == dims else { continue }
-      embeddings.append(contentsOf: floats)
-      fileIds.append(row.fileId)
-      filenames.append(row.filename)
-      paths.append(row.path)
-      thumbnailPaths.append(row.thumbnailPath)
-      fileExtensions.append(row.fileExtension ?? "")
+      
+      let dims = firstRow.embedding.count / MemoryLayout<Float>.size
+      var embeddings = [Float]()
+      embeddings.reserveCapacity(count * dims)
+      var fileIds = [Int64]()
+      fileIds.reserveCapacity(count)
+      var filenames = [String]()
+      filenames.reserveCapacity(count)
+      var paths = [String]()
+      paths.reserveCapacity(count)
+      var thumbnailPaths = [String?]()
+      thumbnailPaths.reserveCapacity(count)
+      var fileExtensions = [String]()
+      fileExtensions.reserveCapacity(count)
+      
+      // Process first row
+      firstRow.embedding.withUnsafeBytes { buffer in
+        embeddings.append(contentsOf: buffer.bindMemory(to: Float.self))
+      }
+      fileIds.append(firstRow.fileId)
+      filenames.append(firstRow.filename)
+      paths.append(firstRow.path)
+      thumbnailPaths.append(firstRow.thumbnailPath)
+      fileExtensions.append(firstRow.fileExtension ?? "")
+      
+      // Process remaining rows via cursor — only one row's Data is alive at a time
+      while let row = try cursor.next() {
+        let rowDims = row.embedding.count / MemoryLayout<Float>.size
+        guard rowDims == dims else { continue }
+        row.embedding.withUnsafeBytes { buffer in
+          embeddings.append(contentsOf: buffer.bindMemory(to: Float.self))
+        }
+        fileIds.append(row.fileId)
+        filenames.append(row.filename)
+        paths.append(row.path)
+        thumbnailPaths.append(row.thumbnailPath)
+        fileExtensions.append(row.fileExtension ?? "")
+      }
+      
+      LoggingService.shared.info(
+        "Cached \(fileIds.count) embeddings (\(dims) dims, \(embeddings.count * MemoryLayout<Float>.size / 1024)KB)",
+        category: "Search"
+      )
+      return EmbeddingCache(
+        embeddings: embeddings,
+        fileIds: fileIds,
+        filenames: filenames,
+        paths: paths,
+        thumbnailPaths: thumbnailPaths,
+        fileExtensions: fileExtensions,
+        count: fileIds.count,
+        dims: dims
+      )
     }
-    
-    LoggingService.shared.info(
-      "Cached \(fileIds.count) embeddings (\(dims) dims, \(embeddings.count * MemoryLayout<Float>.size / 1024)KB)",
-      category: "Search"
-    )
-    return EmbeddingCache(
-      embeddings: embeddings,
-      fileIds: fileIds,
-      filenames: filenames,
-      paths: paths,
-      thumbnailPaths: thumbnailPaths,
-      fileExtensions: fileExtensions,
-      count: fileIds.count,
-      dims: dims
-    )
   }
 }
 

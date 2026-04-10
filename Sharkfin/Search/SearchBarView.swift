@@ -37,7 +37,6 @@ struct SearchBarView: View {
   @Environment(DirectoryStore.self) private var directoryStore
   @Environment(CLIPModelManager.self) private var modelManager
   @Environment(SearchController.self) private var searchController
-  @State private var enabledFileCount: Int = 0
   
   private var needsSetup: Bool {
     !modelManager.isReady || directoryStore.directories.isEmpty
@@ -58,7 +57,7 @@ struct SearchBarView: View {
     } else if allDirectoriesDisabled {
       return "All directories disabled"
     } else {
-      return "Search \(enabledFileCount) files..."
+      return "Search \(viewModel.enabledFileCount) files..."
     }
   }
   
@@ -137,28 +136,17 @@ struct SearchBarView: View {
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 14)
-    .task {
-      await updateFileCount()
-      await viewModel.loadAvailableFileTypes()
-    }
     .onChange(of: directoryStore.directories) {
       Task {
-        await updateFileCount()
+        await viewModel.updateFileCount()
         await viewModel.loadAvailableFileTypes()
       }
     }
     .onChange(of: viewModel.filters.directoryScope) {
-      Task { await updateFileCount() }
+      Task { await viewModel.updateFileCount() }
     }
     .onChange(of: viewModel.filters) {
       viewModel.filtersChanged()
     }
-  }
-  
-  private func updateFileCount() async {
-    let scope = viewModel.filters.directoryScope
-    enabledFileCount =
-    (try? await AppDatabase.shared.fetchEnabledFileCount(scopePath: scope))
-    ?? 0
   }
 }

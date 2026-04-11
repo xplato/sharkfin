@@ -51,6 +51,7 @@ final class SearchViewModel {
   private let database: AppDatabase
   private let modelManager: CLIPModelManager
   private var searchService: SearchService?
+  private var searchServiceTask: Task<SearchService, any Error>?
   private var searchTask: Task<Void, Never>?
   
   init(database: AppDatabase, modelManager: CLIPModelManager) {
@@ -62,7 +63,10 @@ final class SearchViewModel {
     let types = (try? await database.fetchAvailableFileTypes()) ?? []
     availableFileTypes = types
     // Remove any selected types that are no longer available
-    filters.fileTypes.formIntersection(availableFileTypes)
+    let pruned = filters.fileTypes.intersection(availableFileTypes)
+    if pruned != filters.fileTypes {
+      filters.fileTypes = pruned
+    }
   }
   
   func filtersChanged() {
@@ -116,6 +120,7 @@ final class SearchViewModel {
     let currentFilters = filters
     do {
       let service = try await getOrCreateSearchService()
+      guard !Task.isCancelled else { return }
       let searchResults = try await Task.detached(priority: .userInitiated) {
         try await service.search(query: query, filters: currentFilters)
       }.value
@@ -134,17 +139,26 @@ final class SearchViewModel {
   
   private func getOrCreateSearchService() async throws -> SearchService {
     if let existing = searchService { return existing }
-    guard let modelURL = modelManager.textModelURL,
-          let tokenizerURL = modelManager.textTokenizerFolderURL
-    else {
-      throw CLIPError.modelNotReady
+    if let task = searchServiceTask { return try await task.value }
+    
+    let db = database
+    let mm = modelManager
+    let task = Task<SearchService, any Error> {
+      guard let modelURL = mm.textModelURL,
+            let tokenizerURL = mm.textTokenizerFolderURL
+      else {
+        throw CLIPError.modelNotReady
+      }
+      let encoder = try await CLIPTextEncoder(
+        modelPath: modelURL,
+        tokenizerFolder: tokenizerURL
+      )
+      return SearchService(database: db, textEncoder: encoder)
     }
-    let encoder = try await CLIPTextEncoder(
-      modelPath: modelURL,
-      tokenizerFolder: tokenizerURL
-    )
-    let service = SearchService(database: database, textEncoder: encoder)
+    searchServiceTask = task
+    let service = try await task.value
     searchService = service
+    searchServiceTask = nil
     return service
   }
 }

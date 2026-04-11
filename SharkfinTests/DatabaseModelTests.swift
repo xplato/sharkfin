@@ -205,7 +205,7 @@ struct DatabaseModelTests {
     
     let fakeEmbedding = [Float](repeating: 0.1, count: 512)
     let embData = fakeEmbedding.withUnsafeBufferPointer { Data(buffer: $0) }
-    let embedding = FileEmbedding(fileId: file.id!, embedding: embData)
+    let embedding = FileEmbedding(fileId: file.id!, embedding: embData, modelId: CLIPModelPackage.default.id)
     try db.dbQueue.write { dbConn in try embedding.insert(dbConn) }
     
     let fetched = try db.dbQueue.read { dbConn in
@@ -237,7 +237,7 @@ struct DatabaseModelTests {
     let embData = [Float](repeating: 0, count: 512)
       .withUnsafeBufferPointer { Data(buffer: $0) }
     try db.dbQueue.write { dbConn in
-      try FileEmbedding(fileId: file.id!, embedding: embData).insert(dbConn)
+      try FileEmbedding(fileId: file.id!, embedding: embData, modelId: CLIPModelPackage.default.id).insert(dbConn)
     }
     
     try db.dbQueue.write { dbConn in

@@ -14,8 +14,14 @@ final class CLIPTextEncoder: @unchecked Sendable, TextEncoding {
   private nonisolated let tokenizer: any Tokenizer
   private nonisolated let outputName: String
   private nonisolated let maxLength = 77
+  private nonisolated let embeddingDimension: Int
   
-  nonisolated init(modelPath: URL, tokenizerFolder: URL) async throws {
+  nonisolated init(
+    modelPath: URL,
+    tokenizerFolder: URL,
+    embeddingDimension: Int = 512
+  ) async throws {
+    self.embeddingDimension = embeddingDimension
     let env = try ORTEnv(loggingLevel: .warning)
     
     // CPU-only for text model (small, fast, avoids CoreML dynamic shape issues)
@@ -118,8 +124,8 @@ final class CLIPTextEncoder: @unchecked Sendable, TextEncoding {
       Array(buffer.bindMemory(to: Float.self))
     }
     
-    if embedding.count > CLIPImageEncoder.embeddingDimension {
-      embedding = Array(embedding.prefix(CLIPImageEncoder.embeddingDimension))
+    if embedding.count > embeddingDimension {
+      embedding = Array(embedding.prefix(embeddingDimension))
     }
     
     return CLIPImageEncoder.l2Normalize(embedding)

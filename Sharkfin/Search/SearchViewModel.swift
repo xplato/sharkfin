@@ -54,7 +54,8 @@ final class SearchViewModel {
   private var searchServiceTask: Task<SearchService, any Error>?
   private var searchTask: Task<Void, Never>?
   private var idleUnloadTask: Task<Void, Never>?
-
+  private var cacheObserver: (any NSObjectProtocol)?
+  
   /// How long to keep the text encoder in memory after the last search.
   /// Shorter on low-RAM machines to reduce memory pressure.
   private static let idleUnloadDelay: Duration = {
@@ -63,10 +64,24 @@ final class SearchViewModel {
     if ramGB <= 16 { return .seconds(600) }
     return .seconds(1800)
   }()
-
+  
   init(database: AppDatabase, modelManager: CLIPModelManager) {
     self.database = database
     self.modelManager = modelManager
+    
+    // When the active model changes (or embeddings are updated),
+    // drop the cached search service so it's recreated with the
+    // new model's encoder and ID on the next search.
+    cacheObserver = NotificationCenter.default.addObserver(
+      forName: .searchCacheDidInvalidate,
+      object: nil,
+      queue: .main
+    ) { [weak self] _ in
+      MainActor.assumeIsolated {
+        self?.searchService = nil
+        self?.searchServiceTask = nil
+      }
+    }
   }
   
   func loadAvailableFileTypes() async {
@@ -147,7 +162,7 @@ final class SearchViewModel {
       state = .noResults
     }
   }
-
+  
   /// After a period of inactivity, release the text encoder and embedding
   /// cache to reclaim ~450MB. The next search will recreate them.
   private func scheduleIdleUnload() {
@@ -158,7 +173,7 @@ final class SearchViewModel {
       self?.unloadSearchService()
     }
   }
-
+  
   private func unloadSearchService() {
     searchService = nil
     searchServiceTask = nil
@@ -180,11 +195,17 @@ final class SearchViewModel {
       else {
         throw CLIPError.modelNotReady
       }
+      let activePackage = mm.activePackage
       let encoder = try await CLIPTextEncoder(
         modelPath: modelURL,
-        tokenizerFolder: tokenizerURL
+        tokenizerFolder: tokenizerURL,
+        embeddingDimension: activePackage.embeddingDimension
       )
-      return SearchService(database: db, textEncoder: encoder)
+      return SearchService(
+        database: db,
+        textEncoder: encoder,
+        modelId: activePackage.id
+      )
     }
     searchServiceTask = task
     let service = try await task.value

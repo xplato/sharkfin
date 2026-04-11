@@ -1,17 +1,24 @@
 import SwiftUI
 
-struct ModelRowView: View {
-  let model: CLIPModelSpec
+struct ModelPackageRowView: View {
+  let package: CLIPModelPackage
   @Environment(CLIPModelManager.self) private var manager
+  @Environment(IndexingService.self) private var indexingService
+  @Environment(DirectoryStore.self) private var directoryStore
   @State private var showDeleteConfirmation = false
+  @State private var showActivateConfirmation = false
   
   private var state: ModelDownloadState {
-    manager.modelStates[model.id] ?? .notDownloaded
+    manager.packageState(package)
+  }
+  
+  private var isActive: Bool {
+    manager.activePackage.id == package.id
   }
   
   private var formattedSize: String {
     ByteCountFormatter.string(
-      fromByteCount: model.totalSizeBytes,
+      fromByteCount: package.totalSizeBytes,
       countStyle: .file
     )
   }
@@ -23,11 +30,28 @@ struct ModelRowView: View {
         .font(.title3)
       
       VStack(alignment: .leading, spacing: 4) {
-        Text(model.displayName)
-          .fontWeight(.medium)
-        Text(formattedSize)
-          .font(.caption)
-          .foregroundStyle(.tertiary)
+        HStack(spacing: 6) {
+          Text(package.displayName)
+            .fontWeight(.medium)
+          if isActive && state == .downloaded {
+            Text("Active")
+              .font(.caption2)
+              .fontWeight(.medium)
+              .padding(.horizontal, 6)
+              .padding(.vertical, 2)
+              .background(.blue.opacity(0.15))
+              .foregroundStyle(.blue)
+              .clipShape(Capsule())
+          }
+        }
+        VStack(alignment: .leading, spacing: 0) {
+          Text("\(package.description)")
+            .font(.caption)
+            .foregroundStyle(.tertiary)
+          Text("\(formattedSize)")
+            .font(.caption)
+            .foregroundStyle(.tertiary)
+        }
       }
       
       Spacer()
@@ -61,7 +85,7 @@ struct ModelRowView: View {
     switch state {
     case .notDownloaded:
       Button("Download") {
-        manager.download(model)
+        manager.downloadPackage(package)
       }
       
     case .downloading(let progress):
@@ -74,7 +98,7 @@ struct ModelRowView: View {
           .foregroundStyle(.secondary)
           .monospacedDigit()
         Button {
-          manager.cancel(model)
+          manager.cancelPackage(package)
         } label: {
           Image(systemName: "xmark.circle")
         }
@@ -82,24 +106,45 @@ struct ModelRowView: View {
       }
       
     case .downloaded:
-      Button(role: .destructive) {
-        showDeleteConfirmation = true
-      } label: {
-        Image(systemName: "trash")
-      }
-      .buttonStyle(.borderless)
-      .confirmationDialog(
-        "Remove \"\(model.displayName)\"?",
-        isPresented: $showDeleteConfirmation,
-        titleVisibility: .visible
-      ) {
-        Button("Remove", role: .destructive) {
-          manager.delete(model)
+      HStack(spacing: 8) {
+        if !isActive {
+          Button("Use") {
+            showActivateConfirmation = true
+          }
+          .confirmationDialog(
+            "Switch to \"\(package.displayName)\"?",
+            isPresented: $showActivateConfirmation,
+            titleVisibility: .visible
+          ) {
+            Button("Switch & Index") {
+              manager.setActivePackage(package)
+              indexingService.indexAllEnabled(from: directoryStore)
+            }
+          } message: {
+            Text(
+              "Directories will be indexed with this model. Files already indexed with it will be skipped."
+            )
+          }
         }
-      } message: {
-        Text(
-          "The model files will be deleted. You can re-download them at any time."
-        )
+        Button(role: .destructive) {
+          showDeleteConfirmation = true
+        } label: {
+          Image(systemName: "trash")
+        }
+        .buttonStyle(.borderless)
+        .confirmationDialog(
+          "Remove \"\(package.displayName)\"?",
+          isPresented: $showDeleteConfirmation,
+          titleVisibility: .visible
+        ) {
+          Button("Remove", role: .destructive) {
+            manager.deletePackage(package)
+          }
+        } message: {
+          Text(
+            "The model files and all embeddings created with this model will be deleted. You can re-download and re-index at any time."
+          )
+        }
       }
       
     case .error(let message):
@@ -109,7 +154,7 @@ struct ModelRowView: View {
           .foregroundStyle(.red)
           .lineLimit(2)
         Button("Retry") {
-          manager.retry(model)
+          manager.downloadPackage(package)
         }
       }
     }

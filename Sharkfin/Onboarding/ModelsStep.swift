@@ -5,26 +5,26 @@ struct ModelsStep: View {
   var onContinue: () -> Void
   var onSkip: () -> Void
   
+  private var activePackage: CLIPModelPackage {
+    modelManager.activePackage
+  }
+  
   private var allDownloaded: Bool {
     modelManager.isReady
   }
   
   private var isDownloading: Bool {
-    CLIPModelSpec.all.contains { model in
-      if case .downloading = modelManager.modelStates[model.id] ?? .notDownloaded {
-        return true
-      }
-      return false
+    if case .downloading = modelManager.packageState(activePackage) {
+      return true
     }
+    return false
   }
   
   private var hasError: Bool {
-    CLIPModelSpec.all.contains { model in
-      if case .error = modelManager.modelStates[model.id] ?? .notDownloaded {
-        return true
-      }
-      return false
+    if case .error = modelManager.packageState(activePackage) {
+      return true
     }
+    return false
   }
   
   var body: some View {
@@ -46,8 +46,8 @@ struct ModelsStep: View {
       Spacer().frame(height: 24)
       
       VStack(spacing: 12) {
-        ForEach(CLIPModelSpec.all) { model in
-          OnboardingModelRow(model: model, modelManager: modelManager)
+        ForEach(activePackage.specs) { spec in
+          OnboardingModelRow(spec: spec, modelManager: modelManager)
         }
       }
       .padding(.horizontal, 30)
@@ -109,16 +109,16 @@ struct ModelsStep: View {
 // MARK: - Onboarding Model Row
 
 private struct OnboardingModelRow: View {
-  let model: CLIPModelSpec
+  let spec: CLIPModelSpec
   let modelManager: CLIPModelManager
   
   private var state: ModelDownloadState {
-    modelManager.modelStates[model.id] ?? .notDownloaded
+    modelManager.modelStates[spec.id] ?? .notDownloaded
   }
   
   private var formattedSize: String {
     ByteCountFormatter.string(
-      fromByteCount: model.totalSizeBytes,
+      fromByteCount: spec.totalSizeBytes,
       countStyle: .file
     )
   }
@@ -131,7 +131,7 @@ private struct OnboardingModelRow: View {
         .frame(width: 24)
       
       VStack(alignment: .leading, spacing: 2) {
-        Text(model.displayName)
+        Text(spec.displayName)
           .font(.callout)
           .fontWeight(.medium)
         Text(formattedSize)
@@ -171,7 +171,7 @@ private struct OnboardingModelRow: View {
     switch state {
     case .notDownloaded:
       Button("Download") {
-        modelManager.download(model)
+        modelManager.download(spec)
       }
       .controlSize(.small)
       
@@ -185,7 +185,7 @@ private struct OnboardingModelRow: View {
           .foregroundStyle(.secondary)
           .monospacedDigit()
         Button {
-          modelManager.cancel(model)
+          modelManager.cancel(spec)
         } label: {
           Image(systemName: "xmark.circle")
         }
@@ -206,7 +206,7 @@ private struct OnboardingModelRow: View {
           .lineLimit(1)
           .frame(maxWidth: 100, alignment: .trailing)
         Button("Retry") {
-          modelManager.retry(model)
+          modelManager.retry(spec)
         }
         .controlSize(.small)
       }

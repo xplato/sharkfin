@@ -61,7 +61,11 @@ struct SearchServiceTests {
         
         let normalized = CLIPImageEncoder.l2Normalize(file.embedding)
         let data = normalized.withUnsafeBufferPointer { Data(buffer: $0) }
-        try FileEmbedding(fileId: f.id!, embedding: data).insert(dbConn)
+        try FileEmbedding(
+          fileId: f.id!,
+          embedding: data,
+          modelId: CLIPModelPackage.default.id
+        ).insert(dbConn)
       }
     }
     
@@ -88,7 +92,11 @@ struct SearchServiceTests {
     ])
     
     let encoder = FakeTextEncoder(embedding: queryVec)
-    let service = SearchService(database: db, textEncoder: encoder)
+    let service = SearchService(
+      database: db,
+      textEncoder: encoder,
+      modelId: CLIPModelPackage.default.id
+    )
     let results = try await service.search(query: "test")
     
     if results.count >= 2 {
@@ -107,7 +115,11 @@ struct SearchServiceTests {
     ])
     
     let encoder = FakeTextEncoder(embedding: vec)
-    let service = SearchService(database: db, textEncoder: encoder)
+    let service = SearchService(
+      database: db,
+      textEncoder: encoder,
+      modelId: CLIPModelPackage.default.id
+    )
     let results = try await service.search(
       query: "test",
       filters: SearchFilters(fileTypes: ["jpg"])
@@ -126,7 +138,7 @@ struct SearchServiceTests {
     let db = try seedDatabase(files: files)
     
     let encoder = FakeTextEncoder(embedding: vec)
-    let service = SearchService(database: db, textEncoder: encoder)
+    let service = SearchService(database: db, textEncoder: encoder, modelId: CLIPModelPackage.default.id)
     let results = try await service.search(query: "test")
     
     #expect(results.count <= 60)
@@ -139,7 +151,7 @@ struct SearchServiceTests {
     )
     
     let encoder = FakeTextEncoder(embedding: vec)
-    let service = SearchService(database: db, textEncoder: encoder)
+    let service = SearchService(database: db, textEncoder: encoder, modelId: CLIPModelPackage.default.id)
     let results = try await service.search(query: "test")
     
     #expect(results.isEmpty)
@@ -154,7 +166,7 @@ struct SearchServiceTests {
     ])
     
     let encoder = FakeTextEncoder(embedding: vec)
-    let service = SearchService(database: db, textEncoder: encoder)
+    let service = SearchService(database: db, textEncoder: encoder, modelId: CLIPModelPackage.default.id)
     let results = try await service.search(query: "test")
     
     for result in results {
@@ -172,7 +184,7 @@ struct SearchServiceTests {
     ])
     
     let encoder = FakeTextEncoder(embedding: vec)
-    let service = SearchService(database: db, textEncoder: encoder)
+    let service = SearchService(database: db, textEncoder: encoder, modelId: CLIPModelPackage.default.id)
     
     // First search populates cache
     _ = try await service.search(query: "test")
@@ -214,6 +226,7 @@ struct SearchServiceTests {
     let enabledDirId = enabledDir.id!
     let disabledDirId = disabledDir.id!
     
+    let defaultModelId = CLIPModelPackage.default.id
     try await db.dbQueue.write { dbConn in
       var f1 = IndexedFile(
         path: "/enabled/a.jpg",
@@ -231,7 +244,7 @@ struct SearchServiceTests {
       )
       try f1.insert(dbConn)
       let data = vec.withUnsafeBufferPointer { Data(buffer: $0) }
-      try FileEmbedding(fileId: f1.id!, embedding: data).insert(dbConn)
+      try FileEmbedding(fileId: f1.id!, embedding: data, modelId: defaultModelId).insert(dbConn)
       
       var f2 = IndexedFile(
         path: "/disabled/b.jpg",
@@ -248,11 +261,11 @@ struct SearchServiceTests {
         thumbnailPath: nil
       )
       try f2.insert(dbConn)
-      try FileEmbedding(fileId: f2.id!, embedding: data).insert(dbConn)
+      try FileEmbedding(fileId: f2.id!, embedding: data, modelId: defaultModelId).insert(dbConn)
     }
     
     let encoder = FakeTextEncoder(embedding: vec)
-    let service = SearchService(database: db, textEncoder: encoder)
+    let service = SearchService(database: db, textEncoder: encoder, modelId: CLIPModelPackage.default.id)
     let results = try await service.search(query: "test")
     
     #expect(results.allSatisfy { $0.filename != "hidden.jpg" })
@@ -268,7 +281,7 @@ struct SearchServiceTests {
     ])
     
     let encoder = FakeTextEncoder(embedding: vec)
-    let service = SearchService(database: db, textEncoder: encoder)
+    let service = SearchService(database: db, textEncoder: encoder, modelId: CLIPModelPackage.default.id)
     
     let sourceId = try await db.dbQueue.read { dbConn in
       try IndexedFile.filter(Column("filename") == "source.jpg")
@@ -296,6 +309,7 @@ struct SearchServiceTests {
     try db.addDirectory(&dir)
     let dirId = dir.id!
     
+    let defaultModelId = CLIPModelPackage.default.id
     try await db.dbQueue.write { dbConn in
       for (i, file) in [
         ("vacation/beach.jpg", "jpg"),
@@ -318,12 +332,12 @@ struct SearchServiceTests {
         )
         try f.insert(dbConn)
         let data = vec.withUnsafeBufferPointer { Data(buffer: $0) }
-        try FileEmbedding(fileId: f.id!, embedding: data).insert(dbConn)
+        try FileEmbedding(fileId: f.id!, embedding: data, modelId: defaultModelId).insert(dbConn)
       }
     }
     
     let encoder = FakeTextEncoder(embedding: vec)
-    let service = SearchService(database: db, textEncoder: encoder)
+    let service = SearchService(database: db, textEncoder: encoder, modelId: CLIPModelPackage.default.id)
     
     // Scope to /photos/vacation — should only return vacation files
     let vacationResults = try await service.search(

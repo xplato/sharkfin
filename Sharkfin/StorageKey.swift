@@ -7,4 +7,5 @@ nonisolated enum StorageKey {
   static let excludedFolderNames = "excludedFolderNames"
   static let ignoreHiddenDirectories = "ignoreHiddenDirectories"
   static let debugMode = "debugMode"
+  static let activeModelPackage = "activeModelPackage"
 }

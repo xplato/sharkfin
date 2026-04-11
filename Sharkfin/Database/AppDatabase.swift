@@ -46,12 +46,16 @@ final class AppDatabase: Sendable {
         t.column("thumbnailPath", .text)
       }
       
-      // file_embeddings
+      // file_embeddings (one embedding per file per model)
       try db.create(table: "fileEmbeddings") { t in
-        t.primaryKey("fileId", .integer)
+        t.column("fileId", .integer)
+          .notNull()
           .references("files", onDelete: .cascade)
         t.column("embedding", .blob).notNull()
+        t.column("modelId", .text).notNull()
+        t.primaryKey(["fileId", "modelId"])
       }
+      try db.create(indexOn: "fileEmbeddings", columns: ["modelId"])
       
       // file_metadata
       try db.create(table: "fileMetadata") { t in

@@ -4,20 +4,25 @@ import OnnxRuntimeBindings
 /// Wraps the ONNX Runtime vision session for CLIP image encoding.
 final class CLIPImageEncoder: @unchecked Sendable {
   
-  /// Number of dimensions in a CLIP embedding vector.
-  nonisolated static let embeddingDimension = 512
+  /// Number of dimensions in the embedding vector for this encoder.
+  nonisolated let embeddingDimension: Int
   
   nonisolated(unsafe) private let session: ORTSession
   private nonisolated let outputName: String
   
-  nonisolated init(modelPath: URL) throws {
+  nonisolated init(modelPath: URL, embeddingDimension: Int = 512) throws {
+    self.embeddingDimension = embeddingDimension
     let env = try ORTEnv(loggingLevel: .warning)
     
     let options = try ORTSessionOptions()
-    // Use CoreML execution provider for GPU acceleration
-    try? options.appendCoreMLExecutionProvider(
-      with: ORTCoreMLExecutionProviderOptions()
-    )
+    // Use CoreML execution provider for GPU acceleration.
+    // Larger models (e.g. ViT-L/14) fail to load on the ANE,
+    // so exclude it for high-dimensional encoders.
+    let coreMLOptions = ORTCoreMLExecutionProviderOptions()
+    if embeddingDimension > 512 {
+      coreMLOptions.useCPUAndGPU = true
+    }
+    try? options.appendCoreMLExecutionProvider(with: coreMLOptions)
     
     self.session = try ORTSession(
       env: env,
@@ -58,8 +63,8 @@ final class CLIPImageEncoder: @unchecked Sendable {
     }
     
     // Take only the expected dims if output is larger
-    if embedding.count > Self.embeddingDimension {
-      embedding = Array(embedding.prefix(Self.embeddingDimension))
+    if embedding.count > embeddingDimension {
+      embedding = Array(embedding.prefix(embeddingDimension))
     }
     
     return Self.l2Normalize(embedding)

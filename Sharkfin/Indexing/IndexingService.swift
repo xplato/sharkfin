@@ -65,15 +65,19 @@ final class IndexingService {
       return
     }
     
+    let activePackage = modelManager.activePackage
+    
     progressByDirectory[dirId] = IndexingProgress(phase: .scanning)
     
     let db = database
     activeTasks[dirId] = Task.detached { [weak self] in
+      let startTime = ContinuousClock.now
       do {
         try await Self.performIndexing(
           dirId: dirId,
           bookmark: bookmark,
           visionModelURL: visionModelURL,
+          modelPackage: activePackage,
           database: db
         ) { [weak self] progress in
           let service = self
@@ -81,6 +85,11 @@ final class IndexingService {
             service?.progressByDirectory[dirId] = progress
           }
         }
+        let elapsed = ContinuousClock.now - startTime
+        LoggingService.shared.debug(
+          "Directory \(dirId) indexed in \(elapsed)",
+          category: "Indexing"
+        )
       } catch is CancellationError {
         let service = self
         await MainActor.run {
@@ -122,6 +131,7 @@ final class IndexingService {
     dirId: Int64,
     bookmark: Data,
     visionModelURL: URL,
+    modelPackage: CLIPModelPackage,
     database: AppDatabase,
     onProgress: @Sendable @escaping (IndexingProgress) -> Void
   ) async throws {
@@ -137,7 +147,10 @@ final class IndexingService {
     defer { url.stopAccessingSecurityScopedResource() }
     
     // Create CLIP encoder (off main thread — model loading can be slow)
-    let encoder = try CLIPImageEncoder(modelPath: visionModelURL)
+    let encoder = try CLIPImageEncoder(
+      modelPath: visionModelURL,
+      embeddingDimension: modelPackage.embeddingDimension
+    )
     
     // Phase 1: Quick scan — enumerate files without hashing
     onProgress(IndexingProgress(phase: .scanning))
@@ -163,23 +176,34 @@ final class IndexingService {
     try Task.checkCancellation()
     
     // Phase 2: Diff against all existing indexed files (across directories)
-    // so we can detect overlapping files owned by a different directory.
-    let (existingDates, existingOwners) = try await database.dbQueue.read { db -> ([String: Date], [String: Int64]) in
+    // so we can detect overlapping files owned by a different directory
+    // and files that lack an embedding for the active model.
+    let activeModelId = modelPackage.id
+    let (existingFiles, existingOwners) = try await database.dbQueue.read {
+      db -> ([String: (date: Date, fileId: Int64, hasActiveEmbed: Bool)], [String: Int64]) in
       let rows = try Row.fetchAll(
         db,
-        sql: "SELECT path, modifiedAt, directoryId FROM files"
+        sql: """
+          SELECT f.id AS fileId, f.path, f.modifiedAt, f.directoryId,
+                 EXISTS(SELECT 1 FROM fileEmbeddings e
+                        WHERE e.fileId = f.id AND e.modelId = ?) AS hasActiveEmbed
+          FROM files f
+          """,
+        arguments: [activeModelId]
       )
-      var dates: [String: Date] = [:]
+      var files: [String: (date: Date, fileId: Int64, hasActiveEmbed: Bool)] = [:]
       var owners: [String: Int64] = [:]
       for row in rows {
         if let path: String = row["path"],
            let date: Date = row["modifiedAt"],
-           let ownerId: Int64 = row["directoryId"] {
-          dates[path] = date
+           let ownerId: Int64 = row["directoryId"],
+           let fileId: Int64 = row["fileId"] {
+          let hasEmbed: Bool = row["hasActiveEmbed"]
+          files[path] = (date: date, fileId: fileId, hasActiveEmbed: hasEmbed)
           owners[path] = ownerId
         }
       }
-      return (dates, owners)
+      return (files, owners)
     }
     
     // Clean up records for files owned by this directory that no longer exist on disk
@@ -207,29 +231,32 @@ final class IndexingService {
       return Set(ids)
     }
     
-    // Categorize scanned files into three tiers:
-    // 1. New or modified → full processing pipeline
-    // 2. Unchanged but owned by a removed/disabled directory → cheap reassignment
-    // 3. Unchanged and already owned by this or another active directory → skip
+    // Categorize scanned files into four tiers:
+    // 1. New or modified → full processing pipeline (deletes old file + all embeddings)
+    // 2. Unchanged but missing embedding for active model → generate embedding only
+    // 3. Unchanged but owned by a removed/disabled directory → cheap reassignment
+    // 4. Unchanged with active-model embedding → skip
     var filesToProcess: [QuickScannedFile] = []
+    var filesToEmbed: [(file: QuickScannedFile, fileId: Int64)] = []
     var pathsToReassign: [String] = []
     
     for file in allFiles {
-      guard let existingDate = existingDates[file.url.path] else {
+      guard let existing = existingFiles[file.url.path] else {
         filesToProcess.append(file)
         continue
       }
       // The database stores dates as text with millisecond precision, so the
       // round-tripped date loses sub-millisecond information. Use a small
       // tolerance to avoid false positives from that truncation.
-      let isModified = file.modifiedAt.timeIntervalSince(existingDate) > 1.0
+      let isModified = file.modifiedAt.timeIntervalSince(existing.date) > 1.0
       let currentOwner = existingOwners[file.url.path]
       let ownedByOther = currentOwner != dirId
       
       if isModified {
         filesToProcess.append(file)
+      } else if !existing.hasActiveEmbed {
+        filesToEmbed.append((file: file, fileId: existing.fileId))
       } else if ownedByOther, let owner = currentOwner, !enabledDirIds.contains(owner) {
-        // Only reassign if the current owner is no longer active
         pathsToReassign.append(file.url.path)
       }
     }
@@ -251,7 +278,7 @@ final class IndexingService {
       }
     }
     
-    if filesToProcess.isEmpty {
+    if filesToProcess.isEmpty && filesToEmbed.isEmpty {
       try await database.dbQueue.write { db in
         if var dir = try SharkfinDirectory.fetchOne(db, id: dirId) {
           dir.lastIndexedAt = Date()
@@ -263,31 +290,66 @@ final class IndexingService {
     }
     
     // Phase 3: Process files with bounded concurrency
-    let total = filesToProcess.count
+    let total = filesToProcess.count + filesToEmbed.count
     onProgress(IndexingProgress(phase: .indexing, total: total))
     
     let maxConcurrency = 8
     var processed = 0
     
+    // Combine both queues into a single work list with a tag
+    // to distinguish full-process from embedding-only items.
+    enum WorkItem {
+      case full(QuickScannedFile)
+      case embedOnly(file: QuickScannedFile, fileId: Int64)
+      
+      var filename: String {
+        switch self {
+        case .full(let f): f.filename
+        case .embedOnly(let f, _): f.filename
+        }
+      }
+    }
+    
+    var workItems: [WorkItem] = filesToProcess.map { .full($0) }
+    workItems += filesToEmbed.map { .embedOnly(file: $0.file, fileId: $0.fileId) }
+    
     await withTaskGroup(of: String.self) { group in
       var index = 0
       
-      // Seed initial batch
-      while index < min(maxConcurrency, filesToProcess.count) {
-        let file = filesToProcess[index]
-        index += 1
-        group.addTask {
-          Self.processFile(
-            file,
-            directoryId: dirId,
-            encoder: encoder,
-            database: database
-          )
-          return file.filename
+      func enqueue(_ item: WorkItem, in group: inout TaskGroup<String>) {
+        switch item {
+        case .full(let file):
+          group.addTask {
+            Self.processFile(
+              file,
+              directoryId: dirId,
+              encoder: encoder,
+              modelId: activeModelId,
+              database: database
+            )
+            return file.filename
+          }
+        case .embedOnly(let file, let fileId):
+          group.addTask {
+            Self.addEmbedding(
+              for: file,
+              fileId: fileId,
+              encoder: encoder,
+              modelId: activeModelId,
+              database: database
+            )
+            return file.filename
+          }
         }
       }
       
-      // As each task completes, enqueue the next file
+      // Seed initial batch
+      while index < min(maxConcurrency, workItems.count) {
+        enqueue(workItems[index], in: &group)
+        index += 1
+      }
+      
+      // As each task completes, enqueue the next item
       for await filename in group {
         if Task.isCancelled { break }
         processed += 1
@@ -300,18 +362,9 @@ final class IndexingService {
           )
         )
         
-        if index < filesToProcess.count {
-          let file = filesToProcess[index]
+        if index < workItems.count {
+          enqueue(workItems[index], in: &group)
           index += 1
-          group.addTask {
-            Self.processFile(
-              file,
-              directoryId: dirId,
-              encoder: encoder,
-              database: database
-            )
-            return file.filename
-          }
         }
       }
     }
@@ -347,6 +400,7 @@ final class IndexingService {
     _ file: QuickScannedFile,
     directoryId: Int64,
     encoder: CLIPImageEncoder,
+    modelId: String,
     database: AppDatabase
   ) {
     do {
@@ -438,13 +492,68 @@ final class IndexingService {
         guard let fileId = indexedFile.id else { return }
         let fileEmbedding = FileEmbedding(
           fileId: fileId,
-          embedding: embeddingData
+          embedding: embeddingData,
+          modelId: modelId
         )
         try fileEmbedding.insert(db)
       }
     } catch {
       LoggingService.shared.info(
         "Failed to index \(file.filename): \(error)",
+        category: "Indexing"
+      )
+    }
+  }
+  
+  // MARK: - Embedding-Only Processing
+  
+  /// Generates and inserts an embedding for an existing file record.
+  /// Used when the file content hasn't changed but an embedding for the
+  /// active model doesn't exist yet.
+  private nonisolated static func addEmbedding(
+    for file: QuickScannedFile,
+    fileId: Int64,
+    encoder: CLIPImageEncoder,
+    modelId: String,
+    database: AppDatabase
+  ) {
+    do {
+      guard let image = NSImage(contentsOf: file.url) else { return }
+      
+      let maxDim: CGFloat = 4096
+      let finalImage: NSImage
+      if image.size.width > maxDim || image.size.height > maxDim {
+        let scale = min(maxDim / image.size.width, maxDim / image.size.height)
+        let newSize = NSSize(
+          width: image.size.width * scale,
+          height: image.size.height * scale
+        )
+        finalImage = NSImage(size: newSize)
+        finalImage.lockFocus()
+        image.draw(in: NSRect(origin: .zero, size: newSize))
+        finalImage.unlockFocus()
+      } else {
+        finalImage = image
+      }
+      
+      guard let tensorData = ImagePreprocessor.preprocess(finalImage) else {
+        return
+      }
+      let embedding = try encoder.encode(pixelValues: tensorData)
+      let embeddingData = embedding.withUnsafeBufferPointer { Data(buffer: $0) }
+      
+      try database.dbQueue.write { db in
+        try db.execute(
+          sql: """
+            INSERT OR REPLACE INTO fileEmbeddings (fileId, embedding, modelId)
+            VALUES (?, ?, ?)
+            """,
+          arguments: [fileId, embeddingData, modelId]
+        )
+      }
+    } catch {
+      LoggingService.shared.info(
+        "Failed to add embedding for \(file.filename): \(error)",
         category: "Indexing"
       )
     }

@@ -120,24 +120,28 @@ final class AppState {
   private func showSearch() {
     let panel = getOrCreatePanel()
     
-    // Only set the default position on first show; subsequent shows
-    // preserve the user's dragged position (resets on app relaunch).
-    if !hasPositionedPanel {
-      if let screen = NSScreen.screens.first(where: {
-        $0.frame.contains(NSEvent.mouseLocation)
-      }) ?? NSScreen.main ?? NSScreen.screens.first {
-        let screenFrame = screen.visibleFrame
-        let panelWidth = SearchPanel.panelWidth
-        let panelHeight = SearchPanel.panelHeight
-        let x = screenFrame.midX - panelWidth / 2
-        let panelTopY = screenFrame.origin.y + screenFrame.height * 0.78 + 100
-        let y = panelTopY - panelHeight
-        panel.setFrame(
-          NSRect(x: x, y: y, width: panelWidth, height: panelHeight),
-          display: false
-        )
-        panel.defaultOriginY = y
-      }
+    let mouseScreen = NSScreen.screens.first(where: {
+      $0.frame.contains(NSEvent.mouseLocation)
+    }) ?? NSScreen.main ?? NSScreen.screens.first
+    
+    // Reposition the panel on first show, or whenever the mouse has
+    // moved to a different screen than where the panel currently sits.
+    let panelScreen = panel.screen
+    let needsReposition = !hasPositionedPanel
+    || (mouseScreen != nil && mouseScreen != panelScreen)
+    
+    if needsReposition, let screen = mouseScreen {
+      let screenFrame = screen.visibleFrame
+      let panelWidth = SearchPanel.panelWidth
+      let panelHeight = SearchPanel.panelHeight
+      let x = screenFrame.midX - panelWidth / 2
+      let panelTopY = screenFrame.origin.y + screenFrame.height * 0.78 + 100
+      let y = panelTopY - panelHeight
+      panel.setFrame(
+        NSRect(x: x, y: y, width: panelWidth, height: panelHeight),
+        display: false
+      )
+      panel.defaultOriginY = y
       hasPositionedPanel = true
     }
     

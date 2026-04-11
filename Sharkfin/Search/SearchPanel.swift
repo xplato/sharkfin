@@ -43,6 +43,7 @@ final class SearchPanel: NSPanel {
     
     isFloatingPanel = true
     level = .floating
+    collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
     isOpaque = false
     backgroundColor = .clear
     hasShadow = true

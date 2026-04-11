@@ -163,15 +163,27 @@ final class AppState {
     hideSearch()
     NSApp.setActivationPolicy(.regular)
     let window = getOrCreateSettingsWindow()
-    window.makeKeyAndOrderFront(nil)
-    NSApp.activate(ignoringOtherApps: true)
-    // Re-activate on the next run-loop tick so the window server
-    // places the app at the front of the Cmd-Tab list, even if the
-    // activation policy change hadn't fully propagated above.
+    centerWindowOnMouseScreen(window)
+    window.orderFront(nil)
+    // Delay activation to the next run-loop tick so the window server
+    // registers the window on the correct space before we bring it key.
     DispatchQueue.main.async {
+      self.centerWindowOnMouseScreen(window)
       window.makeKeyAndOrderFront(nil)
       NSApp.activate(ignoringOtherApps: true)
     }
+  }
+  
+  /// Centers the given window on the screen that currently contains the mouse.
+  private func centerWindowOnMouseScreen(_ window: NSWindow) {
+    guard let screen = NSScreen.screens.first(where: {
+      $0.frame.contains(NSEvent.mouseLocation)
+    }) ?? NSScreen.main else { return }
+    let screenFrame = screen.visibleFrame
+    let windowSize = window.frame.size
+    let x = screenFrame.midX - windowSize.width / 2
+    let y = screenFrame.midY - windowSize.height / 2
+    window.setFrameOrigin(NSPoint(x: x, y: y))
   }
   
   private func getOrCreateSettingsWindow() -> NSWindow {
@@ -190,6 +202,7 @@ final class AppState {
       defer: false
     )
     window.isReleasedWhenClosed = false
+    window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
     window.contentView = NSHostingView(rootView: settingsView)
     window.title = "Sharkfin Settings"
     window.setContentSize(NSSize(width: 500, height: 600))

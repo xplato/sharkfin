@@ -184,7 +184,7 @@ or, more explicitly:
 
 Neither of these two images were included in the search results for "pilot."
 
-Improving the quality of search results is, of course, a priority moving forward.
+Improving the quality of search results is, of course, a priority moving forward. [PR #31](https://github.com/xplato/Sharkfin/pull/31) focuses on adding support for additional CLIP model packages of larger dimensions which should, in theory, improve search quality, at the cost of indexing speed and memory usage. These trade-offs, however, are comparatively minor relative to the quality of the results (so far).
 
 ## Developing
 

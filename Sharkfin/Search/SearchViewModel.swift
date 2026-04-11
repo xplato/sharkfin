@@ -137,6 +137,7 @@ final class SearchViewModel {
       guard !Task.isCancelled else { return }
       results = searchResults
       state = searchResults.isEmpty ? .noResults : .results
+      scheduleIdleUnload()
     } catch is CancellationError {
       // Keep previous results on cancellation
     } catch {
@@ -145,7 +146,6 @@ final class SearchViewModel {
       results = []
       state = .noResults
     }
-    scheduleIdleUnload()
   }
 
   /// After a period of inactivity, release the text encoder and embedding

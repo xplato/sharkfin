@@ -59,8 +59,8 @@ struct GeneralSettingsView: View {
           "Models are downloaded from [huggingface.co/xplato](https://huggingface.co/xplato)"
         )
       ) {
-        ForEach(CLIPModelSpec.all) { model in
-          ModelRowView(model: model)
+        ForEach(CLIPModelPackage.all) { package in
+          ModelPackageRowView(package: package)
         }
       }
     }

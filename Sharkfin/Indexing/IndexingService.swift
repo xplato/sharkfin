@@ -65,6 +65,8 @@ final class IndexingService {
       return
     }
     
+    let activePackage = modelManager.activePackage
+    
     progressByDirectory[dirId] = IndexingProgress(phase: .scanning)
     
     let db = database
@@ -74,6 +76,7 @@ final class IndexingService {
           dirId: dirId,
           bookmark: bookmark,
           visionModelURL: visionModelURL,
+          modelPackage: activePackage,
           database: db
         ) { [weak self] progress in
           let service = self
@@ -122,6 +125,7 @@ final class IndexingService {
     dirId: Int64,
     bookmark: Data,
     visionModelURL: URL,
+    modelPackage: CLIPModelPackage,
     database: AppDatabase,
     onProgress: @Sendable @escaping (IndexingProgress) -> Void
   ) async throws {
@@ -137,7 +141,10 @@ final class IndexingService {
     defer { url.stopAccessingSecurityScopedResource() }
     
     // Create CLIP encoder (off main thread — model loading can be slow)
-    let encoder = try CLIPImageEncoder(modelPath: visionModelURL)
+    let encoder = try CLIPImageEncoder(
+      modelPath: visionModelURL,
+      embeddingDimension: modelPackage.embeddingDimension
+    )
     
     // Phase 1: Quick scan — enumerate files without hashing
     onProgress(IndexingProgress(phase: .scanning))
@@ -163,23 +170,32 @@ final class IndexingService {
     try Task.checkCancellation()
     
     // Phase 2: Diff against all existing indexed files (across directories)
-    // so we can detect overlapping files owned by a different directory.
-    let (existingDates, existingOwners) = try await database.dbQueue.read { db -> ([String: Date], [String: Int64]) in
+    // so we can detect overlapping files owned by a different directory
+    // and files whose embeddings were produced by a different model.
+    let activeModelId = modelPackage.id
+    let (existingDates, existingOwners, existingModelIds) = try await database.dbQueue.read {
+      db -> ([String: Date], [String: Int64], [String: String?]) in
       let rows = try Row.fetchAll(
         db,
-        sql: "SELECT path, modifiedAt, directoryId FROM files"
+        sql: """
+          SELECT f.path, f.modifiedAt, f.directoryId, e.modelId
+          FROM files f
+          LEFT JOIN fileEmbeddings e ON e.fileId = f.id
+          """
       )
       var dates: [String: Date] = [:]
       var owners: [String: Int64] = [:]
+      var modelIds: [String: String?] = [:]
       for row in rows {
         if let path: String = row["path"],
            let date: Date = row["modifiedAt"],
            let ownerId: Int64 = row["directoryId"] {
           dates[path] = date
           owners[path] = ownerId
+          modelIds[path] = row["modelId"] as String?
         }
       }
-      return (dates, owners)
+      return (dates, owners, modelIds)
     }
     
     // Clean up records for files owned by this directory that no longer exist on disk
@@ -207,10 +223,11 @@ final class IndexingService {
       return Set(ids)
     }
     
-    // Categorize scanned files into three tiers:
+    // Categorize scanned files into four tiers:
     // 1. New or modified → full processing pipeline
-    // 2. Unchanged but owned by a removed/disabled directory → cheap reassignment
-    // 3. Unchanged and already owned by this or another active directory → skip
+    // 2. Embedding produced by a different model → re-index
+    // 3. Unchanged but owned by a removed/disabled directory → cheap reassignment
+    // 4. Unchanged and already owned by this or another active directory → skip
     var filesToProcess: [QuickScannedFile] = []
     var pathsToReassign: [String] = []
     
@@ -223,10 +240,12 @@ final class IndexingService {
       // round-tripped date loses sub-millisecond information. Use a small
       // tolerance to avoid false positives from that truncation.
       let isModified = file.modifiedAt.timeIntervalSince(existingDate) > 1.0
+      let embeddingModelId = existingModelIds[file.url.path] ?? nil
+      let needsReEmbed = embeddingModelId != activeModelId
       let currentOwner = existingOwners[file.url.path]
       let ownedByOther = currentOwner != dirId
       
-      if isModified {
+      if isModified || needsReEmbed {
         filesToProcess.append(file)
       } else if ownedByOther, let owner = currentOwner, !enabledDirIds.contains(owner) {
         // Only reassign if the current owner is no longer active
@@ -281,6 +300,7 @@ final class IndexingService {
             file,
             directoryId: dirId,
             encoder: encoder,
+            modelId: activeModelId,
             database: database
           )
           return file.filename
@@ -308,6 +328,7 @@ final class IndexingService {
               file,
               directoryId: dirId,
               encoder: encoder,
+              modelId: activeModelId,
               database: database
             )
             return file.filename
@@ -347,6 +368,7 @@ final class IndexingService {
     _ file: QuickScannedFile,
     directoryId: Int64,
     encoder: CLIPImageEncoder,
+    modelId: String,
     database: AppDatabase
   ) {
     do {
@@ -438,7 +460,8 @@ final class IndexingService {
         guard let fileId = indexedFile.id else { return }
         let fileEmbedding = FileEmbedding(
           fileId: fileId,
-          embedding: embeddingData
+          embedding: embeddingData,
+          modelId: modelId
         )
         try fileEmbedding.insert(db)
       }

@@ -17,6 +17,7 @@ final class SearchService: @unchecked Sendable {
   
   private let database: AppDatabase
   private let textEncoder: any TextEncoding
+  private let modelId: String
   
   private nonisolated static let minRawScore: Float = 0.16
   private nonisolated static let scoreFloor: Float = 0.18
@@ -27,9 +28,10 @@ final class SearchService: @unchecked Sendable {
   private let cacheState = OSAllocatedUnfairLock(initialState: CacheSlot())
   private var notificationObserver: (any NSObjectProtocol)?
   
-  init(database: AppDatabase, textEncoder: any TextEncoding) {
+  init(database: AppDatabase, textEncoder: any TextEncoding, modelId: String) {
     self.database = database
     self.textEncoder = textEncoder
+    self.modelId = modelId
     
     notificationObserver = NotificationCenter.default.addObserver(
       forName: .searchCacheDidInvalidate,
@@ -239,13 +241,14 @@ final class SearchService: @unchecked Sendable {
   }
   
   private nonisolated func loadCache() async throws -> EmbeddingCache {
+    let activeModelId = modelId
     let sql = """
       SELECT e.fileId, e.embedding, f.filename, f.path, f.thumbnailPath,
              LOWER(f.fileExtension) AS fileExtension
       FROM fileEmbeddings e
       JOIN files f ON f.id = e.fileId
       JOIN directories d ON d.id = f.directoryId
-      WHERE d.enabled = 1
+      WHERE d.enabled = 1 AND e.modelId = ?
       """
     
     return try await database.dbQueue.read { db in
@@ -256,11 +259,16 @@ final class SearchService: @unchecked Sendable {
           FROM fileEmbeddings e
           JOIN files f ON f.id = e.fileId
           JOIN directories d ON d.id = f.directoryId
-          WHERE d.enabled = 1
-          """
+          WHERE d.enabled = 1 AND e.modelId = ?
+          """,
+        arguments: [activeModelId]
       ) ?? 0
       
-      let cursor = try EmbeddingRow.fetchCursor(db, sql: sql)
+      let cursor = try EmbeddingRow.fetchCursor(
+        db,
+        sql: sql,
+        arguments: [activeModelId]
+      )
       
       guard let firstRow = try cursor.next() else {
         return EmbeddingCache(

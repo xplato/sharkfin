@@ -3,7 +3,10 @@ import SwiftUI
 struct ModelPackageRowView: View {
   let package: CLIPModelPackage
   @Environment(CLIPModelManager.self) private var manager
+  @Environment(IndexingService.self) private var indexingService
+  @Environment(DirectoryStore.self) private var directoryStore
   @State private var showDeleteConfirmation = false
+  @State private var showActivateConfirmation = false
   
   private var state: ModelDownloadState {
     manager.packageState(package)
@@ -101,7 +104,21 @@ struct ModelPackageRowView: View {
       HStack(spacing: 8) {
         if !isActive {
           Button("Set Active") {
-            manager.activePackage = package
+            showActivateConfirmation = true
+          }
+          .confirmationDialog(
+            "Switch to \"\(package.displayName)\"?",
+            isPresented: $showActivateConfirmation,
+            titleVisibility: .visible
+          ) {
+            Button("Switch & Re-index") {
+              manager.setActivePackage(package)
+              indexingService.indexAllEnabled(from: directoryStore)
+            }
+          } message: {
+            Text(
+              "All indexed directories will be re-indexed with the new model. This may take a while depending on the number of files."
+            )
           }
         }
         Button(role: .destructive) {

@@ -4,13 +4,14 @@ import OnnxRuntimeBindings
 /// Wraps the ONNX Runtime vision session for CLIP image encoding.
 final class CLIPImageEncoder: @unchecked Sendable {
   
-  /// Number of dimensions in a CLIP embedding vector.
-  nonisolated static let embeddingDimension = 512
+  /// Number of dimensions in the embedding vector for this encoder.
+  nonisolated let embeddingDimension: Int
   
   nonisolated(unsafe) private let session: ORTSession
   private nonisolated let outputName: String
   
-  nonisolated init(modelPath: URL) throws {
+  nonisolated init(modelPath: URL, embeddingDimension: Int = 512) throws {
+    self.embeddingDimension = embeddingDimension
     let env = try ORTEnv(loggingLevel: .warning)
     
     let options = try ORTSessionOptions()
@@ -58,8 +59,8 @@ final class CLIPImageEncoder: @unchecked Sendable {
     }
     
     // Take only the expected dims if output is larger
-    if embedding.count > Self.embeddingDimension {
-      embedding = Array(embedding.prefix(Self.embeddingDimension))
+    if embedding.count > embeddingDimension {
+      embedding = Array(embedding.prefix(embeddingDimension))
     }
     
     return Self.l2Normalize(embedding)

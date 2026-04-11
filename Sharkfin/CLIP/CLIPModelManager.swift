@@ -12,7 +12,7 @@ enum ModelDownloadState: Equatable {
   case error(String)
 }
 
-// MARK: - Model Specification
+// MARK: - Model File Specification
 
 struct CLIPModelSpec: Identifiable {
   let id: String
@@ -36,34 +36,95 @@ struct CLIPModelSpec: Identifiable {
   }
 }
 
-extension CLIPModelSpec {
-  static let textEncoder = CLIPModelSpec(
-    id: "clip-vit-base-patch32-text-onnx",
-    displayName: "CLIP Text Encoder",
-    repoID: "xplato/clip-vit-base-patch32-text-onnx",
-    files: [
-      ModelFile(filename: "model.onnx", sizeBytes: 254_000_000),
-      ModelFile(filename: "tokenizer.json", sizeBytes: 2_220_000),
-      ModelFile(filename: "vocab.json", sizeBytes: 862_000),
-      ModelFile(filename: "merges.txt", sizeBytes: 525_000),
-      ModelFile(filename: "config.json", sizeBytes: 536),
-      ModelFile(filename: "tokenizer_config.json", sizeBytes: 705),
-      ModelFile(filename: "special_tokens_map.json", sizeBytes: 588),
-    ]
+// MARK: - Model Package
+
+/// A paired set of CLIP text + vision encoders at a specific model size.
+/// Each package produces embeddings of a fixed dimension and is identified
+/// by a stable `id` that gets stored alongside embeddings in the database.
+struct CLIPModelPackage: Identifiable {
+  let id: String
+  let displayName: String
+  let description: String
+  let embeddingDimension: Int
+  let textEncoder: CLIPModelSpec
+  let visionEncoder: CLIPModelSpec
+  
+  var totalSizeBytes: Int64 {
+    textEncoder.totalSizeBytes + visionEncoder.totalSizeBytes
+  }
+  
+  /// All individual model specs in this package.
+  var specs: [CLIPModelSpec] { [textEncoder, visionEncoder] }
+}
+
+extension CLIPModelPackage {
+  static let vitB32 = CLIPModelPackage(
+    id: "clip-vit-base-patch32",
+    displayName: "CLIP ViT-B/32",
+    description: "Smallest and fastest. Good for general use.",
+    embeddingDimension: 512,
+    textEncoder: CLIPModelSpec(
+      id: "clip-vit-base-patch32-text-onnx",
+      displayName: "Text Encoder",
+      repoID: "xplato/clip-vit-base-patch32-text-onnx",
+      files: [
+        .init(filename: "model.onnx", sizeBytes: 254_000_000),
+        .init(filename: "tokenizer.json", sizeBytes: 2_220_000),
+        .init(filename: "vocab.json", sizeBytes: 862_000),
+        .init(filename: "merges.txt", sizeBytes: 525_000),
+        .init(filename: "config.json", sizeBytes: 536),
+        .init(filename: "tokenizer_config.json", sizeBytes: 705),
+        .init(filename: "special_tokens_map.json", sizeBytes: 588),
+      ]
+    ),
+    visionEncoder: CLIPModelSpec(
+      id: "clip-vit-base-patch32-vision-onnx",
+      displayName: "Vision Encoder",
+      repoID: "xplato/clip-vit-base-patch32-vision-onnx",
+      files: [
+        .init(filename: "model.onnx", sizeBytes: 352_000_000),
+        .init(filename: "config.json", sizeBytes: 482),
+        .init(filename: "preprocessor_config.json", sizeBytes: 780),
+      ]
+    )
   )
   
-  static let visionEncoder = CLIPModelSpec(
-    id: "clip-vit-base-patch32-vision-onnx",
-    displayName: "CLIP Vision Encoder",
-    repoID: "xplato/clip-vit-base-patch32-vision-onnx",
-    files: [
-      ModelFile(filename: "model.onnx", sizeBytes: 352_000_000),
-      ModelFile(filename: "config.json", sizeBytes: 482),
-      ModelFile(filename: "preprocessor_config.json", sizeBytes: 780),
-    ]
+  static let vitB16 = CLIPModelPackage(
+    id: "clip-vit-base-patch16",
+    displayName: "CLIP ViT-B/16",
+    description: "Better detail recognition, same download size.",
+    embeddingDimension: 512,
+    textEncoder: CLIPModelSpec(
+      id: "clip-vit-base-patch16-text-onnx",
+      displayName: "Text Encoder",
+      repoID: "xplato/clip-vit-base-patch16-text-onnx",
+      files: [
+        .init(filename: "model.onnx", sizeBytes: 254_000_000),
+        .init(filename: "tokenizer.json", sizeBytes: 2_220_000),
+        .init(filename: "vocab.json", sizeBytes: 862_000),
+        .init(filename: "merges.txt", sizeBytes: 525_000),
+        .init(filename: "config.json", sizeBytes: 536),
+        .init(filename: "tokenizer_config.json", sizeBytes: 705),
+        .init(filename: "special_tokens_map.json", sizeBytes: 588),
+      ]
+    ),
+    visionEncoder: CLIPModelSpec(
+      id: "clip-vit-base-patch16-vision-onnx",
+      displayName: "Vision Encoder",
+      repoID: "xplato/clip-vit-base-patch16-vision-onnx",
+      files: [
+        .init(filename: "model.onnx", sizeBytes: 345_000_000),
+        .init(filename: "config.json", sizeBytes: 482),
+        .init(filename: "preprocessor_config.json", sizeBytes: 780),
+      ]
+    )
   )
   
-  static let all: [CLIPModelSpec] = [textEncoder, visionEncoder]
+  /// All available model packages, ordered from smallest to largest.
+  static let all: [CLIPModelPackage] = [vitB32, vitB16]
+  
+  /// The default package used when no preference has been set.
+  static let `default` = vitB32
 }
 
 // MARK: - Model Manager
@@ -71,6 +132,7 @@ extension CLIPModelSpec {
 @MainActor
 @Observable
 final class CLIPModelManager {
+  /// Download state for each individual model spec (keyed by spec ID).
   private(set) var modelStates: [String: ModelDownloadState] = [:]
   
   private var activeDownloads: [String: FileDownloader] = [:]
@@ -84,17 +146,98 @@ final class CLIPModelManager {
   }()
   
   init() {
+    self.activePackage = Self.loadActivePackage()
     try? fileManager.createDirectory(
       at: Self.modelsDirectoryURL,
       withIntermediateDirectories: true
     )
     cleanupTemporaryFiles()
-    for model in CLIPModelSpec.all {
-      modelStates[model.id] = checkDownloadStatus(for: model)
+    // Check download status for all specs across all packages
+    for package in CLIPModelPackage.all {
+      for spec in package.specs {
+        modelStates[spec.id] = checkDownloadStatus(for: spec)
+      }
     }
   }
   
-  // MARK: - Public API
+  // MARK: - Active Package
+  
+  /// The user's selected model package. Stored so @Observable can track changes.
+  private(set) var activePackage: CLIPModelPackage
+  
+  func setActivePackage(_ package: CLIPModelPackage) {
+    activePackage = package
+    UserDefaults.standard.set(package.id, forKey: StorageKey.activeModelPackage)
+    NotificationCenter.default.post(
+      name: .searchCacheDidInvalidate,
+      object: nil
+    )
+  }
+  
+  private static func loadActivePackage() -> CLIPModelPackage {
+    let storedId = UserDefaults.standard.string(
+      forKey: StorageKey.activeModelPackage
+    )
+    return CLIPModelPackage.all.first { $0.id == storedId } ?? .default
+  }
+  
+  // MARK: - Package-Level API
+  
+  /// Download all models in a package.
+  func downloadPackage(_ package: CLIPModelPackage) {
+    for spec in package.specs {
+      download(spec)
+    }
+  }
+  
+  /// Cancel all downloads in a package.
+  func cancelPackage(_ package: CLIPModelPackage) {
+    for spec in package.specs {
+      cancel(spec)
+    }
+  }
+  
+  /// Delete all model files in a package.
+  func deletePackage(_ package: CLIPModelPackage) {
+    for spec in package.specs {
+      delete(spec)
+    }
+  }
+  
+  /// Whether all models in a package are downloaded and ready.
+  func isPackageReady(_ package: CLIPModelPackage) -> Bool {
+    package.specs.allSatisfy { modelStates[$0.id] == .downloaded }
+  }
+  
+  /// Aggregate download state for a package.
+  func packageState(_ package: CLIPModelPackage) -> ModelDownloadState {
+    let states = package.specs.map { modelStates[$0.id] ?? .notDownloaded }
+    if states.allSatisfy({ $0 == .downloaded }) { return .downloaded }
+    if let error = states.first(where: {
+      if case .error = $0 { return true }; return false
+    }) { return error }
+    // If any spec is downloading, compute aggregate progress
+    let downloading = states.contains {
+      if case .downloading = $0 { return true }; return false
+    }
+    if downloading {
+      var totalBytes: Int64 = 0
+      var weightedProgress: Double = 0
+      for spec in package.specs {
+        totalBytes += spec.totalSizeBytes
+        if case .downloading(let p) = modelStates[spec.id] {
+          weightedProgress += p * Double(spec.totalSizeBytes)
+        } else if modelStates[spec.id] == .downloaded {
+          weightedProgress += Double(spec.totalSizeBytes)
+        }
+      }
+      let overall = totalBytes > 0 ? weightedProgress / Double(totalBytes) : 0
+      return .downloading(progress: overall)
+    }
+    return .notDownloaded
+  }
+  
+  // MARK: - Individual Spec API
   
   func download(_ model: CLIPModelSpec) {
     guard modelStates[model.id] != .downloading(progress: 0) else { return }
@@ -127,35 +270,34 @@ final class CLIPModelManager {
   
   // MARK: - Convenience Accessors
   
+  /// The text model URL for the active package, if downloaded.
   var textModelURL: URL? {
-    guard modelStates[CLIPModelSpec.textEncoder.id] == .downloaded else {
-      return nil
-    }
+    let spec = activePackage.textEncoder
+    guard modelStates[spec.id] == .downloaded else { return nil }
     return Self.modelsDirectoryURL
-      .appendingPathComponent(CLIPModelSpec.textEncoder.id)
+      .appendingPathComponent(spec.id)
       .appendingPathComponent("model.onnx")
   }
   
+  /// The tokenizer folder URL for the active package, if downloaded.
   var textTokenizerFolderURL: URL? {
-    guard modelStates[CLIPModelSpec.textEncoder.id] == .downloaded else {
-      return nil
-    }
-    return Self.modelsDirectoryURL
-      .appendingPathComponent(CLIPModelSpec.textEncoder.id)
+    let spec = activePackage.textEncoder
+    guard modelStates[spec.id] == .downloaded else { return nil }
+    return Self.modelsDirectoryURL.appendingPathComponent(spec.id)
   }
   
+  /// The vision model URL for the active package, if downloaded.
   var visionModelURL: URL? {
-    guard modelStates[CLIPModelSpec.visionEncoder.id] == .downloaded else {
-      return nil
-    }
+    let spec = activePackage.visionEncoder
+    guard modelStates[spec.id] == .downloaded else { return nil }
     return Self.modelsDirectoryURL
-      .appendingPathComponent(CLIPModelSpec.visionEncoder.id)
+      .appendingPathComponent(spec.id)
       .appendingPathComponent("model.onnx")
   }
   
+  /// Whether the active package is fully downloaded and ready.
   var isReady: Bool {
-    modelStates[CLIPModelSpec.textEncoder.id] == .downloaded
-    && modelStates[CLIPModelSpec.visionEncoder.id] == .downloaded
+    isPackageReady(activePackage)
   }
   
   // MARK: - Download Logic

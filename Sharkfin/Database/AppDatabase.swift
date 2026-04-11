@@ -83,6 +83,20 @@ final class AppDatabase: Sendable {
       try db.create(indexOn: "fileMetadata", columns: ["key"])
     }
     
+    migrator.registerMigration("v2-model-tracking") { db in
+      // Track which model package produced each embedding so we can
+      // detect stale embeddings when the user switches models.
+      try db.alter(table: "fileEmbeddings") { t in
+        t.add(column: "modelId", .text)
+          .notNull()
+          .defaults(to: "clip-vit-base-patch32")
+      }
+      try db.create(
+        indexOn: "fileEmbeddings",
+        columns: ["modelId"]
+      )
+    }
+    
     return migrator
   }
   

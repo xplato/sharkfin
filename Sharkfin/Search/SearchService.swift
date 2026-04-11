@@ -24,8 +24,7 @@ final class SearchService: @unchecked Sendable {
   
   // MARK: - Embedding cache
   
-  private let cacheTask = OSAllocatedUnfairLock<Task<EmbeddingCache, any Error>?>(initialState: nil)
-  private let debounceTask = OSAllocatedUnfairLock<Task<Void, Never>?>(initialState: nil)
+  private let cacheState = OSAllocatedUnfairLock(initialState: CacheSlot())
   private var notificationObserver: (any NSObjectProtocol)?
   
   init(database: AppDatabase, textEncoder: any TextEncoding) {
@@ -37,7 +36,7 @@ final class SearchService: @unchecked Sendable {
       object: nil,
       queue: nil
     ) { [weak self] _ in
-      self?.scheduleInvalidation()
+      self?.invalidateCache()
     }
   }
   
@@ -48,21 +47,10 @@ final class SearchService: @unchecked Sendable {
   }
   
   nonisolated func invalidateCache() {
-    cacheTask.withLock { $0 = nil }
-    LoggingService.shared.info("Cache invalidated", category: "Search")
-  }
-  
-  /// Debounce invalidation so rapid-fire notifications (e.g. multiple directories
-  /// finishing indexing) coalesce into a single cache reload.
-  private nonisolated func scheduleInvalidation() {
-    debounceTask.withLock { existing in
-      existing?.cancel()
-      existing = Task { [weak self] in
-        try? await Task.sleep(for: .milliseconds(500))
-        guard !Task.isCancelled else { return }
-        self?.invalidateCache()
-      }
+    cacheState.withLock { state in
+      state.stale = true
     }
+    LoggingService.shared.info("Cache invalidated", category: "Search")
   }
   
   nonisolated func search(
@@ -224,13 +212,30 @@ final class SearchService: @unchecked Sendable {
   // MARK: - Cache management
   
   private nonisolated func getCache() async throws -> EmbeddingCache {
-    let task = cacheTask.withLock { (task: inout Task<EmbeddingCache, any Error>?) -> Task<EmbeddingCache, any Error> in
-      if let task { return task }
+    let task = cacheState.withLock { (state: inout CacheSlot) -> Task<EmbeddingCache, any Error> in
+      // If a task exists (loading or completed), always return it —
+      // even if stale. We'll check staleness after the load finishes.
+      if let existing = state.task {
+        return existing
+      }
       let newTask = Task { try await loadCache() }
-      task = newTask
+      state.task = newTask
+      state.stale = false
       return newTask
     }
-    return try await task.value
+    
+    let result = try await task.value
+    
+    // After the load finishes, if we were marked stale during the load,
+    // clear the task so the *next* search triggers a fresh reload.
+    cacheState.withLock { (state: inout CacheSlot) in
+      if state.stale {
+        state.task = nil
+        state.stale = false
+      }
+    }
+    
+    return result
   }
   
   private nonisolated func loadCache() async throws -> EmbeddingCache {
@@ -327,6 +332,11 @@ final class SearchService: @unchecked Sendable {
 }
 
 // MARK: - Internal types
+
+private struct CacheSlot: @unchecked Sendable {
+  var task: Task<EmbeddingCache, any Error>?
+  var stale = false
+}
 
 private struct EmbeddingCache: Sendable {
   let embeddings: [Float]  // Contiguous N × dims buffer

@@ -44,9 +44,14 @@ struct ModelPackageRowView: View {
               .clipShape(Capsule())
           }
         }
-        Text("\(package.description) — \(formattedSize)")
-          .font(.caption)
-          .foregroundStyle(.tertiary)
+        VStack(alignment: .leading, spacing: 0) {
+          Text("\(package.description)")
+            .font(.caption)
+            .foregroundStyle(.tertiary)
+          Text("\(formattedSize)")
+            .font(.caption)
+            .foregroundStyle(.tertiary)
+        }
       }
       
       Spacer()
@@ -103,7 +108,7 @@ struct ModelPackageRowView: View {
     case .downloaded:
       HStack(spacing: 8) {
         if !isActive {
-          Button("Set Active") {
+          Button("Use") {
             showActivateConfirmation = true
           }
           .confirmationDialog(

@@ -161,6 +161,13 @@ final class AppState {
     let window = getOrCreateSettingsWindow()
     window.makeKeyAndOrderFront(nil)
     NSApp.activate(ignoringOtherApps: true)
+    // Re-activate on the next run-loop tick so the window server
+    // places the app at the front of the Cmd-Tab list, even if the
+    // activation policy change hadn't fully propagated above.
+    DispatchQueue.main.async {
+      window.makeKeyAndOrderFront(nil)
+      NSApp.activate(ignoringOtherApps: true)
+    }
   }
   
   private func getOrCreateSettingsWindow() -> NSWindow {
@@ -187,7 +194,7 @@ final class AppState {
     window.center()
     window.standardWindowButton(.zoomButton)?.isHidden = true
     window.standardWindowButton(.miniaturizeButton)?.isHidden = true
-
+    
     self.settingsWindow = window
     return window
   }

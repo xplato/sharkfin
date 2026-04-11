@@ -15,10 +15,14 @@ final class CLIPImageEncoder: @unchecked Sendable {
     let env = try ORTEnv(loggingLevel: .warning)
     
     let options = try ORTSessionOptions()
-    // Use CoreML execution provider for GPU acceleration
-    try? options.appendCoreMLExecutionProvider(
-      with: ORTCoreMLExecutionProviderOptions()
-    )
+    // Use CoreML execution provider for GPU acceleration.
+    // Larger models (e.g. ViT-L/14) fail to load on the ANE,
+    // so exclude it for high-dimensional encoders.
+    let coreMLOptions = ORTCoreMLExecutionProviderOptions()
+    if embeddingDimension > 512 {
+      coreMLOptions.useCPUAndGPU = true
+    }
+    try? options.appendCoreMLExecutionProvider(with: coreMLOptions)
     
     self.session = try ORTSession(
       env: env,

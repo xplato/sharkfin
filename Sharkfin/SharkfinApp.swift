@@ -185,7 +185,9 @@ final class AppState {
     window.minSize = NSSize(width: 400, height: 500)
     window.maxSize = NSSize(width: 600, height: 900)
     window.center()
-    
+    window.standardWindowButton(.zoomButton)?.isHidden = true
+    window.standardWindowButton(.miniaturizeButton)?.isHidden = true
+
     self.settingsWindow = window
     return window
   }

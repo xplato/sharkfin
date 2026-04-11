@@ -41,12 +41,10 @@ struct SearchPanelView: View {
           noResultsView
         }
       }
-      .background(.ultraThinMaterial)
-      .clipShape(RoundedRectangle(cornerRadius: SearchPanel.cornerRadius))
-      .overlay {
-        RoundedRectangle(cornerRadius: SearchPanel.cornerRadius)
-          .strokeBorder(.white.opacity(0.1), lineWidth: 0.5)
-      }
+      .glassEffect(
+        .regular.tint(.primary.opacity(0.1)),
+        in: .rect(cornerRadius: SearchPanel.cornerRadius)
+      )
       .animation(.easeInOut(duration: 0.2), value: viewModel.state)
       .animation(
         .easeInOut(duration: 0.2),
@@ -55,6 +53,7 @@ struct SearchPanelView: View {
       
       Spacer(minLength: 0)
     }
+    .padding(32)
     .frame(width: SearchPanel.panelWidth)
     .onChange(of: viewModel.query) {
       if searchController.selectedResult != nil {

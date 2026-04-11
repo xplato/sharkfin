@@ -46,7 +46,7 @@ final class SearchPanel: NSPanel {
     collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
     isOpaque = false
     backgroundColor = .clear
-    hasShadow = true
+    hasShadow = false
     isMovableByWindowBackground = false
     hidesOnDeactivate = false
     isReleasedWhenClosed = false

@@ -224,6 +224,7 @@ final class AppState {
       .environment(searchController)
       .environment(directoryStore)
       .environment(modelManager)
+      .environment(indexingService)
     )
     
     panel.contentView = hostingView

@@ -41,6 +41,12 @@ struct SearchBarView: View {
   @Environment(SearchController.self) private var searchController
   @State private var enabledFileCount: Int = 0
   
+  /// Tracks only phase changes (not per-file progress ticks) to avoid
+  /// triggering multiple updates per frame during indexing.
+  private var indexingPhases: [Int64: IndexingPhase] {
+    indexingService.progressByDirectory.mapValues(\.phase)
+  }
+  
   private var needsSetup: Bool {
     !modelManager.isReady || directoryStore.directories.isEmpty
   }
@@ -150,7 +156,7 @@ struct SearchBarView: View {
     .onChange(of: viewModel.filters.directoryScope) {
       Task { await updateFileCount() }
     }
-    .onChange(of: indexingService.progressByDirectory) {
+    .onChange(of: indexingPhases) {
       Task {
         await updateFileCount()
         await viewModel.loadAvailableFileTypes()

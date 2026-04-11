@@ -71,6 +71,7 @@ final class IndexingService {
     
     let db = database
     activeTasks[dirId] = Task.detached { [weak self] in
+      let startTime = ContinuousClock.now
       do {
         try await Self.performIndexing(
           dirId: dirId,
@@ -84,6 +85,11 @@ final class IndexingService {
             service?.progressByDirectory[dirId] = progress
           }
         }
+        let elapsed = ContinuousClock.now - startTime
+        LoggingService.shared.debug(
+          "Directory \(dirId) indexed in \(elapsed)",
+          category: "Indexing"
+        )
       } catch is CancellationError {
         let service = self
         await MainActor.run {

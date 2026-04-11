@@ -10,7 +10,6 @@ struct SharkfinApp: App {
   @State private var appState: AppState
   
   @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-  @Environment(\.openSettings) private var openSettings
   
   init() {
     let manager = CLIPModelManager()
@@ -29,7 +28,8 @@ struct SharkfinApp: App {
       initialValue: AppState(
         database: .shared,
         modelManager: manager,
-        directoryStore: store
+        directoryStore: store,
+        indexingService: indexing
       )
     )
     
@@ -42,8 +42,6 @@ struct SharkfinApp: App {
   }
   
   var body: some Scene {
-    let _ = { appDelegate.settingsOpener = { openSettings() } }()
-    
     MenuBarExtra("Sharkfin", image: "MenuBarIcon") {
       MenuBarContent(appState: appState)
     }
@@ -55,14 +53,6 @@ struct SharkfinApp: App {
     .windowResizability(.contentSize)
     .windowStyle(.titleBar)
     .defaultPosition(.center)
-    
-    Settings {
-      SettingsView()
-        .environment(directoryStore)
-        .environment(modelManager)
-        .environment(indexingService)
-        .environment(appState)
-    }
   }
 }
 
@@ -71,12 +61,13 @@ struct SharkfinApp: App {
 final class AppState {
   let modelManager: CLIPModelManager
   let directoryStore: DirectoryStore
+  let indexingService: IndexingService
   
   private var searchPanel: SearchPanel?
+  private var settingsWindow: NSWindow?
   private var searchViewModel: SearchViewModel
   private var searchController = SearchController()
   private var resignKeyObserver: Any?
-  private var settingsOpener: (() -> Void)?
   private var hasPositionedPanel = false
   
   var needsSetup: Bool {
@@ -86,7 +77,8 @@ final class AppState {
   init(
     database: AppDatabase,
     modelManager: CLIPModelManager,
-    directoryStore: DirectoryStore
+    directoryStore: DirectoryStore,
+    indexingService: IndexingService
   ) {
     self.searchViewModel = SearchViewModel(
       database: database,
@@ -94,6 +86,7 @@ final class AppState {
     )
     self.modelManager = modelManager
     self.directoryStore = directoryStore
+    self.indexingService = indexingService
     
     KeyboardShortcuts.onKeyDown(for: .activateSearch) { [self] in
       activateSearch()
@@ -171,28 +164,39 @@ final class AppState {
     searchPanel?.orderOut(nil)
   }
   
-  func setSettingsOpener(_ opener: @escaping () -> Void) {
-    settingsOpener = opener
-  }
-  
   func openSettings() {
     hideSearch()
     NSApp.setActivationPolicy(.regular)
-    if let settingsOpener {
-      settingsOpener()
-    } else {
-      NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-    }
-    // Activate the app and bring the settings window to front after SwiftUI
-    // has had time to create/show it on the next run-loop cycle.
-    DispatchQueue.main.async {
-      NSApplication.shared.activate(ignoringOtherApps: true)
-      for window in NSApplication.shared.windows
-      where !(window is SearchPanel) && window.canBecomeKey {
-        window.makeKeyAndOrderFront(nil)
-        break
-      }
-    }
+    let window = getOrCreateSettingsWindow()
+    window.makeKeyAndOrderFront(nil)
+    NSApp.activate(ignoringOtherApps: true)
+  }
+  
+  private func getOrCreateSettingsWindow() -> NSWindow {
+    if let existing = settingsWindow { return existing }
+    
+    let settingsView = SettingsView()
+      .environment(directoryStore)
+      .environment(modelManager)
+      .environment(indexingService)
+      .environment(self)
+    
+    let window = NSWindow(
+      contentRect: NSRect(x: 0, y: 0, width: 500, height: 600),
+      styleMask: [.titled, .closable, .resizable],
+      backing: .buffered,
+      defer: false
+    )
+    window.isReleasedWhenClosed = false
+    window.contentView = NSHostingView(rootView: settingsView)
+    window.title = "Sharkfin Settings"
+    window.setContentSize(NSSize(width: 500, height: 600))
+    window.minSize = NSSize(width: 400, height: 500)
+    window.maxSize = NSSize(width: 600, height: 900)
+    window.center()
+    
+    self.settingsWindow = window
+    return window
   }
   
   private func getOrCreatePanel() -> SearchPanel {
@@ -253,12 +257,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   private var welcomeWindow: NSWindow?
   private var windowCloseObserver: Any?
   private var windowBecameKeyObserver: Any?
-  var settingsOpener: (() -> Void)?
   var directoryWatcher: DirectoryWatcherService?
   var directoryStore: DirectoryStore?
   var indexingService: IndexingService?
   var appState: AppState?
   var modelManager: CLIPModelManager?
+  
+  /// Intercept the system's Cmd-, / Preferences menu item so it routes
+  /// to our managed settings window instead of the (removed) Settings scene.
+  @objc func orderFrontPreferencesPanel(_ sender: Any?) {
+    appState?.openSettings()
+  }
+  
+  /// Also intercept the newer `showSettingsWindow:` selector used by SwiftUI.
+  @objc func showSettingsWindow(_ sender: Any?) {
+    appState?.openSettings()
+  }
   
   func applicationDidFinishLaunching(_ notification: Notification) {
     LoggingService.shared.info("App launched", category: "App")
@@ -360,12 +374,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 struct MenuBarContent: View {
   let appState: AppState
   
-  @Environment(\.openSettings) private var openSettings
   @Environment(\.openWindow) private var openWindow
   
   var body: some View {
-    let _ = appState.setSettingsOpener { openSettings() }
-    
     Button("Open Search") {
       appState.activateSearch()
     }

@@ -35,11 +35,7 @@ final class DirectoryWatcherService {
   
   /// Call when the watched-directories list or the toggle changes.
   func restartIfNeeded() {
-    let enabled =
-    UserDefaults.standard.object(forKey: StorageKey.watchDirectories) as? Bool
-    ?? true
-    guard enabled,
-          let store = directoryStore,
+    guard let store = directoryStore,
           !store.directories.isEmpty
     else {
       stopStream()

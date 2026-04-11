@@ -61,7 +61,6 @@ struct SharkfinApp: App {
         .environment(directoryStore)
         .environment(modelManager)
         .environment(indexingService)
-        .environment(directoryWatcher)
         .environment(appState)
     }
   }
@@ -271,10 +270,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     {
       watcher.start(directoryStore: store, indexingService: indexing)
       
-      let indexOnLaunch =
-      UserDefaults.standard.object(forKey: StorageKey.indexOnLaunch) as? Bool
-      ?? true
-      if indexOnLaunch, indexing.modelsReady {
+      if indexing.modelsReady {
         indexing.indexAllEnabled(from: store)
       }
     }

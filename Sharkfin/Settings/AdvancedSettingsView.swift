@@ -12,9 +12,6 @@ struct AdvancedSettingsView: View {
   ]
   
   @Environment(IndexingService.self) private var indexingService
-  @Environment(DirectoryWatcherService.self) private var directoryWatcher
-  @AppStorage(StorageKey.watchDirectories) private var watchDirectories = true
-  @AppStorage(StorageKey.indexOnLaunch) private var indexOnLaunch = true
   @AppStorage(StorageKey.ignoreHiddenDirectories) private
   var ignoreHiddenDirectories =
   true
@@ -37,21 +34,6 @@ struct AdvancedSettingsView: View {
   var body: some View {
     Form {
       Section("Indexing") {
-        Toggle(isOn: $watchDirectories) {
-          Text("Watch for changes")
-          Text(
-            "Automatically index enabled directories after file system changes."
-          )
-        }
-        .onChange(of: watchDirectories) { _, _ in
-          directoryWatcher.restartIfNeeded()
-        }
-        Toggle(isOn: $indexOnLaunch) {
-          Text("Index on launch")
-          Text(
-            "Automatically index enabled directories when Sharkfin launches."
-          )
-        }
         Toggle(
           "Ignore files in hidden directories",
           isOn: $ignoreHiddenDirectories

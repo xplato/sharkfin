@@ -5,13 +5,42 @@ import SwiftUI
 struct GeneralSettingsView: View {
   @Environment(DirectoryStore.self) private var directoryStore
   @State private var startAtLogin = SMAppService.mainApp.status == .enabled
+  @State private var isEditingShortcut = false
   @AppStorage(StorageKey.searchResultColumns) private var searchResultColumns =
   4
   
   var body: some View {
     Form {
       Section("Functionality") {
-        KeyboardShortcuts.Recorder("Show searchbar", name: .activateSearch)
+        LabeledContent("Show searchbar") {
+          if isEditingShortcut {
+            HStack(spacing: 8) {
+              KeyboardShortcuts.Recorder(for: .activateSearch) { _ in
+                isEditingShortcut = false
+              }
+              Button("Cancel") {
+                isEditingShortcut = false
+              }
+              .buttonStyle(.plain)
+              .foregroundStyle(.secondary)
+            }
+          } else {
+            HStack(spacing: 8) {
+              if let shortcut = KeyboardShortcuts.getShortcut(for: .activateSearch) {
+                Text(shortcut.description)
+                  .foregroundStyle(.secondary)
+              } else {
+                Text("None")
+                  .foregroundStyle(.tertiary)
+              }
+              Button("Change") {
+                isEditingShortcut = true
+              }
+              .buttonStyle(.bordered)
+              .controlSize(.small)
+            }
+          }
+        }
         Toggle("Start at login", isOn: $startAtLogin)
           .onChange(of: startAtLogin) { _, newValue in
             do {
@@ -65,12 +94,5 @@ struct GeneralSettingsView: View {
       }
     }
     .formStyle(.grouped)
-    .onAppear {
-      // Prevent the keyboard shortcut recorder from receiving
-      // focus when the settings window first opens.
-      DispatchQueue.main.async {
-        NSApp.keyWindow?.makeFirstResponder(nil)
-      }
-    }
   }
 }

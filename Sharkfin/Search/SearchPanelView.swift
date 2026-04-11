@@ -15,6 +15,7 @@ struct SearchPanelView: View {
           viewModel: viewModel,
           onSubmit: { viewModel.submitSearch() },
           onDismiss: { onDismiss() },
+          onOpenSettings: { onOpenSettings() },
           isSearchFieldFocused: $isSearchFieldFocused
         )
         

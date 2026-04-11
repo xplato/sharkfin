@@ -32,12 +32,20 @@ struct SearchBarView: View {
   @Bindable var viewModel: SearchViewModel
   var onSubmit: () -> Void
   var onDismiss: () -> Void
+  var onOpenSettings: () -> Void
   var isSearchFieldFocused: FocusState<Bool>.Binding
   
   @Environment(DirectoryStore.self) private var directoryStore
   @Environment(CLIPModelManager.self) private var modelManager
+  @Environment(IndexingService.self) private var indexingService
   @Environment(SearchController.self) private var searchController
   @State private var enabledFileCount: Int = 0
+  
+  /// Tracks only phase changes (not per-file progress ticks) to avoid
+  /// triggering multiple updates per frame during indexing.
+  private var indexingPhases: [Int64: IndexingPhase] {
+    indexingService.progressByDirectory.mapValues(\.phase)
+  }
   
   private var needsSetup: Bool {
     !modelManager.isReady || directoryStore.directories.isEmpty
@@ -78,19 +86,15 @@ struct SearchBarView: View {
         .buttonStyle(.plain)
         .help("Back to results")
       } else if isDisabled {
-        SettingsLink {
+        Button {
+          onOpenSettings()
+        } label: {
           Image(systemName: "exclamationmark.triangle.fill")
             .foregroundStyle(.yellow)
             .font(.system(size: 18))
             .frame(width: 22, height: 22)
         }
         .buttonStyle(.plain)
-        .simultaneousGesture(
-          TapGesture().onEnded {
-            onDismiss()
-            NSApplication.shared.activate(ignoringOtherApps: true)
-          }
-        )
         .help(needsSetup ? "Setup required. Click to open settings." : "All directories are disabled. Click to open settings.")
       } else {
         Image(systemName: "magnifyingglass")
@@ -116,7 +120,9 @@ struct SearchBarView: View {
       
       HStack(spacing: 6) {
         if isDisabled {
-          SettingsLink {
+          Button {
+            onOpenSettings()
+          } label: {
             FilterButtonLabel(text: "Open Settings", isActive: false)
           }
           .buttonStyle(.plain)
@@ -149,6 +155,12 @@ struct SearchBarView: View {
     }
     .onChange(of: viewModel.filters.directoryScope) {
       Task { await updateFileCount() }
+    }
+    .onChange(of: indexingPhases) {
+      Task {
+        await updateFileCount()
+        await viewModel.loadAvailableFileTypes()
+      }
     }
     .onChange(of: viewModel.filters) {
       viewModel.filtersChanged()

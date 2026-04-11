@@ -5,26 +5,15 @@ struct ModelsStep: View {
   var onContinue: () -> Void
   var onSkip: () -> Void
   
-  private var activePackage: CLIPModelPackage {
-    modelManager.activePackage
+  private var anyPackageReady: Bool {
+    CLIPModelPackage.all.contains { modelManager.isPackageReady($0) }
   }
   
-  private var allDownloaded: Bool {
-    modelManager.isReady
-  }
-  
-  private var isDownloading: Bool {
-    if case .downloading = modelManager.packageState(activePackage) {
-      return true
+  private var anyDownloading: Bool {
+    CLIPModelPackage.all.contains {
+      if case .downloading = modelManager.packageState($0) { return true }
+      return false
     }
-    return false
-  }
-  
-  private var hasError: Bool {
-    if case .error = modelManager.packageState(activePackage) {
-      return true
-    }
-    return false
   }
   
   var body: some View {
@@ -45,30 +34,23 @@ struct ModelsStep: View {
       
       Spacer().frame(height: 24)
       
-      VStack(spacing: 12) {
-        ForEach(activePackage.specs) { spec in
-          OnboardingModelRow(spec: spec, modelManager: modelManager)
+      VStack(spacing: 10) {
+        ForEach(CLIPModelPackage.all) { package in
+          OnboardingPackageRow(
+            package: package,
+            modelManager: modelManager,
+            isRecommended: package.id == CLIPModelPackage.vitB32.id
+          )
         }
       }
       .padding(.horizontal, 30)
       
-      if allDownloaded {
+      if anyPackageReady {
         Spacer().frame(height: 16)
         
-        Label("Both models downloaded", systemImage: "checkmark.circle.fill")
+        Label("Ready to continue", systemImage: "checkmark.circle.fill")
           .font(.callout)
           .foregroundStyle(.green)
-      }
-      
-      if hasError {
-        Spacer().frame(height: 12)
-        
-        Link(
-          destination: URL(string: "https://github.com/xplato/Sharkfin?tab=readme-ov-file#1-downloading-clip-models")!
-        ) {
-          Label("Troubleshooting guide", systemImage: "questionmark.circle")
-            .font(.caption)
-        }
       }
       
       Spacer()
@@ -88,7 +70,7 @@ struct ModelsStep: View {
         }
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
-        .disabled(!allDownloaded || isDownloading)
+        .disabled(!anyPackageReady || anyDownloading)
         
         Button("Skip this step") {
           onSkip()
@@ -96,8 +78,8 @@ struct ModelsStep: View {
         .buttonStyle(.plain)
         .font(.caption)
         .foregroundStyle(.secondary)
-        .opacity(allDownloaded ? 0 : 1)
-        .disabled(allDownloaded)
+        .opacity(anyPackageReady ? 0 : 1)
+        .disabled(anyPackageReady)
       }
       
       Spacer().frame(height: 28)
@@ -106,19 +88,20 @@ struct ModelsStep: View {
   }
 }
 
-// MARK: - Onboarding Model Row
+// MARK: - Onboarding Package Row
 
-private struct OnboardingModelRow: View {
-  let spec: CLIPModelSpec
+private struct OnboardingPackageRow: View {
+  let package: CLIPModelPackage
   let modelManager: CLIPModelManager
+  let isRecommended: Bool
   
   private var state: ModelDownloadState {
-    modelManager.modelStates[spec.id] ?? .notDownloaded
+    modelManager.packageState(package)
   }
   
   private var formattedSize: String {
     ByteCountFormatter.string(
-      fromByteCount: spec.totalSizeBytes,
+      fromByteCount: package.totalSizeBytes,
       countStyle: .file
     )
   }
@@ -131,9 +114,24 @@ private struct OnboardingModelRow: View {
         .frame(width: 24)
       
       VStack(alignment: .leading, spacing: 2) {
-        Text(spec.displayName)
-          .font(.callout)
-          .fontWeight(.medium)
+        HStack(spacing: 6) {
+          Text(package.displayName)
+            .font(.callout)
+            .fontWeight(.medium)
+          if isRecommended {
+            Text("Recommended")
+              .font(.caption2)
+              .fontWeight(.medium)
+              .padding(.horizontal, 6)
+              .padding(.vertical, 2)
+              .background(.blue.opacity(0.15))
+              .foregroundStyle(.blue)
+              .clipShape(Capsule())
+          }
+        }
+        Text(package.description)
+          .font(.caption)
+          .foregroundStyle(.tertiary)
         Text(formattedSize)
           .font(.caption)
           .foregroundStyle(.tertiary)
@@ -171,7 +169,7 @@ private struct OnboardingModelRow: View {
     switch state {
     case .notDownloaded:
       Button("Download") {
-        modelManager.download(spec)
+        modelManager.downloadPackage(package)
       }
       .controlSize(.small)
       
@@ -185,7 +183,7 @@ private struct OnboardingModelRow: View {
           .foregroundStyle(.secondary)
           .monospacedDigit()
         Button {
-          modelManager.cancel(spec)
+          modelManager.cancelPackage(package)
         } label: {
           Image(systemName: "xmark.circle")
         }
@@ -206,7 +204,7 @@ private struct OnboardingModelRow: View {
           .lineLimit(1)
           .frame(maxWidth: 100, alignment: .trailing)
         Button("Retry") {
-          modelManager.retry(spec)
+          modelManager.downloadPackage(package)
         }
         .controlSize(.small)
       }

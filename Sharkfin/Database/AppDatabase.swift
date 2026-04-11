@@ -46,12 +46,16 @@ final class AppDatabase: Sendable {
         t.column("thumbnailPath", .text)
       }
       
-      // file_embeddings
+      // file_embeddings (one embedding per file per model)
       try db.create(table: "fileEmbeddings") { t in
-        t.primaryKey("fileId", .integer)
+        t.column("fileId", .integer)
+          .notNull()
           .references("files", onDelete: .cascade)
         t.column("embedding", .blob).notNull()
+        t.column("modelId", .text).notNull()
+        t.primaryKey(["fileId", "modelId"])
       }
+      try db.create(indexOn: "fileEmbeddings", columns: ["modelId"])
       
       // file_metadata
       try db.create(table: "fileMetadata") { t in
@@ -81,40 +85,6 @@ final class AppDatabase: Sendable {
       try db.create(indexOn: "files", columns: ["contentHash"])
       try db.create(indexOn: "fileMetadata", columns: ["fileId"])
       try db.create(indexOn: "fileMetadata", columns: ["key"])
-    }
-    
-    migrator.registerMigration("v2-model-tracking") { db in
-      // Track which model package produced each embedding so we can
-      // detect stale embeddings when the user switches models.
-      try db.alter(table: "fileEmbeddings") { t in
-        t.add(column: "modelId", .text)
-          .notNull()
-          .defaults(to: "clip-vit-base-patch32")
-      }
-      try db.create(
-        indexOn: "fileEmbeddings",
-        columns: ["modelId"]
-      )
-    }
-    
-    migrator.registerMigration("v3-multi-model-embeddings") { db in
-      // Recreate fileEmbeddings with composite primary key (fileId, modelId)
-      // so each file can store one embedding per model package.
-      try db.create(table: "fileEmbeddings_new") { t in
-        t.column("fileId", .integer)
-          .notNull()
-          .references("files", onDelete: .cascade)
-        t.column("embedding", .blob).notNull()
-        t.column("modelId", .text).notNull()
-        t.primaryKey(["fileId", "modelId"])
-      }
-      try db.execute(sql: """
-        INSERT INTO fileEmbeddings_new (fileId, embedding, modelId)
-        SELECT fileId, embedding, modelId FROM fileEmbeddings
-        """)
-      try db.drop(table: "fileEmbeddings")
-      try db.rename(table: "fileEmbeddings_new", to: "fileEmbeddings")
-      try db.create(indexOn: "fileEmbeddings", columns: ["modelId"])
     }
     
     return migrator

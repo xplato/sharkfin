@@ -322,7 +322,7 @@ final class SearchService: @unchecked Sendable {
       }
       
       LoggingService.shared.info(
-        "Cached \(fileIds.count) embeddings (\(dims) dims, \(embeddings.count * MemoryLayout<Float>.size / 1024)KB)",
+        "Cached \(fileIds.count) embeddings (\(dims) dims, \(embeddings.count * MemoryLayout<Float>.size / 1024)KB) for model \(activeModelId)",
         category: "Search"
       )
       return EmbeddingCache(

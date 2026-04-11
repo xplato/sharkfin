@@ -54,6 +54,7 @@ final class SearchViewModel {
   private var searchServiceTask: Task<SearchService, any Error>?
   private var searchTask: Task<Void, Never>?
   private var idleUnloadTask: Task<Void, Never>?
+  private var cacheObserver: (any NSObjectProtocol)?
   
   /// How long to keep the text encoder in memory after the last search.
   /// Shorter on low-RAM machines to reduce memory pressure.
@@ -67,6 +68,20 @@ final class SearchViewModel {
   init(database: AppDatabase, modelManager: CLIPModelManager) {
     self.database = database
     self.modelManager = modelManager
+    
+    // When the active model changes (or embeddings are updated),
+    // drop the cached search service so it's recreated with the
+    // new model's encoder and ID on the next search.
+    cacheObserver = NotificationCenter.default.addObserver(
+      forName: .searchCacheDidInvalidate,
+      object: nil,
+      queue: .main
+    ) { [weak self] _ in
+      MainActor.assumeIsolated {
+        self?.searchService = nil
+        self?.searchServiceTask = nil
+      }
+    }
   }
   
   func loadAvailableFileTypes() async {

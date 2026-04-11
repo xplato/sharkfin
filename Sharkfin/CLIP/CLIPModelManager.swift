@@ -72,7 +72,6 @@ extension CLIPModelPackage {
         .init(filename: "tokenizer.json", sizeBytes: 2_220_000),
         .init(filename: "vocab.json", sizeBytes: 862_000),
         .init(filename: "merges.txt", sizeBytes: 525_000),
-        .init(filename: "config.json", sizeBytes: 536),
         .init(filename: "tokenizer_config.json", sizeBytes: 705),
         .init(filename: "special_tokens_map.json", sizeBytes: 588),
       ]
@@ -83,8 +82,6 @@ extension CLIPModelPackage {
       repoID: "xplato/clip-vit-base-patch32-vision-onnx",
       files: [
         .init(filename: "model.onnx", sizeBytes: 352_000_000),
-        .init(filename: "config.json", sizeBytes: 482),
-        .init(filename: "preprocessor_config.json", sizeBytes: 780),
       ]
     )
   )
@@ -103,7 +100,6 @@ extension CLIPModelPackage {
         .init(filename: "tokenizer.json", sizeBytes: 2_220_000),
         .init(filename: "vocab.json", sizeBytes: 862_000),
         .init(filename: "merges.txt", sizeBytes: 525_000),
-        .init(filename: "config.json", sizeBytes: 536),
         .init(filename: "tokenizer_config.json", sizeBytes: 705),
         .init(filename: "special_tokens_map.json", sizeBytes: 588),
       ]
@@ -114,14 +110,40 @@ extension CLIPModelPackage {
       repoID: "xplato/clip-vit-base-patch16-vision-onnx",
       files: [
         .init(filename: "model.onnx", sizeBytes: 345_000_000),
-        .init(filename: "config.json", sizeBytes: 482),
-        .init(filename: "preprocessor_config.json", sizeBytes: 780),
+      ]
+    )
+  )
+  
+  static let vitL14 = CLIPModelPackage(
+    id: "clip-vit-large-patch14",
+    displayName: "CLIP ViT-L/14",
+    description: "Best quality, larger download.",
+    embeddingDimension: 768,
+    textEncoder: CLIPModelSpec(
+      id: "clip-vit-large-patch14-text-onnx",
+      displayName: "Text Encoder",
+      repoID: "xplato/clip-vit-large-patch14-text-onnx",
+      files: [
+        .init(filename: "model.onnx", sizeBytes: 495_000_000),
+        .init(filename: "tokenizer.json", sizeBytes: 2_220_000),
+        .init(filename: "vocab.json", sizeBytes: 862_000),
+        .init(filename: "merges.txt", sizeBytes: 525_000),
+        .init(filename: "tokenizer_config.json", sizeBytes: 705),
+        .init(filename: "special_tokens_map.json", sizeBytes: 588),
+      ]
+    ),
+    visionEncoder: CLIPModelSpec(
+      id: "clip-vit-large-patch14-vision-onnx",
+      displayName: "Vision Encoder",
+      repoID: "xplato/clip-vit-large-patch14-vision-onnx",
+      files: [
+        .init(filename: "model.onnx", sizeBytes: 1_220_000_000),
       ]
     )
   )
   
   /// All available model packages, ordered from smallest to largest.
-  static let all: [CLIPModelPackage] = [vitB32, vitB16]
+  static let all: [CLIPModelPackage] = [vitB32, vitB16, vitL14]
   
   /// The default package used when no preference has been set.
   static let `default` = vitB32

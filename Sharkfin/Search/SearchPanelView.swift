@@ -41,6 +41,7 @@ struct SearchPanelView: View {
           noResultsView
         }
       }
+      .clipShape(.rect(cornerRadius: SearchPanel.cornerRadius))
       .glassEffect(
         .regular.tint(.primary.opacity(0.1)),
         in: .rect(cornerRadius: SearchPanel.cornerRadius)

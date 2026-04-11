@@ -97,6 +97,26 @@ final class AppDatabase: Sendable {
       )
     }
     
+    migrator.registerMigration("v3-multi-model-embeddings") { db in
+      // Recreate fileEmbeddings with composite primary key (fileId, modelId)
+      // so each file can store one embedding per model package.
+      try db.create(table: "fileEmbeddings_new") { t in
+        t.column("fileId", .integer)
+          .notNull()
+          .references("files", onDelete: .cascade)
+        t.column("embedding", .blob).notNull()
+        t.column("modelId", .text).notNull()
+        t.primaryKey(["fileId", "modelId"])
+      }
+      try db.execute(sql: """
+        INSERT INTO fileEmbeddings_new (fileId, embedding, modelId)
+        SELECT fileId, embedding, modelId FROM fileEmbeddings
+        """)
+      try db.drop(table: "fileEmbeddings")
+      try db.rename(table: "fileEmbeddings_new", to: "fileEmbeddings")
+      try db.create(indexOn: "fileEmbeddings", columns: ["modelId"])
+    }
+    
     return migrator
   }
   

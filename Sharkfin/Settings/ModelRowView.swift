@@ -116,13 +116,13 @@ struct ModelPackageRowView: View {
             isPresented: $showActivateConfirmation,
             titleVisibility: .visible
           ) {
-            Button("Switch & Re-index") {
+            Button("Switch & Index") {
               manager.setActivePackage(package)
               indexingService.indexAllEnabled(from: directoryStore)
             }
           } message: {
             Text(
-              "All indexed directories will be re-indexed with the new model. This may take a while depending on the number of files."
+              "Directories will be indexed with this model. Files already indexed with it will be skipped."
             )
           }
         }
@@ -142,7 +142,7 @@ struct ModelPackageRowView: View {
           }
         } message: {
           Text(
-            "The model files will be deleted. You can re-download them at any time."
+            "The model files and all embeddings created with this model will be deleted. You can re-download and re-index at any time."
           )
         }
       }

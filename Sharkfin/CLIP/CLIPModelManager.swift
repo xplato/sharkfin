@@ -1,6 +1,7 @@
 // TODO: rebuild this whole thing smh
 
 import Foundation
+import GRDB
 import Observation
 
 // MARK: - Model Download State
@@ -219,11 +220,21 @@ final class CLIPModelManager {
     }
   }
   
-  /// Delete all model files in a package.
+  /// Delete all model files in a package and remove its embeddings from the DB.
   func deletePackage(_ package: CLIPModelPackage) {
     for spec in package.specs {
       delete(spec)
     }
+    try? AppDatabase.shared.dbQueue.write { db in
+      try db.execute(
+        sql: "DELETE FROM fileEmbeddings WHERE modelId = ?",
+        arguments: [package.id]
+      )
+    }
+    NotificationCenter.default.post(
+      name: .searchCacheDidInvalidate,
+      object: nil
+    )
   }
   
   /// Whether all models in a package are downloaded and ready.

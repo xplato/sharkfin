@@ -53,7 +53,17 @@ final class SearchViewModel {
   private var searchService: SearchService?
   private var searchServiceTask: Task<SearchService, any Error>?
   private var searchTask: Task<Void, Never>?
-  
+  private var idleUnloadTask: Task<Void, Never>?
+
+  /// How long to keep the text encoder in memory after the last search.
+  /// Shorter on low-RAM machines to reduce memory pressure.
+  private static let idleUnloadDelay: Duration = {
+    let ramGB = ProcessInfo.processInfo.physicalMemory / (1024 * 1024 * 1024)
+    if ramGB <= 8 { return .seconds(180) }
+    if ramGB <= 16 { return .seconds(600) }
+    return .seconds(1800)
+  }()
+
   init(database: AppDatabase, modelManager: CLIPModelManager) {
     self.database = database
     self.modelManager = modelManager
@@ -135,6 +145,27 @@ final class SearchViewModel {
       results = []
       state = .noResults
     }
+    scheduleIdleUnload()
+  }
+
+  /// After a period of inactivity, release the text encoder and embedding
+  /// cache to reclaim ~450MB. The next search will recreate them.
+  private func scheduleIdleUnload() {
+    idleUnloadTask?.cancel()
+    idleUnloadTask = Task { [weak self] in
+      try? await Task.sleep(for: Self.idleUnloadDelay)
+      guard !Task.isCancelled else { return }
+      self?.unloadSearchService()
+    }
+  }
+
+  private func unloadSearchService() {
+    searchService = nil
+    searchServiceTask = nil
+    LoggingService.shared.info(
+      "Unloaded search service after idle timeout",
+      category: "Search"
+    )
   }
   
   private func getOrCreateSearchService() async throws -> SearchService {

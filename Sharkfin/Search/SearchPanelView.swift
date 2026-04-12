@@ -97,6 +97,7 @@ struct SearchPanelView: View {
       }
       .padding(Self.outerPadding)
       .background { outerGlassBackground }
+      .shadow(color: .black.opacity(0.125), radius: 12, y: 6)
       
       Spacer(minLength: 0)
     }

@@ -3,6 +3,7 @@ import SwiftUI
 struct SearchPanelView: View {
   @Bindable var viewModel: SearchViewModel
   @Environment(SearchController.self) private var searchController
+  @Environment(\.colorScheme) private var colorScheme
   @FocusState private var isSearchFieldFocused: Bool
   var onDismiss: () -> Void
   var onOpenSettings: () -> Void
@@ -41,11 +42,14 @@ struct SearchPanelView: View {
           noResultsView
         }
       }
-      .background(.ultraThinMaterial)
-      .clipShape(RoundedRectangle(cornerRadius: SearchPanel.cornerRadius))
-      .overlay {
-        RoundedRectangle(cornerRadius: SearchPanel.cornerRadius)
-          .strokeBorder(.white.opacity(0.1), lineWidth: 0.5)
+      .clipShape(.rect(cornerRadius: SearchPanel.cornerRadius))
+      .background {
+        Color.clear
+          .glassEffect(
+            .regular.tint(.primary.opacity(0.1)),
+            in: .rect(cornerRadius: SearchPanel.cornerRadius)
+          )
+          .id(colorScheme)
       }
       .animation(.easeInOut(duration: 0.2), value: viewModel.state)
       .animation(
@@ -55,6 +59,7 @@ struct SearchPanelView: View {
       
       Spacer(minLength: 0)
     }
+    .padding(32)
     .frame(width: SearchPanel.panelWidth)
     .onChange(of: viewModel.query) {
       if searchController.selectedResult != nil {

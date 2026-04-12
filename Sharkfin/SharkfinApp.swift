@@ -246,12 +246,7 @@ final class AppState {
     
     panel.contentView = hostingView
     
-    // Round the corners at the AppKit layer level so the
-    // window frame itself is clipped, not just the SwiftUI content.
     hostingView.wantsLayer = true
-    hostingView.layer?.cornerRadius = SearchPanel.cornerRadius
-    hostingView.layer?.cornerCurve = .continuous
-    hostingView.layer?.masksToBounds = true
     self.searchPanel = panel
     return panel
   }

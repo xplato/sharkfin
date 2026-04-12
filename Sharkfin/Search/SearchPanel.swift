@@ -46,7 +46,7 @@ final class SearchPanel: NSPanel {
     collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
     isOpaque = false
     backgroundColor = .clear
-    hasShadow = true
+    hasShadow = false
     isMovableByWindowBackground = false
     hidesOnDeactivate = false
     isReleasedWhenClosed = false
@@ -55,7 +55,7 @@ final class SearchPanel: NSPanel {
   
   override var canBecomeKey: Bool { true }
   override var canBecomeMain: Bool { false }
-  
+
   override func resignKey() {
     super.resignKey()
     NotificationCenter.default.post(

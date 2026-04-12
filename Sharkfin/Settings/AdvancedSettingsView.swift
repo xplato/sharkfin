@@ -259,7 +259,7 @@ struct AdvancedSettingsView: View {
   private func refreshStats() async {
     do {
       let db = AppDatabase.shared
-      let fetched = try db.fetchStats()
+      let fetched = try await Task.detached { try db.fetchStats() }.value
       stats = fetched
     } catch {
       LoggingService.shared.info(

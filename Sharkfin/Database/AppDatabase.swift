@@ -181,7 +181,7 @@ final class AppDatabase: Sendable {
     var thumbnailsSizeBytes: Int64
   }
   
-  func fetchStats() throws -> Stats {
+  nonisolated func fetchStats() throws -> Stats {
     let fm = FileManager.default
     let dbURL = Self.dataDirectoryURL.appendingPathComponent("sharkfin.db")
     let dbSize =

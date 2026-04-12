@@ -31,7 +31,9 @@ struct SearchPanelView: View {
   }
   
   private var innerBlurBackground: some View {
-    RoundedRectangle(cornerRadius: Self.innerCornerRadius).fill(colorScheme == .dark ? .black.opacity(0.025) : .white.opacity(0.05)).background(.ultraThinMaterial)
+    RoundedRectangle(cornerRadius: Self.innerCornerRadius)
+      .fill(colorScheme == .dark ? .black.opacity(0.025) : .white.opacity(0.05))
+      .background(.regularMaterial)
   }
   
   var body: some View {

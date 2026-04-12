@@ -73,10 +73,9 @@ struct SearchPanelView: View {
           .clipShape(.rect(cornerRadius: Self.innerCornerRadius))
           .transition(
             .asymmetric(
-              insertion: .scale(scale: 0.85, anchor: .top)
-                .combined(with: .opacity)
-                .combined(with: .offset(y: -8)),
-              removal: .scale(scale: 0.95, anchor: .top)
+              insertion: .scale(scale: 0.98, anchor: .top)
+                .combined(with: .opacity),
+              removal: .scale(scale: 0.98, anchor: .top)
                 .combined(with: .opacity)
             )
           )
@@ -97,6 +96,7 @@ struct SearchPanelView: View {
       }
       .padding(Self.outerPadding)
       .background { outerGlassBackground }
+      .clipShape(.rect(cornerRadius: Self.outerCornerRadius))
       .shadow(color: .black.opacity(0.125), radius: 12, y: 6)
       
       Spacer(minLength: 0)

@@ -84,7 +84,6 @@ private struct GlassHighlightBorder: View {
   var cornerRadius: CGFloat
   @Environment(\.colorScheme) private var colorScheme
   
-  private var borderOpacity: Double { colorScheme == .dark ? 0.1 : 0.6 }
   private var peakOpacity: Double { colorScheme == .dark ? 0.6 : 0.3 }
   private var midOpacity: Double { colorScheme == .dark ? 0.15 : 0.08 }
   
@@ -98,15 +97,15 @@ private struct GlassHighlightBorder: View {
       
       // Soft base border, always visible
       RoundedRectangle(cornerRadius: cornerRadius)
-        .stroke(.white.opacity(borderOpacity), lineWidth: 1)
+        .stroke(.primary.opacity(0.1), lineWidth: 1)
       
       // Specular highlight that follows the cursor
       RoundedRectangle(cornerRadius: cornerRadius)
         .stroke(
           RadialGradient(
             colors: [
-              .white.opacity(isHovering ? peakOpacity : 0),
-              .white.opacity(isHovering ? midOpacity : 0),
+              .primary.opacity(isHovering ? peakOpacity : 0),
+              .primary.opacity(isHovering ? midOpacity : 0),
               .clear,
             ],
             center: center,

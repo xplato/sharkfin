@@ -66,7 +66,7 @@ struct SearchBarView: View {
     } else if allDirectoriesDisabled {
       return "All directories disabled"
     } else {
-      return "Search \(enabledFileCount) files..."
+      return "Search \(enabledFileCount.formatted(.number)) files..."
     }
   }
   

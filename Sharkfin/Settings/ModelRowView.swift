@@ -23,25 +23,47 @@ struct ModelPackageRowView: View {
     )
   }
   
+  private var showBadge: Bool {
+    switch state {
+    case .downloaded, .error: true
+    default:
+      false
+    }
+  }
+  
+  private var badgeText: String {
+    switch state {
+    case .downloaded: "Downloaded"
+    case .error: "Error"
+    case .downloading: "Downloading"
+    case .notDownloaded: "Not Downloaded"
+    }
+  }
+  
+  private var badgeColor: Color {
+    switch state {
+    case .downloaded: .green
+    case .error: .red
+    case .downloading: .blue
+    case .notDownloaded: .gray
+    }
+  }
+  
   var body: some View {
     HStack(alignment: .center, spacing: 10) {
-      Image(systemName: iconName)
-        .foregroundStyle(iconColor)
-        .font(.title3)
-      
       VStack(alignment: .leading, spacing: 4) {
         HStack(spacing: 6) {
           Text(package.displayName)
             .fontWeight(.medium)
-          if isActive && state == .downloaded {
-            Text("Active")
-              .font(.caption2)
-              .fontWeight(.medium)
-              .padding(.horizontal, 6)
-              .padding(.vertical, 2)
-              .background(.blue.opacity(0.15))
-              .foregroundStyle(.blue)
-              .clipShape(Capsule())
+          
+          HStack(spacing: 2) {
+            if showBadge {
+              TextBadge(text: badgeText, color: badgeColor)
+            }
+            
+            if isActive && state == .downloaded {
+              TextBadge(text: "Active", color: .blue)
+            }
           }
         }
         VStack(alignment: .leading, spacing: 0) {

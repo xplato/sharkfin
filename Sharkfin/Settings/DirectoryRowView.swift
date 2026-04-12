@@ -117,6 +117,7 @@ struct DirectoryRowView: View {
       }
     }
     .padding(.vertical, 6)
+    .padding(.horizontal, 6)
     .alert(
       "Disable \"\(directory.label ?? URL(fileURLWithPath: directory.path).lastPathComponent)\"?",
       isPresented: $showDisableConfirmation

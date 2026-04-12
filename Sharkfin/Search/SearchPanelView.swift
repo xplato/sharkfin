@@ -15,9 +15,11 @@ struct SearchPanelView: View {
   private var outerGlassBackground: some View {
     Color.clear
       .glassEffect(
-        colorScheme == .dark ? .regular.tint(.gray.opacity(0.025)) : .clear.tint(.primary.opacity(0.025)),
+        .clear,
         in: .rect(cornerRadius: Self.outerCornerRadius)
       )
+      .background(colorScheme == .dark ? .black.opacity(0.3) : .black.opacity(0.1))
+      .clipShape(.rect(cornerRadius: Self.outerCornerRadius))
       .id(colorScheme)
   }
   
@@ -65,12 +67,28 @@ struct SearchPanelView: View {
           .frame(maxHeight: .infinity)
           .background { innerBlurBackground }
           .clipShape(.rect(cornerRadius: Self.innerCornerRadius))
-          .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
+          .transition(
+            .asymmetric(
+              insertion: .scale(scale: 0.85, anchor: .top)
+                .combined(with: .opacity)
+                .combined(with: .offset(y: -8)),
+              removal: .scale(scale: 0.95, anchor: .top)
+                .combined(with: .opacity)
+            )
+          )
         } else if viewModel.state == .noResults {
           noResultsView
             .background { innerBlurBackground }
             .clipShape(.rect(cornerRadius: Self.innerCornerRadius))
-            .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
+            .transition(
+              .asymmetric(
+                insertion: .scale(scale: 0.85, anchor: .top)
+                  .combined(with: .opacity)
+                  .combined(with: .offset(y: -8)),
+                removal: .scale(scale: 0.95, anchor: .top)
+                  .combined(with: .opacity)
+              )
+            )
         }
       }
       .padding(Self.outerPadding)
@@ -78,7 +96,7 @@ struct SearchPanelView: View {
       
       Spacer(minLength: 0)
     }
-    .animation(.easeInOut(duration: 0.2), value: viewModel.state)
+    .animation(.spring(duration: 0.35, bounce: 0.2), value: viewModel.state)
     .animation(
       .easeInOut(duration: 0.2),
       value: searchController.selectedResult?.id

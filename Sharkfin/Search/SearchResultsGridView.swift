@@ -20,7 +20,7 @@ struct SearchResultsGridView: View {
             SearchResultCard(result: result)
           }
         }
-        .padding(12)
+        .padding(16)
         .id("resultsTop")
         
         if hasMore {

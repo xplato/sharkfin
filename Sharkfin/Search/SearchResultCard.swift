@@ -12,7 +12,7 @@ struct SearchResultCard: View {
     CardThumbnail(result: result, cornerRadius: cornerRadius)
       .background(
         RoundedRectangle(cornerRadius: cornerRadius)
-          .fill(.primary.opacity(isHovering ? 0.03 : 0))
+          .fill(.primary.opacity(0))
       )
       .contentShape(Rectangle())
       .overlay {
@@ -62,7 +62,7 @@ private struct CardThumbnail: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
         .background(
-          Color.primary.opacity(0.03),
+          Color.primary.opacity(0),
           in: RoundedRectangle(cornerRadius: cornerRadius)
         )
     } else {

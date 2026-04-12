@@ -27,7 +27,7 @@ struct SearchPanelView: View {
     RoundedRectangle(cornerRadius: Self.innerCornerRadius)
       .fill(.background)
       .stroke(.primary.opacity(0.2), lineWidth: 1)
-      .shadow(color: .black.opacity(0.06), radius: 2, y: 1)
+      .shadow(color: .black.opacity(0.3), radius: 3, y: 1)
   }
   
   private var innerBlurBackground: some View {
@@ -68,6 +68,7 @@ struct SearchPanelView: View {
             }
           }
           .frame(maxHeight: .infinity)
+          .background(.background.opacity(0.25))
           .background { innerBlurBackground }
           .clipShape(.rect(cornerRadius: Self.innerCornerRadius))
           .transition(

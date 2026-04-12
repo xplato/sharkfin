@@ -11,12 +11,12 @@ struct SearchResultCard: View {
     CardThumbnail(result: result, cornerRadius: cornerRadius)
       .background(
         RoundedRectangle(cornerRadius: cornerRadius)
-          .fill(.primary.opacity(isHovering ? 0.3 : 0))
+          .fill(.primary.opacity(isHovering ? 0.1 : 0))
       )
-      .scaleEffect(isHovering ? 1.05 : 1.0)
+      .scaleEffect(isHovering ? 1.025 : 1.0)
       .contentShape(Rectangle())
       .onHover { hovering in
-        withAnimation(.easeInOut(duration: 0.2)) {
+        withAnimation(.easeInOut(duration: 0.1)) {
           isHovering = hovering
         }
       }

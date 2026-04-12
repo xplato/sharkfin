@@ -62,7 +62,7 @@ private struct CardThumbnail: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
         .background(
-          Color.primary.opacity(0.06),
+          Color.primary.opacity(0.03),
           in: RoundedRectangle(cornerRadius: cornerRadius)
         )
     } else {
@@ -97,7 +97,7 @@ private struct GlassHighlightBorder: View {
       
       // Soft base border, always visible
       RoundedRectangle(cornerRadius: cornerRadius)
-        .stroke(.primary.opacity(0.1), lineWidth: 1)
+        .stroke(.primary.opacity(0.15), lineWidth: 1)
       
       // Specular highlight that follows the cursor
       RoundedRectangle(cornerRadius: cornerRadius)

@@ -46,7 +46,7 @@ struct SearchPanelView: View {
       .background {
         Color.clear
           .glassEffect(
-            .regular.tint(.primary.opacity(0.1)),
+            .regular.tint(.primary.opacity(0.075)),
             in: .rect(cornerRadius: SearchPanel.cornerRadius)
           )
           .id(colorScheme)

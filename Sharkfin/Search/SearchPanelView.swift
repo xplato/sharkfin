@@ -46,7 +46,7 @@ struct SearchPanelView: View {
             SearchResultDetailView(result: selected)
           }
         }
-        .frame(maxHeight: 732)
+        .frame(maxHeight: .infinity)
         .clipShape(.rect(cornerRadius: SearchPanel.cornerRadius))
         .background { glassBackground }
         .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))

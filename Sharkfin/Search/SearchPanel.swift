@@ -6,7 +6,7 @@ final class SearchPanel: NSPanel {
   // MARK: - Layout constants
   
   static let panelWidth: CGFloat = 760
-  static let panelHeight: CGFloat = 720
+  static let panelHeight: CGFloat = 760
   static let cornerRadius: CGFloat = 12
   
   // MARK: - Drag state

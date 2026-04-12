@@ -33,6 +33,7 @@ struct SearchPanelView: View {
   private var innerBlurBackground: some View {
     RoundedRectangle(cornerRadius: Self.innerCornerRadius)
       .fill(colorScheme == .dark ? .black.opacity(0.025) : .white.opacity(0.05))
+      .stroke(.primary.opacity(0.2), lineWidth: 1)
       .background(.regularMaterial)
   }
   

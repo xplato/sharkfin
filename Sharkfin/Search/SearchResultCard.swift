@@ -62,7 +62,7 @@ private struct CardThumbnail: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
         .background(
-          Color.primary.opacity(0),
+          Color.primary.opacity(0.1),
           in: RoundedRectangle(cornerRadius: cornerRadius)
         )
     } else {

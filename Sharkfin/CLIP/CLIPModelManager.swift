@@ -400,6 +400,14 @@ final class CLIPModelManager {
     
     modelStates[model.id] = .downloaded
     activeDownloads[model.id] = nil
+    
+    // Auto-set this package as active if the user hasn't explicitly chosen one
+    if UserDefaults.standard.string(forKey: StorageKey.activeModelPackage) == nil {
+      if let package = CLIPModelPackage.all.first(where: { $0.specs.contains(where: { $0.id == model.id }) }),
+         isPackageReady(package) {
+        setActivePackage(package)
+      }
+    }
   }
   
   // MARK: - File Management

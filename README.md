@@ -33,7 +33,7 @@ Performing several example searches on my local index of >18,000 files (source s
 
 https://github.com/user-attachments/assets/41eb9a51-1da2-485f-a501-46a60505d231
 
-Note: The UI is very likely to have changed since this demo video was recorded. Additionally, the intermittent white artifacts in the Liquid Glass background only appear due to a bug in the screen recording; these artifacts are not visible when using the app.
+⚠️ Note: The intermittent white artifacts in the Liquid Glass background only appear due to a bug in the screen recording; these artifacts are not visible when using the app.
 
 #### Other Search Examples
 

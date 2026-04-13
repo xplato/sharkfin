@@ -128,6 +128,10 @@ Once models have been downloaded and directories have been added, you can now se
 
 ## Implementation
 
+<details>
+
+<summary>View implementation details</summary>
+
 Sharkfin uses [CLIP](https://openai.com/index/clip/) (Contrastive Language-Image Pre-Training) to embed both images and text into a shared 512-dimensional vector space, enabling natural language search over local image files.
 
 ### Indexing
@@ -170,7 +174,13 @@ Similar-image search uses the same approach, substituting a stored image embeddi
 
 All data is stored locally in a SQLite database (via [GRDB](https://github.com/groue/GRDB.swift)) with tables for directories, indexed files, embeddings (stored as raw float blobs), and index job status. Thumbnails are stored as JPEG/PNG files on disk, content-addressed by hash to avoid duplicates.
 
+</details>
+
 ## Search Quality
+
+<details>
+
+<summary>View search quality details</summary>
 
 Generally, I've found the results to be pretty good—sometimes surprisingly so (see the "woman as a flamingo" example above). However, in other cases the results are quite strange. Here's an example:
 
@@ -187,6 +197,8 @@ or, more explicitly:
 Neither of these two images were included in the search results for "pilot."
 
 Improving the quality of search results is, of course, a priority moving forward. [PR #31](https://github.com/xplato/Sharkfin/pull/31) focuses on adding support for additional CLIP model packages of larger dimensions which should, in theory, improve search quality, at the cost of indexing speed and memory usage. These trade-offs, however, are comparatively minor relative to the quality of the results (so far).
+
+</details>
 
 ## Developing
 
@@ -217,13 +229,3 @@ open sharkfin.xcodeproj
    - [swift-transformers](https://github.com/huggingface/swift-transformers) — Tokenizer support for CLIP text encoding
 
 4. Select the `sharkfin` scheme and build (`Cmd+B`) or run (`Cmd+R`).
-
-### Architecture
-
-Sharkfin is a menu bar app that provides a global search panel (similar to Spotlight) for semantic image search using CLIP embeddings.
-
-- **CLIP/** — CLIP model management, text/image encoding, and image preprocessing. Models are downloaded from Hugging Face on first launch.
-- **Database/** — SQLite persistence via GRDB for indexed files, embeddings, directories, and index jobs.
-- **Indexing/** — File scanning, thumbnail generation, and the indexing service that coordinates embedding generation.
-- **Search/** — Search UI (panel, bar, results grid, detail view) and the search service/view model.
-- **Settings/** — Settings views for directories, keyboard shortcuts, model management, and general preferences.

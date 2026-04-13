@@ -10,7 +10,8 @@
 
 **A better way to find files on Mac**
 
-<img width="1920" height="1080" alt="Sharkfin Header" src="https://github.com/user-attachments/assets/b9e6999b-7992-40dc-9dc9-b41d48051510" />
+![Sharkfin Header](https://github.com/user-attachments/assets/b12454ef-b7c1-47ff-a9a8-d4e707a01899)
+
 
 ### 
 
@@ -30,35 +31,39 @@ Sharkfin is a native macOS app for semantic search of local files. Currently onl
 
 Performing several example searches on my local index of >18,000 files (source size: ~50 GB, database size: ~100 MB).
 
-https://github.com/user-attachments/assets/b9de95a4-aaed-4876-bc39-3c4e3b554462
+https://github.com/user-attachments/assets/41eb9a51-1da2-485f-a501-46a60505d231
 
-Note: The UI is very likely to have changed since this demo video was recorded.
+⚠️ Note: The intermittent white artifacts in the Liquid Glass background only appear due to a bug in the screen recording; these artifacts are not visible when using the app.
 
 #### Other Search Examples
 
 (I have an egregious amount of unique design assets from Creative Market 😅)
 
-<img width="1468" height="1224" alt="CleanShot 2026-04-06 at 17 42 17@2x" src="https://github.com/user-attachments/assets/644dfa59-6846-4697-84e8-555d4bfce58f" />
+![demo-1](https://github.com/user-attachments/assets/f9b46c86-db26-4d08-833d-399b86ced74b)
 
-<img width="1446" height="1218" alt="CleanShot 2026-04-06 at 17 43 02@2x" src="https://github.com/user-attachments/assets/c7598183-02fd-4db8-9247-2e179b97761a" />
+![demo-4](https://github.com/user-attachments/assets/63bbf8ab-5e4c-4b4a-9d59-31172e050ef6)
 
-<img width="1448" height="1212" alt="CleanShot 2026-04-06 at 17 43 40@2x" src="https://github.com/user-attachments/assets/1b94fea9-bf42-4663-8a08-c29e59c46790" />
-
-### Indexing
-
-Performing indexing on two test directories containing several hundred images total. The average filesize for the images in testdir is 3.88 MB and 5.49 MB for testdir2 (i.e. rather large image files).
-
-https://github.com/user-attachments/assets/b502dd63-7f29-4257-bbe7-11e8697a72c6
+![demo-3](https://github.com/user-attachments/assets/bc278dac-7a74-4f65-9bf4-8dc7d12ee14a)
 
 ## Installation
 
-Sharkfin is currently in pre-release (beta) testing. With that said, the current build is *safe to use* for personal use, just keep in mind that you may encounter bugs. If so, please [open an issue](https://github.com/xplato/Sharkfin/issues).
+Sharkfin is currently in pre-release testing. With that said, the current build is **safe to use** for personal use, just keep in mind that you may encounter bugs. If so, please [open an issue](https://github.com/xplato/Sharkfin/issues).
 
-View the [Sharkfin 1.0.0 (2) (pre-release)](https://github.com/xplato/Sharkfin/releases/tag/v1.0.0-2_pre-release) to download the installable DMG.
+View [Sharkfin releases](https://github.com/xplato/Sharkfin/releases) to download the latest release in an installable DMG.
 
 ## Usage
 
-When you open Sharkfin for the first time, you'll see a welcome screen (pictured below) with instructions on how to get started. The same instructions are repeated here with more detail.
+When you open Sharkfin for the first time, you'll see a welcome screen with instructions on how to get started. The onboarding flow will guide you through the initial setup. More detailed usage information is provided below, if desired.
+
+### High-level Usage
+
+1. Choose your model package (ViT B/32, ViT B/16, or ViT L/14).
+2. Add directories to index.
+3. Search!
+
+<details>
+
+<summary>View in-depth usage details</summary>
 
 Screenshots below include UI from Sharkfin that may differ from the UI of the current version. Functionality remains the same, unless otherwise noted. 
 
@@ -118,13 +123,19 @@ The toggle in the directory row controls the enabled or disabled state of the di
 
 Once models have been downloaded and directories have been added, you can now search your files using more semantic expressions. By default, Sharkfin is activated with Shift+Command+Space, but this shortcut can be changed in the "Shortcuts" tab in Sharkfin settings.
 
-<img width="1614" height="1364" alt="CleanShot 2026-04-06 at 17 31 33@2x" src="https://github.com/user-attachments/assets/d47ee893-6f1a-4271-a0b0-75353f272ae9" />
+![demo-2](https://github.com/user-attachments/assets/683ab249-f426-4bd0-bcd9-35abb554a895)
 
 ### Welcome Screen
 
 <img width="1200" height="1176" alt="CleanShot 2026-04-06 at 17 07 26@2x" src="https://github.com/user-attachments/assets/884bf74f-9515-4343-b93a-6ba25ad642da" />
 
+</details>
+
 ## Implementation
+
+<details>
+
+<summary>View implementation details</summary>
 
 Sharkfin uses [CLIP](https://openai.com/index/clip/) (Contrastive Language-Image Pre-Training) to embed both images and text into a shared 512-dimensional vector space, enabling natural language search over local image files.
 
@@ -168,7 +179,13 @@ Similar-image search uses the same approach, substituting a stored image embeddi
 
 All data is stored locally in a SQLite database (via [GRDB](https://github.com/groue/GRDB.swift)) with tables for directories, indexed files, embeddings (stored as raw float blobs), and index job status. Thumbnails are stored as JPEG/PNG files on disk, content-addressed by hash to avoid duplicates.
 
+</details>
+
 ## Search Quality
+
+<details>
+
+<summary>View search quality details</summary>
 
 Generally, I've found the results to be pretty good—sometimes surprisingly so (see the "woman as a flamingo" example above). However, in other cases the results are quite strange. Here's an example:
 
@@ -185,6 +202,8 @@ or, more explicitly:
 Neither of these two images were included in the search results for "pilot."
 
 Improving the quality of search results is, of course, a priority moving forward. [PR #31](https://github.com/xplato/Sharkfin/pull/31) focuses on adding support for additional CLIP model packages of larger dimensions which should, in theory, improve search quality, at the cost of indexing speed and memory usage. These trade-offs, however, are comparatively minor relative to the quality of the results (so far).
+
+</details>
 
 ## Developing
 
@@ -215,13 +234,3 @@ open sharkfin.xcodeproj
    - [swift-transformers](https://github.com/huggingface/swift-transformers) — Tokenizer support for CLIP text encoding
 
 4. Select the `sharkfin` scheme and build (`Cmd+B`) or run (`Cmd+R`).
-
-### Architecture
-
-Sharkfin is a menu bar app that provides a global search panel (similar to Spotlight) for semantic image search using CLIP embeddings.
-
-- **CLIP/** — CLIP model management, text/image encoding, and image preprocessing. Models are downloaded from Hugging Face on first launch.
-- **Database/** — SQLite persistence via GRDB for indexed files, embeddings, directories, and index jobs.
-- **Indexing/** — File scanning, thumbnail generation, and the indexing service that coordinates embedding generation.
-- **Search/** — Search UI (panel, bar, results grid, detail view) and the search service/view model.
-- **Settings/** — Settings views for directories, keyboard shortcuts, model management, and general preferences.

@@ -60,7 +60,17 @@ View the [Sharkfin 1.0.0 (2) (pre-release)](https://github.com/xplato/Sharkfin/r
 
 ## Usage
 
-When you open Sharkfin for the first time, you'll see a welcome screen (pictured below) with instructions on how to get started. The same instructions are repeated here with more detail.
+When you open Sharkfin for the first time, you'll see a welcome screen with instructions on how to get started. The onboarding flow will guide you through the initial setup. More detailed usage information is provided below, if desired.
+
+### High-level Usage
+
+1. Choose your model package (ViT B/32, ViT B/16, or ViT L/14).
+2. Add directories to index.
+3. Search!
+
+<details>
+
+<summary>View in-depth usage details</summary>
 
 Screenshots below include UI from Sharkfin that may differ from the UI of the current version. Functionality remains the same, unless otherwise noted. 
 
@@ -125,6 +135,8 @@ Once models have been downloaded and directories have been added, you can now se
 ### Welcome Screen
 
 <img width="1200" height="1176" alt="CleanShot 2026-04-06 at 17 07 26@2x" src="https://github.com/user-attachments/assets/884bf74f-9515-4343-b93a-6ba25ad642da" />
+
+</details>
 
 ## Implementation
 

@@ -1,5 +1,4 @@
 import SwiftUI
-internal import Combine
 
 private struct SearchIconView: View {
   var isAnimating: Bool

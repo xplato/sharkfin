@@ -57,34 +57,9 @@ final class AppDatabase: Sendable {
       }
       try db.create(indexOn: "fileEmbeddings", columns: ["modelId"])
       
-      // file_metadata
-      try db.create(table: "fileMetadata") { t in
-        t.autoIncrementedPrimaryKey("id")
-        t.belongsTo("file", onDelete: .cascade).notNull()
-        t.column("key", .text).notNull()
-        t.column("value", .text).notNull()
-        t.column("source", .text).notNull()
-        t.column("createdAt", .datetime).notNull()
-        t.uniqueKey(["fileId", "key", "source"])
-      }
-      
-      // index_jobs
-      try db.create(table: "indexJobs") { t in
-        t.autoIncrementedPrimaryKey("id")
-        t.belongsTo("directory", onDelete: .cascade).notNull()
-        t.column("status", .text).notNull().defaults(to: "pending")
-        t.column("totalFiles", .integer)
-        t.column("processedFiles", .integer).defaults(to: 0)
-        t.column("startedAt", .datetime)
-        t.column("completedAt", .datetime)
-        t.column("error", .text)
-      }
-      
       // Indexes
       try db.create(indexOn: "files", columns: ["directoryId"])
       try db.create(indexOn: "files", columns: ["contentHash"])
-      try db.create(indexOn: "fileMetadata", columns: ["fileId"])
-      try db.create(indexOn: "fileMetadata", columns: ["key"])
     }
     
     return migrator

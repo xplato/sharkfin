@@ -47,8 +47,6 @@ struct DatabaseModelTests {
     #expect(tables.contains("directories"))
     #expect(tables.contains("files"))
     #expect(tables.contains("fileEmbeddings"))
-    #expect(tables.contains("fileMetadata"))
-    #expect(tables.contains("indexJobs"))
   }
   
   // MARK: - SharkfinDirectory

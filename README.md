@@ -38,11 +38,12 @@ Note: The UI is very likely to have changed since this demo video was recorded.
 
 (I have an egregious amount of unique design assets from Creative Market 😅)
 
-<img width="1468" height="1224" alt="CleanShot 2026-04-06 at 17 42 17@2x" src="https://github.com/user-attachments/assets/644dfa59-6846-4697-84e8-555d4bfce58f" />
+![demo-1](https://github.com/user-attachments/assets/f9b46c86-db26-4d08-833d-399b86ced74b)
 
-<img width="1446" height="1218" alt="CleanShot 2026-04-06 at 17 43 02@2x" src="https://github.com/user-attachments/assets/c7598183-02fd-4db8-9247-2e179b97761a" />
+![demo-4](https://github.com/user-attachments/assets/63bbf8ab-5e4c-4b4a-9d59-31172e050ef6)
 
-<img width="1448" height="1212" alt="CleanShot 2026-04-06 at 17 43 40@2x" src="https://github.com/user-attachments/assets/1b94fea9-bf42-4663-8a08-c29e59c46790" />
+![demo-3](https://github.com/user-attachments/assets/bc278dac-7a74-4f65-9bf4-8dc7d12ee14a)
+
 
 ### Indexing
 

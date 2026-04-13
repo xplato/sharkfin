@@ -45,18 +45,11 @@ Note: The UI is very likely to have changed since this demo video was recorded. 
 
 ![demo-3](https://github.com/user-attachments/assets/bc278dac-7a74-4f65-9bf4-8dc7d12ee14a)
 
-
-### Indexing
-
-Performing indexing on two test directories containing several hundred images total. The average filesize for the images in testdir is 3.88 MB and 5.49 MB for testdir2 (i.e. rather large image files).
-
-https://github.com/user-attachments/assets/b502dd63-7f29-4257-bbe7-11e8697a72c6
-
 ## Installation
 
-Sharkfin is currently in pre-release (beta) testing. With that said, the current build is *safe to use* for personal use, just keep in mind that you may encounter bugs. If so, please [open an issue](https://github.com/xplato/Sharkfin/issues).
+Sharkfin is currently in pre-release testing. With that said, the current build is **safe to use** for personal use, just keep in mind that you may encounter bugs. If so, please [open an issue](https://github.com/xplato/Sharkfin/issues).
 
-View the [Sharkfin 1.0.0 (2) (pre-release)](https://github.com/xplato/Sharkfin/releases/tag/v1.0.0-2_pre-release) to download the installable DMG.
+View [Sharkfin releases](https://github.com/xplato/Sharkfin/releases) to download the latest release in an installable DMG.
 
 ## Usage
 

@@ -290,13 +290,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   func applicationDidFinishLaunching(_ notification: Notification) {
     LoggingService.shared.info("App launched", category: "App")
     
-    // Start FSEvents directory watcher and index on launch
+    // Start FSEvents directory watcher and index on launch.
+    // DirectoryStore loads asynchronously, so we also restart the
+    // watcher whenever the directory list changes.
     if let watcher = directoryWatcher,
        let store = directoryStore,
        let indexing = indexingService
     {
       watcher.start(directoryStore: store, indexingService: indexing)
-      
+
+      var hasIndexedOnLaunch = false
+      store.onDirectoriesChanged = { [weak watcher, weak indexing, weak store] in
+        guard let watcher, let indexing, let store else { return }
+        watcher.restartIfNeeded()
+        if !hasIndexedOnLaunch && indexing.modelsReady {
+          hasIndexedOnLaunch = true
+          indexing.indexAllEnabled(from: store)
+        }
+      }
+
       if indexing.modelsReady {
         indexing.indexAllEnabled(from: store)
       }

@@ -6,7 +6,10 @@ import Observation
 @Observable
 final class DirectoryStore {
   private(set) var directories: [SharkfinDirectory] = []
-  
+
+  /// Called on the main actor whenever the directories list changes.
+  var onDirectoriesChanged: (() -> Void)?
+
   let database: AppDatabase
   private var cancellable: AnyDatabaseCancellable?
   
@@ -33,6 +36,7 @@ final class DirectoryStore {
       guard let self else { return }
       Task { @MainActor in
         self.directories = directories
+        self.onDirectoriesChanged?()
       }
     }
   }

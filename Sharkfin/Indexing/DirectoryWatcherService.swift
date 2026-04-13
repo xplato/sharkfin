@@ -15,7 +15,10 @@ final class DirectoryWatcherService {
   /// Maps watched root paths back to their directory ID for fast lookup
   /// when FSEvents fires.
   private var pathToDirectoryId: [String: Int64] = [:]
-  
+
+  /// The set of paths currently being watched, used to avoid redundant restarts.
+  private var currentWatchedPaths: Set<String> = []
+
   private let debounceInterval: Duration = .seconds(3)
   
   func start(
@@ -29,6 +32,7 @@ final class DirectoryWatcherService {
   
   func stop() {
     stopStream()
+    currentWatchedPaths = []
     for task in debounceTasks.values { task.cancel() }
     debounceTasks.removeAll()
   }
@@ -73,11 +77,23 @@ final class DirectoryWatcherService {
     
     guard !resolvedPaths.isEmpty else {
       stopStream()
+      currentWatchedPaths = []
       return
     }
-    
+
+    // Skip restart if the watched paths haven't changed
+    let newPaths = Set(resolvedPaths)
+    if newPaths == currentWatchedPaths && stream != nil {
+      return
+    }
+
     // Tear down old stream before creating a new one
     stopStream()
+    currentWatchedPaths = newPaths
+    LoggingService.shared.info(
+      "Starting FSEvents watch on \(resolvedPaths.count) directory(ies)",
+      category: "Watcher"
+    )
     startStream(paths: resolvedPaths)
   }
   
@@ -147,6 +163,7 @@ final class DirectoryWatcherService {
   
   private func stopStream() {
     guard let stream else { return }
+    LoggingService.shared.info("Stopping FSEvents stream", category: "Watcher")
     FSEventStreamStop(stream)
     FSEventStreamInvalidate(stream)
     FSEventStreamRelease(stream)
@@ -159,7 +176,12 @@ final class DirectoryWatcherService {
   /// Called from the FSEvents C callback on the main thread.
   fileprivate func handleFSEvents(paths: [String]) {
     guard let indexingService, let directoryStore else { return }
-    
+
+    LoggingService.shared.debug(
+      "FSEvents fired with \(paths.count) path(s)",
+      category: "Watcher"
+    )
+
     // Figure out which tracked directories were affected
     var affectedIds: Set<Int64> = []
     for eventPath in paths {
@@ -170,7 +192,20 @@ final class DirectoryWatcherService {
         }
       }
     }
-    
+
+    guard !affectedIds.isEmpty else {
+      LoggingService.shared.debug(
+        "No tracked directories matched — ignoring",
+        category: "Watcher"
+      )
+      return
+    }
+
+    LoggingService.shared.info(
+      "FSEvents matched \(affectedIds.count) directory(ies): \(affectedIds.sorted())",
+      category: "Watcher"
+    )
+
     for dirId in affectedIds {
       // Cancel any pending debounce for this directory and restart it
       debounceTasks[dirId]?.cancel()
@@ -179,16 +214,27 @@ final class DirectoryWatcherService {
         do {
           try await Task.sleep(for: self?.debounceInterval ?? .seconds(3))
         } catch { return }  // cancelled
-        
+
         guard let indexingService, let directoryStore else { return }
         guard
           let dir = directoryStore.directories.first(where: { $0.id == dirId })
         else { return }
-        
+
         // Only trigger if not already indexing
-        guard !indexingService.isIndexing(dirId) else { return }
+        guard !indexingService.isIndexing(dirId) else {
+          LoggingService.shared.debug(
+            "Directory \(dirId) already indexing — skipping",
+            category: "Watcher"
+          )
+          return
+        }
+
+        LoggingService.shared.info(
+          "Triggering re-index for directory \(dirId) after FSEvents change",
+          category: "Watcher"
+        )
         indexingService.indexDirectory(dir)
-        
+
         self?.debounceTasks[dirId] = nil
       }
     }

@@ -120,7 +120,7 @@ The toggle in the directory row controls the enabled or disabled state of the di
 
 Once models have been downloaded and directories have been added, you can now search your files using more semantic expressions. By default, Sharkfin is activated with Shift+Command+Space, but this shortcut can be changed in the "Shortcuts" tab in Sharkfin settings.
 
-<img width="1614" height="1364" alt="CleanShot 2026-04-06 at 17 31 33@2x" src="https://github.com/user-attachments/assets/d47ee893-6f1a-4271-a0b0-75353f272ae9" />
+![demo-2](https://github.com/user-attachments/assets/683ab249-f426-4bd0-bcd9-35abb554a895)
 
 ### Welcome Screen
 

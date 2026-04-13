@@ -221,6 +221,22 @@ final class IndexingService {
       }
     }
     
+    // Remove indexed files that now fall under excluded folders.
+    // The scan-diff above should catch these, but an explicit DB query
+    // guards against path-format mismatches between scanner URLs and
+    // stored paths.
+    if !excludedNames.isEmpty {
+      try await database.dbQueue.write { db in
+        for name in excludedNames {
+          let pattern = "%/" + name + "/%"
+          try db.execute(
+            sql: "DELETE FROM files WHERE directoryId = ? AND path LIKE ?",
+            arguments: [dirId, pattern]
+          )
+        }
+      }
+    }
+    
     // Fetch the set of enabled directory IDs so we only reassign files from
     // directories that have been removed or disabled (not from active peers).
     let enabledDirIds: Set<Int64> = try await database.dbQueue.read { db in

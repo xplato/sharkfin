@@ -1,29 +1,36 @@
 import SwiftUI
+internal import Combine
 
-private struct SpinnerView: View {
-  @State private var rotation = 0.0
+private struct SearchIconView: View {
+  var isAnimating: Bool
+  @State private var rotation: Double = -10
+  @State private var dimmed = false
   
   var body: some View {
-    Circle()
-      .trim(from: 0, to: 0.7)
-      .stroke(
-        AngularGradient(
-          gradient: Gradient(colors: [
-            Color.accentColor.opacity(0), .accentColor,
-          ]),
-          center: .center,
-          startAngle: .zero,
-          endAngle: .degrees(252)
-        ),
-        style: StrokeStyle(lineWidth: 3, lineCap: .round)
+    Image(systemName: "magnifyingglass")
+      .foregroundStyle(isAnimating ? .primary : .secondary)
+      .font(.system(size: 18))
+      .frame(width: 22, height: 22)
+      .opacity(dimmed ? 0.4 : 1.0)
+      .rotationEffect(
+        .degrees(rotation),
+        anchor: UnitPoint(x: 0.43, y: 0.43)
       )
-      .frame(width: 18, height: 18)
-      .rotationEffect(.degrees(rotation))
-      .onAppear {
-        withAnimation(.linear(duration: 0.8).repeatForever(autoreverses: false))
-        {
-          rotation = 360
-        }
+      .animation(
+        isAnimating
+        ? .easeInOut(duration: 1.0).repeatForever(autoreverses: true)
+        : .default,
+        value: rotation
+      )
+      .animation(
+        isAnimating
+        ? .easeInOut(duration: 1.0).repeatForever(autoreverses: true)
+        : .default,
+        value: dimmed
+      )
+      .onChange(of: isAnimating, initial: true) {
+        rotation = isAnimating ? 10 : 0
+        dimmed = isAnimating
       }
   }
 }
@@ -97,10 +104,7 @@ struct SearchBarView: View {
         .buttonStyle(.plain)
         .help(needsSetup ? "Setup required. Click to open settings." : "All directories are disabled. Click to open settings.")
       } else {
-        Image(systemName: "magnifyingglass")
-          .foregroundStyle(.secondary)
-          .font(.system(size: 18))
-          .frame(width: 22, height: 22)
+        SearchIconView(isAnimating: viewModel.state == .searching)
       }
       
       TextField(
@@ -112,11 +116,6 @@ struct SearchBarView: View {
       .font(.system(size: 18))
       .onSubmit { onSubmit() }
       .disabled(isDisabled)
-      
-      if viewModel.state == .searching {
-        SpinnerView()
-          .transition(.identity)
-      }
       
       HStack(spacing: 6) {
         if isDisabled {

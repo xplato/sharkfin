@@ -9,13 +9,13 @@ struct SearchResultsGridView: View {
   @AppStorage(StorageKey.searchResultColumns) private var columnCount = 4
   
   private var columns: [GridItem] {
-    Array(repeating: GridItem(.flexible(), spacing: 12), count: columnCount)
+    Array(repeating: GridItem(.flexible(), spacing: 8), count: columnCount)
   }
   
   var body: some View {
     ScrollViewReader { proxy in
       ScrollView {
-        LazyVGrid(columns: columns, spacing: 12) {
+        LazyVGrid(columns: columns, spacing: 8) {
           ForEach(results) { result in
             SearchResultCard(result: result)
           }

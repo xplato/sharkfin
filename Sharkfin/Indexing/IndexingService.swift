@@ -301,6 +301,16 @@ final class IndexingService {
           try dir.update(db)
         }
       }
+      // Invalidate search cache when files were removed (e.g. newly excluded
+      // folders) even though there is nothing new to process.
+      if !deletedPaths.isEmpty || !excludedNames.isEmpty {
+        await MainActor.run {
+          NotificationCenter.default.post(
+            name: .searchCacheDidInvalidate,
+            object: nil
+          )
+        }
+      }
       onProgress(IndexingProgress(phase: .upToDate))
       return
     }

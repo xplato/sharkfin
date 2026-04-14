@@ -18,16 +18,19 @@ struct SearchPanelView: View {
         .clear,
         in: .rect(cornerRadius: Self.outerCornerRadius)
       )
-      .background(colorScheme == .dark ? .black.opacity(0.3) : .black.opacity(0.1))
+      .background(colorScheme == .dark ? .black.opacity(0.5) : .black.opacity(0.1))
       .clipShape(.rect(cornerRadius: Self.outerCornerRadius))
       .id(colorScheme)
   }
   
   private var innerSolidBackground: some View {
-    RoundedRectangle(cornerRadius: Self.innerCornerRadius)
-      .fill(.background)
-      .stroke(.primary.opacity(0.2), lineWidth: 1)
-      .shadow(color: .black.opacity(0.3), radius: 3, y: 1)
+    ZStack {
+      RoundedRectangle(cornerRadius: Self.innerCornerRadius)
+        .fill(colorScheme == .dark ? Color(white: 0.28) : Color(nsColor: .windowBackgroundColor))
+      RoundedRectangle(cornerRadius: Self.innerCornerRadius)
+        .stroke(.primary.opacity(colorScheme == .dark ? 0.3 : 0.2), lineWidth: 1)
+    }
+    .shadow(color: .black.opacity(0.3), radius: 3, y: 1)
   }
   
   private var innerBlurBackground: some View {

@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 enum SearchState: Equatable {
   case idle
@@ -108,8 +109,10 @@ final class SearchViewModel {
     searchTask?.cancel()
     let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty else {
-      results = []
-      state = .idle
+      withAnimation {
+        results = []
+        state = .idle
+      }
       return
     }
     searchTask = Task {
@@ -132,9 +135,11 @@ final class SearchViewModel {
   func clearSearch() {
     searchTask?.cancel()
     query = ""
-    results = []
     displayLimit = Self.pageSize()
-    state = .idle
+    withAnimation {
+      results = []
+      state = .idle
+    }
   }
   
   // MARK: - Private
@@ -150,16 +155,20 @@ final class SearchViewModel {
         try await service.search(query: query, filters: currentFilters)
       }.value
       guard !Task.isCancelled else { return }
-      results = searchResults
-      state = searchResults.isEmpty ? .noResults : .results
+      withAnimation {
+        results = searchResults
+        state = searchResults.isEmpty ? .noResults : .results
+      }
       scheduleIdleUnload()
     } catch is CancellationError {
       // Keep previous results on cancellation
     } catch {
       guard !Task.isCancelled else { return }
       LoggingService.shared.info("Error: \(error)", category: "Search")
-      results = []
-      state = .noResults
+      withAnimation {
+        results = []
+        state = .noResults
+      }
     }
   }
   

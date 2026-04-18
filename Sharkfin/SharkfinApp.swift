@@ -88,6 +88,10 @@ final class AppState {
     self.directoryStore = directoryStore
     self.indexingService = indexingService
     
+    searchController.hidePanel = { [weak self] in
+      self?.hideSearch()
+    }
+    
     KeyboardShortcuts.onKeyDown(for: .activateSearch) { [self] in
       activateSearch()
     }

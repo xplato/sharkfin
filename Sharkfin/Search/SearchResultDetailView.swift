@@ -141,6 +141,7 @@ struct SearchResultDetailView: View {
   // MARK: - Actions
   
   private func revealInFinder() {
+    searchController.hidePanel?()
     NSWorkspace.shared.selectFile(
       result.path,
       inFileViewerRootedAtPath: ""

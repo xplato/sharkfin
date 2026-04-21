@@ -1,4 +1,5 @@
 import KeyboardShortcuts
+import Sparkle
 import SwiftUI
 
 @main
@@ -8,6 +9,8 @@ struct SharkfinApp: App {
   @State private var indexingService: IndexingService
   @State private var directoryWatcher: DirectoryWatcherService
   @State private var appState: AppState
+  @State private var updaterController: SPUStandardUpdaterController
+  @State private var checkForUpdatesViewModel: CheckForUpdatesViewModel
   
   @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
   
@@ -33,6 +36,18 @@ struct SharkfinApp: App {
       )
     )
     
+    let controller = SPUStandardUpdaterController(
+      startingUpdater: true,
+      updaterDelegate: nil,
+      userDriverDelegate: nil
+    )
+    _updaterController = State(initialValue: controller)
+    _checkForUpdatesViewModel = State(
+      initialValue: CheckForUpdatesViewModel(updater: controller.updater)
+    )
+    
+    appState.updater = controller.updater
+    
     // Give the AppDelegate references so it can start services on launch
     appDelegate.directoryWatcher = watcher
     appDelegate.directoryStore = store
@@ -43,7 +58,10 @@ struct SharkfinApp: App {
   
   var body: some Scene {
     MenuBarExtra("Sharkfin", image: "MenuBarIcon") {
-      MenuBarContent(appState: appState)
+      MenuBarContent(
+        appState: appState,
+        checkForUpdatesViewModel: checkForUpdatesViewModel
+      )
     }
     
     Window("About Sharkfin", id: "about") {
@@ -62,6 +80,7 @@ final class AppState {
   let modelManager: CLIPModelManager
   let directoryStore: DirectoryStore
   let indexingService: IndexingService
+  var updater: SPUUpdater?
   
   private var searchPanel: SearchPanel?
   private var settingsWindow: NSWindow?
@@ -402,6 +421,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 struct MenuBarContent: View {
   let appState: AppState
+  let checkForUpdatesViewModel: CheckForUpdatesViewModel
   
   @Environment(\.openWindow) private var openWindow
   
@@ -416,6 +436,11 @@ struct MenuBarContent: View {
     .keyboardShortcut(",")
     
     Divider()
+    
+    Button("Check for Updates...") {
+      checkForUpdatesViewModel.checkForUpdates()
+    }
+    .disabled(!checkForUpdatesViewModel.canCheckForUpdates)
     
     Button("About Sharkfin") {
       NSApp.setActivationPolicy(.regular)

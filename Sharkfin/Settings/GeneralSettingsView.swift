@@ -1,8 +1,10 @@
 import KeyboardShortcuts
 import ServiceManagement
+import Sparkle
 import SwiftUI
 
 struct GeneralSettingsView: View {
+  @Environment(AppState.self) private var appState
   @Environment(DirectoryStore.self) private var directoryStore
   @State private var startAtLogin = SMAppService.mainApp.status == .enabled
   @State private var isEditingShortcut = false
@@ -54,6 +56,15 @@ struct GeneralSettingsView: View {
               startAtLogin = SMAppService.mainApp.status == .enabled
             }
           }
+        if let updater = appState.updater {
+          Toggle(
+            "Automatically check for updates",
+            isOn: Binding(
+              get: { updater.automaticallyChecksForUpdates },
+              set: { updater.automaticallyChecksForUpdates = $0 }
+            )
+          )
+        }
       }
       
       Section("Search") {

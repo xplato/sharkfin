@@ -44,6 +44,7 @@ final class AppDatabase: Sendable {
         t.column("height", .integer)
         t.column("indexedAt", .datetime).notNull()
         t.column("thumbnailPath", .text)
+        t.column("fileIdentifier", .integer)
       }
       
       // file_embeddings (one embedding per file per model)
@@ -60,6 +61,7 @@ final class AppDatabase: Sendable {
       // Indexes
       try db.create(indexOn: "files", columns: ["directoryId"])
       try db.create(indexOn: "files", columns: ["contentHash"])
+      try db.create(indexOn: "files", columns: ["fileIdentifier"])
     }
     
     return migrator

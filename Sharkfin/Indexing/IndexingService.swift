@@ -179,12 +179,17 @@ final class IndexingService {
     // so we can detect overlapping files owned by a different directory
     // and files that lack an embedding for the active model.
     let activeModelId = modelPackage.id
-    let (existingFiles, existingOwners) = try await database.dbQueue.read {
-      db -> ([String: (date: Date, fileId: Int64, hasActiveEmbed: Bool)], [String: Int64]) in
+    let (existingFiles, existingOwners, inodeLookup) = try await database.dbQueue.read {
+      db -> (
+        [String: (date: Date, fileId: Int64, hasActiveEmbed: Bool)],
+        [String: Int64],
+        [Int64: (path: String, date: Date, fileId: Int64, hasActiveEmbed: Bool)]
+      ) in
       let rows = try Row.fetchAll(
         db,
         sql: """
           SELECT f.id AS fileId, f.path, f.modifiedAt, f.directoryId,
+                 f.fileIdentifier,
                  EXISTS(SELECT 1 FROM fileEmbeddings e
                         WHERE e.fileId = f.id AND e.modelId = ?) AS hasActiveEmbed
           FROM files f
@@ -193,6 +198,7 @@ final class IndexingService {
       )
       var files: [String: (date: Date, fileId: Int64, hasActiveEmbed: Bool)] = [:]
       var owners: [String: Int64] = [:]
+      var byInode: [Int64: (path: String, date: Date, fileId: Int64, hasActiveEmbed: Bool)] = [:]
       for row in rows {
         if let path: String = row["path"],
            let date: Date = row["modifiedAt"],
@@ -201,24 +207,13 @@ final class IndexingService {
           let hasEmbed: Bool = row["hasActiveEmbed"]
           files[path] = (date: date, fileId: fileId, hasActiveEmbed: hasEmbed)
           owners[path] = ownerId
+          // Build inode lookup only for files owned by this directory
+          if ownerId == dirId, let inode: Int64 = row["fileIdentifier"] {
+            byInode[inode] = (path: path, date: date, fileId: fileId, hasActiveEmbed: hasEmbed)
+          }
         }
       }
-      return (files, owners)
-    }
-    
-    // Clean up records for files owned by this directory that no longer exist on disk
-    let scannedPaths = Set(allFiles.map(\.url.path))
-    let ownedPaths = Set(existingOwners.filter { $0.value == dirId }.keys)
-    let deletedPaths = ownedPaths.subtracting(scannedPaths)
-    if !deletedPaths.isEmpty {
-      try await database.dbQueue.write { db in
-        for path in deletedPaths {
-          try db.execute(
-            sql: "DELETE FROM files WHERE path = ? AND directoryId = ?",
-            arguments: [path, dirId]
-          )
-        }
-      }
+      return (files, owners, byInode)
     }
     
     // Remove indexed files that now fall under excluded folders.
@@ -247,20 +242,67 @@ final class IndexingService {
       return Set(ids)
     }
     
-    // Categorize scanned files into four tiers:
+    // Categorize scanned files into five tiers:
     // 1. New or modified → full processing pipeline (deletes old file + all embeddings)
-    // 2. Unchanged but missing embedding for active model → generate embedding only
-    // 3. Unchanged but owned by a removed/disabled directory → cheap reassignment
-    // 4. Unchanged with active-model embedding → skip
+    // 2. Renamed (matched by inode) → update path
+    // 3. Unchanged but missing embedding for active model → generate embedding only
+    // 4. Unchanged but owned by a removed/disabled directory → cheap reassignment
+    // 5. Unchanged with active-model embedding → skip
     var filesToProcess: [QuickScannedFile] = []
     var filesToEmbed: [(file: QuickScannedFile, fileId: Int64)] = []
     var pathsToReassign: [String] = []
+    var renamedFiles: [(fileId: Int64, oldPath: String, newPath: String, newFilename: String)] = []
+    var pathMatchCount = 0
+    var inodeMatchCount = 0
+    var inodeMissCount = 0
+    var noInodeCount = 0
+    
+    LoggingService.shared.info(
+      "Inode lookup has \(inodeLookup.count) entries for directory \(dirId)",
+      category: "Indexing"
+    )
     
     for file in allFiles {
       guard let existing = existingFiles[file.url.path] else {
-        filesToProcess.append(file)
+        // Not found by path — check if this is a rename via inode match
+        if let inode = file.fileIdentifier {
+          if let match = inodeLookup[inode] {
+            let isModified = file.modifiedAt.timeIntervalSince(match.date) > 1.0
+            if isModified {
+              // Renamed AND modified — full re-processing needed
+              inodeMatchCount += 1
+              filesToProcess.append(file)
+            } else {
+              // Renamed but content unchanged — just update the path
+              inodeMatchCount += 1
+              renamedFiles.append((
+                fileId: match.fileId,
+                oldPath: match.path,
+                newPath: file.url.path,
+                newFilename: file.filename
+              ))
+              // Still check if embedding is needed for the active model
+              if !match.hasActiveEmbed {
+                filesToEmbed.append((file: file, fileId: match.fileId))
+              }
+            }
+          } else {
+            inodeMissCount += 1
+            if inodeMissCount <= 3 {
+              LoggingService.shared.debug(
+                "No inode match for \(file.filename) (inode \(inode)) — treating as new",
+                category: "Indexing"
+              )
+            }
+            filesToProcess.append(file)
+          }
+        } else {
+          noInodeCount += 1
+          filesToProcess.append(file)
+        }
         continue
       }
+      pathMatchCount += 1
       // The database stores dates as text with millisecond precision, so the
       // round-tripped date loses sub-millisecond information. Use a small
       // tolerance to avoid false positives from that truncation.
@@ -274,6 +316,53 @@ final class IndexingService {
         filesToEmbed.append((file: file, fileId: existing.fileId))
       } else if ownedByOther, let owner = currentOwner, !enabledDirIds.contains(owner) {
         pathsToReassign.append(file.url.path)
+      }
+    }
+    
+    LoggingService.shared.info(
+      "Diff summary for directory \(dirId): " +
+      "\(allFiles.count) scanned, " +
+      "\(pathMatchCount) matched by path, " +
+      "\(inodeMatchCount) matched by inode (renamed), " +
+      "\(inodeMissCount) inode miss (new), " +
+      "\(noInodeCount) no inode (new), " +
+      "\(filesToProcess.count) to process, " +
+      "\(filesToEmbed.count) to embed, " +
+      "\(renamedFiles.count) to rename",
+      category: "Indexing"
+    )
+    
+    // Clean up records for files owned by this directory that no longer exist on disk.
+    // Exclude old paths of renamed files — those will be updated, not deleted.
+    let scannedPaths = Set(allFiles.map(\.url.path))
+    let ownedPaths = Set(existingOwners.filter { $0.value == dirId }.keys)
+    let renamedOldPaths = Set(renamedFiles.map { $0.oldPath })
+    let deletedPaths = ownedPaths.subtracting(scannedPaths).subtracting(renamedOldPaths)
+    if !deletedPaths.isEmpty {
+      try await database.dbQueue.write { db in
+        for path in deletedPaths {
+          try db.execute(
+            sql: "DELETE FROM files WHERE path = ? AND directoryId = ?",
+            arguments: [path, dirId]
+          )
+        }
+      }
+    }
+    
+    // Apply path updates for renamed files (detected via inode match)
+    let renames = renamedFiles
+    if !renames.isEmpty {
+      LoggingService.shared.info(
+        "Updating paths for \(renames.count) renamed file(s) in directory \(dirId)",
+        category: "Indexing"
+      )
+      try await database.dbQueue.write { db in
+        for renamed in renames {
+          try db.execute(
+            sql: "UPDATE files SET path = ?, filename = ? WHERE id = ?",
+            arguments: [renamed.newPath, renamed.newFilename, renamed.fileId]
+          )
+        }
       }
     }
     
@@ -301,9 +390,9 @@ final class IndexingService {
           try dir.update(db)
         }
       }
-      // Invalidate search cache when files were removed (e.g. newly excluded
-      // folders) even though there is nothing new to process.
-      if !deletedPaths.isEmpty || !excludedNames.isEmpty {
+      // Invalidate search cache when files were removed, renamed, or excluded
+      // even though there is nothing new to process.
+      if !deletedPaths.isEmpty || !excludedNames.isEmpty || !renames.isEmpty {
         await MainActor.run {
           NotificationCenter.default.post(
             name: .searchCacheDidInvalidate,
@@ -450,7 +539,8 @@ final class IndexingService {
             width: nil,
             height: nil,
             indexedAt: Date(),
-            thumbnailPath: nil
+            thumbnailPath: nil,
+            fileIdentifier: file.fileIdentifier
           )
           try indexedFile.insert(db)
         }
@@ -511,7 +601,8 @@ final class IndexingService {
           width: Int(finalImage.size.width),
           height: Int(finalImage.size.height),
           indexedAt: Date(),
-          thumbnailPath: thumbnailPath
+          thumbnailPath: thumbnailPath,
+          fileIdentifier: file.fileIdentifier
         )
         try indexedFile.insert(db)
         

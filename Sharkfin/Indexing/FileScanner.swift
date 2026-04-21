@@ -7,6 +7,8 @@ nonisolated struct QuickScannedFile: Sendable {
   let fileExtension: String
   let sizeBytes: Int64
   let modifiedAt: Date
+  /// The file's inode number, used to detect renames without re-indexing.
+  let fileIdentifier: Int64?
 }
 
 nonisolated enum FileScanner {
@@ -63,13 +65,19 @@ nonisolated enum FileScanner {
       )
       guard resourceValues.isRegularFile == true else { continue }
       
+      // Capture the inode so we can detect renames without re-indexing.
+      var statInfo = stat()
+      let inode: Int64? =
+      stat(fileURL.path, &statInfo) == 0 ? Int64(statInfo.st_ino) : nil
+      
       results.append(
         QuickScannedFile(
           url: fileURL,
           filename: fileURL.lastPathComponent,
           fileExtension: ext,
           sizeBytes: Int64(resourceValues.fileSize ?? 0),
-          modifiedAt: resourceValues.contentModificationDate ?? Date()
+          modifiedAt: resourceValues.contentModificationDate ?? Date(),
+          fileIdentifier: inode
         )
       )
     }

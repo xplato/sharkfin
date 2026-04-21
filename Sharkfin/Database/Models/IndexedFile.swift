@@ -15,12 +15,15 @@ nonisolated struct IndexedFile: Codable, Identifiable, Sendable {
   var height: Int?
   var indexedAt: Date
   var thumbnailPath: String?
+  /// The file's inode number at index time, used to detect renames.
+  var fileIdentifier: Int64?
   
   enum CodingKeys: String, CodingKey {
     case id, path, directoryId, filename
     case fileExtension
     case sizeBytes, modifiedAt, contentHash, mimeType
     case width, height, indexedAt, thumbnailPath
+    case fileIdentifier
   }
 }
 

@@ -45,10 +45,23 @@ struct AboutView: View {
       
       Spacer()
       
-      // Button aligned with the text column
-      Button("GitHub Repository") {
-        if let url = URL(string: "https://github.com/xplato/sharkfin") {
-          NSWorkspace.shared.open(url)
+      HStack(spacing: 12) {
+        Button("Website") {
+          if let url = URL(string: "https://sharkfin.sh") {
+            NSWorkspace.shared.open(url)
+          }
+        }
+        
+        Button("Privacy Policy") {
+          if let url = URL(string: "https://sharkfin.sh/privacy") {
+            NSWorkspace.shared.open(url)
+          }
+        }
+        
+        Button("GitHub") {
+          if let url = URL(string: "https://github.com/xplato/sharkfin") {
+            NSWorkspace.shared.open(url)
+          }
         }
       }
       .controlSize(.large)

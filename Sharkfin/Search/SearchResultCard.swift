@@ -4,9 +4,9 @@ struct SearchResultCard: View {
   let result: SearchResult
   @Environment(SearchController.self) private var searchController
   @State private var isHovering = false
-
+  
   private let cornerRadius: CGFloat = 8
-
+  
   var body: some View {
     CardThumbnail(result: result, cornerRadius: cornerRadius)
       .background(
@@ -23,6 +23,7 @@ struct SearchResultCard: View {
       .onTapGesture {
         searchController.selectResult(result)
       }
+      .searchResultContextMenu(result)
       .help(formatDisplayPath(result.path))
   }
 }
@@ -31,7 +32,7 @@ struct SearchResultCard: View {
 private struct CardThumbnail: View {
   let result: SearchResult
   let cornerRadius: CGFloat
-
+  
   var body: some View {
     if let thumbPath = result.thumbnailPath,
        let nsImage = NSImage(contentsOfFile: thumbPath)

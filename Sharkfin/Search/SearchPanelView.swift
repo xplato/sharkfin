@@ -111,6 +111,11 @@ struct SearchPanelView: View {
     )
     .padding(32)
     .frame(width: SearchPanel.panelWidth)
+    .task {
+      searchController.onRemoveResult = { [weak viewModel] id in
+        viewModel?.removeResult(id: id)
+      }
+    }
     .onChange(of: viewModel.query) {
       if searchController.selectedResult != nil {
         searchController.clearSelection()

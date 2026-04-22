@@ -39,6 +39,13 @@ final class SearchViewModel {
     displayLimit += Self.pageSize()
   }
   
+  func removeResult(id: Int64) {
+    results.removeAll { $0.id == id }
+    if results.isEmpty {
+      state = .noResults
+    }
+  }
+  
   /// Returns a page size close to 50 that is evenly divisible by the column count.
   private static func pageSize() -> Int {
     let columns = UserDefaults.standard.integer(

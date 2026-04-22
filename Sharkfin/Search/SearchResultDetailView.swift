@@ -42,7 +42,9 @@ struct SearchResultDetailView: View {
         .resizable()
         .aspectRatio(contentMode: .fit)
         .frame(maxWidth: .infinity, maxHeight: 525)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
         .onTapGesture { revealInFinder() }
+        .searchResultContextMenu(result)
         .help("Click to reveal in Finder")
     } else {
       RoundedRectangle(cornerRadius: 8)

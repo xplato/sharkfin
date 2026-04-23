@@ -14,7 +14,7 @@ nonisolated struct QuickScannedFile: Sendable {
 nonisolated enum FileScanner {
   
   static let supportedExtensions: Set<String> = [
-    "jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", "tif", "svg", "heic",
+    "jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", "tif", "svg", "heic", "dng",
   ]
   
   /// Walk directory recursively and return all supported image files.

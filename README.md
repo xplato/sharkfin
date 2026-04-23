@@ -17,6 +17,8 @@
 
 Sharkfin is a native macOS app for semantic search of local files. Currently only supports images ([#1](https://github.com/xplato/Sharkfin/issues/1)).
 
+[**Visit website**](https://sharkfin.sh) • [**Download**](https://github.com/xplato/Sharkfin/releases/latest/download/Sharkfin.dmg) • [**View releases**](https://github.com/xplato/Sharkfin/releases/latest)
+
 </div>
 
 ## Features
